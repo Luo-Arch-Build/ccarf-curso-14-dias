@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 14 — Simulado final e estratégia de prova · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.uso { color: var(--pt); font-size: 13px; font-style: italic; }
+  .pt { color: var(--pt); font-size: 13.5px; }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 4px 0 10px; }
+  body.hide-pt .pt, body.hide-pt .pt-block { display: none; }
+  .toggle-pt { position: sticky; top: 12px; float: right; z-index: 5; background: var(--card2);
+    border: 1px solid var(--border); color: var(--muted); border-radius: 999px;
+    padding: 6px 14px; font-size: 12.5px; cursor: pointer; }
+  .toggle-pt:hover { color: var(--text); border-color: var(--accent); }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+  /* ---- simulado em modo prova ---- */
+  #exam .ex-top { position: sticky; top: 0; z-index: 6; background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 10px 0; display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  #exam .ex-top .ttl { font-weight: 700; margin-right: auto; }
+  #exam .stat { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  #exam .stat b { color: var(--text); }
+  #exam .stat.late b { color: var(--err); }
+  #exam .btn { background: var(--card2); color: var(--text); border: 1px solid var(--border); border-radius: 999px;
+    padding: 6px 14px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  #exam .btn:hover { border-color: var(--accent); }
+  #exam .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  #exam .btn.on { border-color: var(--accent2); color: var(--accent2); }
+  #exam .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  #exam details.nav { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; margin: 12px 0; }
+  #exam details.nav summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+  #exam .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 6px; margin-top: 10px; }
+  #exam .grid a { text-align: center; padding: 5px 0; border-radius: 6px; border: 1px solid var(--border); background: var(--card2);
+    color: var(--muted); text-decoration: none; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  #exam .grid a.answered { border-color: var(--accent2); color: var(--text); background: rgba(139,92,246,.15); }
+  #exam .grid a.flagged { box-shadow: inset 0 -3px 0 #f5b544; }
+  #exam .grid a.right { border-color: var(--ok); color: var(--ok); background: rgba(52,211,153,.1); }
+  #exam .grid a.wrong { border-color: var(--err); color: var(--err); background: rgba(248,113,113,.1); }
+  #exam .scen { border: 1px dashed var(--border); border-radius: 10px; padding: 14px 18px; margin: 26px 0 10px; }
+  #exam .scen h3 { margin: 0 0 4px; font-size: 15px; }
+  #exam .scen p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  #exam .xq { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin: 14px 0; scroll-margin-top: 70px; }
+  #exam .xq.is-flagged { border-color: #f5b544; }
+  #exam .xq.hide { display: none; }
+  #exam .xq .lbl { display: flex; gap: 8px; align-items: center; font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  #exam .xq .sel-n { text-transform: none; letter-spacing: 0; border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; }
+  #exam .xq .sel-n.multi { border-color: var(--accent2); color: var(--accent2); font-weight: 600; }
+  #exam .xq .res { text-transform: none; letter-spacing: 0; font-weight: 700; }
+  #exam .xq .res.ok { color: var(--ok); }
+  #exam .xq .res.ko { color: var(--err); }
+  #exam .xq .flagbtn { margin-left: auto; text-transform: none; letter-spacing: 0; padding: 2px 10px; font-size: 12px; }
+  #exam .xq.is-flagged .flagbtn { border-color: #f5b544; color: #f5b544; }
+  #exam .xq .stem { font-weight: 600; margin: 8px 0 10px; }
+  #exam .row { display: flex; gap: 8px; margin: 6px 0; }
+  #exam .opt { flex: 1; min-width: 0; text-align: left; display: flex; gap: 10px; align-items: flex-start; background: var(--card2);
+    color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-size: 14.5px;
+    cursor: pointer; font-family: inherit; line-height: 1.5; }
+  #exam .opt:hover { border-color: var(--accent); }
+  #exam .opt .let { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border);
+    display: grid; place-items: center; font-size: 11.5px; font-weight: 700; }
+  #exam .opt.sel { border-color: var(--accent2); background: rgba(139,92,246,.15); }
+  #exam .opt.sel .let { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+  #exam .strike { flex: none; width: 34px; background: var(--card); color: var(--muted); border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer; font-family: inherit; }
+  #exam .row.struck .opt { opacity: .5; }
+  #exam .row.struck .opt .txt { text-decoration: line-through; }
+  #exam.done .opt { cursor: default; }
+  #exam.done .opt:hover { border-color: var(--border); }
+  #exam .opt.correct { border-color: var(--ok); background: rgba(52,211,153,.1); }
+  #exam .opt.correct .let { background: var(--ok); border-color: var(--ok); color: #0f1115; }
+  #exam .opt.incorrect { border-color: var(--err); background: rgba(248,113,113,.1); }
+  #exam .opt.incorrect .let { background: var(--err); border-color: var(--err); color: #0f1115; }
+  #exam .hint { font-size: 12px; color: var(--accent2); margin-top: 4px; min-height: 1em; }
+  #exam .expl { margin-top: 10px; padding: 10px 12px; border-left: 3px solid var(--border); font-size: 13.5px; color: var(--muted); }
+  #exam .expl .ts { display: block; margin-top: 6px; font-size: 12px; }
+  #exam .xpt { display: none; color: var(--pt); font-size: 13px; margin-top: 2px; }
+  #exam.show-pt .xpt { display: block; }
+  #exam table.dom { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 10px 0; }
+  #exam table.dom td, #exam table.dom th { border-bottom: 1px solid var(--border); padding: 6px 8px; text-align: left; vertical-align: middle; }
+  #exam table.dom th { color: var(--muted); font-weight: 600; font-size: 12.5px; }
+  #exam .bar { background: var(--card2); border-radius: 999px; height: 8px; overflow: hidden; min-width: 110px; }
+  #exam .bar i { display: block; height: 100%; background: var(--ok); }
+  #exam .bar i.low { background: var(--err); }
+  #exam ul.hist { margin: 8px 0 0; padding-left: 18px; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<button class="toggle-pt" onclick="document.body.classList.toggle('hide-pt'); this.textContent = document.body.classList.contains('hide-pt') ? '🇧🇷 mostrar traduções' : '🇧🇷 ocultar traduções';">🇧🇷 ocultar traduções</button>
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Aula 14</div>
+  <h1>Aula 14 — Simulado final e estratégia de prova</h1>
+  <div class="meta">
+    <span class="tag">Revisão · Todos os domínios</span>
+    <span class="tag">~60 min</span>
+  </div>
+</header>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo do dia.</strong> Consolidar tudo: fixar a estratégia de execução no dia da prova,
+  revisar os termos mais cobrados do curso inteiro e fazer o <strong>simulado em modo prova</strong> — questões
+  inéditas, 4 cenários sorteados entre os 6 oficiais, cronômetro e resultado por domínio, como no relatório
+  oficial. No final, o checklist da véspera para não perder a prova por burocracia.
+</div>
+
+<h2>1. Estratégia de prova</h2>
+<p>Você já tem o conteúdo. Agora é execução. Sete regras para os 120 minutos:</p>
+<ol>
+  <li><strong>2 minutos por questão.</strong> 60 questões em 120 minutos. Se travar, marque a melhor
+      hipótese, anote mentalmente e siga — voltar depois é melhor que estourar o ritmo.</li>
+  <li><strong>Leia o stem caçando o SINTOMA ou o REQUISITO antes de olhar as opções.</strong> A maioria das
+      questões descreve algo quebrando em produção ("logs show…", "production data shows…", "developers report…"):
+      formule sua hipótese de <strong>causa raiz</strong> primeiro e depois procure a opção que bate com ela. As de
+      configuração/design (questões 4 a 6 e 11 do guia) trazem um requisito-chave ("available to every developer",
+      "regardless of location", "dozens of files"): identifique-o e procure o mecanismo que o atende. Ler as opções antes
+      disso deixa você vulnerável aos distratores.</li>
+  <li><strong>Elimine os dois padrões clássicos de distrator.</strong>
+      <em>Over-engineering:</em> classifier dedicado, infra de ML, reescrever backends, caches especulativos —
+      soluções grandes demais para o problema descrito.
+      <em>Remendo cosmético:</em> "adicione uma instrução ao prompt" quando a questão exige garantia
+      determinística (ordem de tools, compliance, formato) — prompt é probabilístico; hook, schema e gate são determinísticos.</li>
+  <li><strong>Resposta certa = causa raiz + solução proporcional.</strong> Nem o remendo barato que não
+      garante nada, nem a arquitetura nova de 3 meses. A opção correta ataca o mecanismo que gerou o
+      sintoma com o menor esforço que resolve de verdade.</li>
+  <li><strong>"Select TWO" significa exatamente DUAS.</strong> A questão de múltipla resposta diz quantas
+      marcar. O guia não diz como esses itens são pontuados nem se há crédito parcial: trate como tudo-ou-nada
+      e confira a contagem antes de seguir.</li>
+  <li><strong>Elimine, decida, marque, siga.</strong> No simulado abaixo, use <strong>✕ riscar</strong> nas
+      alternativas descartadas e <strong>⚑ marcar p/ revisar</strong> nas dúvidas — volte a elas no fim, com o
+      tempo que sobrar. Treine o hábito aqui para não improvisar no dia.</li>
+  <li><strong>Chutar não penaliza.</strong> Não existe desconto por erro. Nunca deixe questão em branco:
+      elimine o que puder e marque a mais plausível.</li>
+</ol>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha do dia — a meta-pegadinha da prova inteira</h3>
+  <p>O distrator mais frequente da CCAR-F é o <strong>par "cosmético vs estrutural"</strong> — e ele corta para os dois
+  lados. Quando o stem exige <strong>garantia determinística</strong> (ordem de tools, compliance, limite financeiro, saída
+  parseável), a instrução vaga ("reforce o system prompt", "peça ao modelo para ter cuidado", "aumente o contexto")
+  perde para a opção que muda o <strong>mecanismo</strong> (hook que bloqueia, schema nullable, <code>stop_reason</code> como
+  sinal, contexto passado explicitamente ao subagent). Quando o problema é <strong>critério ou julgamento</strong> do modelo
+  (seleção de tool, escalonamento, falsos positivos), a resposta proporcional costuma ser texto específico — descrição
+  completa da tool (questão 2 do guia), critérios explícitos + few-shot no system prompt (questão 3) — e a opção
+  "estrutural" (routing layer, classifier, score de confiança, análise de sentimento) é o over-engineering.
+  Regra de bolso: <em>garantia determinística → código, schema ou config; critério ou julgamento → prompt específico
+  (critérios explícitos, few-shot, descrição da tool), nunca instrução vaga.</em></p>
+</div>
+
+<h2>2. Revisão relâmpago <span class="pt">— os termos mais importantes do curso (EN → PT)</span></h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Português</th></tr>
+  <tr><td class="en">agentic loop</td><td>loop agêntico: raciocinar → pedir tool → receber resultado → repetir</td></tr>
+  <tr><td class="en">stop_reason</td><td>motivo de parada da resposta; o sinal estrutural que controla o loop</td></tr>
+  <tr><td class="en">tool_use / end_turn</td><td>"quero uma tool" (continue) / "terminei" (encerre o loop)</td></tr>
+  <tr><td class="en">tool result</td><td>resultado da tool, devolvido ao histórico antes da próxima chamada</td></tr>
+  <tr><td class="en">coordinator (hub-and-spoke)</td><td>coordenador: toda comunicação entre subagents passa por ele</td></tr>
+  <tr><td class="en">subagent / Task tool</td><td>subagente com contexto isolado, spawnado via Task tool</td></tr>
+  <tr><td class="en">allowedTools</td><td>na prova: lista de tools do agente que precisa incluir "Task" para spawnar subagents (no produto atual a tool se chama Agent e <code>allowedTools</code> só auto-aprova — card 🧭 da aula 02)</td></tr>
+  <tr><td class="en">PostToolUse hook</td><td>intercepta o resultado da tool antes de o modelo processá-lo (ex.: normalizar timestamps Unix/ISO 8601 e status numéricos)</td></tr>
+  <tr><td class="en">tool call interception hook</td><td>intercepta a chamada de saída antes da execução para bloquear violação de política e redirecionar (ex.: process_refund acima de US$ 500 → escalate_to_human)</td></tr>
+  <tr><td class="en">prompt chaining</td><td>pipeline sequencial fixo de passes (ex.: por arquivo + passe de integração)</td></tr>
+  <tr><td class="en">--resume / fork_session</td><td>retomar sessão nomeada / ramificar sessões a partir de uma base comum</td></tr>
+  <tr><td class="en">tool description</td><td>descrição da tool — mecanismo nº 1 de seleção de tools pelo modelo</td></tr>
+  <tr><td class="en">isError</td><td>flag MCP que sinaliza falha da tool de volta ao agente</td></tr>
+  <tr><td class="en">errorCategory / isRetryable</td><td>categoria do erro (transient/validation/permission; violação de regra de negócio → isRetryable: false + explicação ao cliente) + se vale retry</td></tr>
+  <tr><td class="en">tool_choice</td><td>"auto" (pode não chamar), "any" (deve chamar alguma), forced (tool específica)</td></tr>
+  <tr><td class="en">.mcp.json</td><td>config de MCP servers no nível do projeto (compartilhada via git)</td></tr>
+  <tr><td class="en">MCP resources</td><td>catálogos de conteúdo expostos ao agente sem chamadas exploratórias</td></tr>
+  <tr><td class="en">CLAUDE.md</td><td>memória do projeto; hierarquia user / projeto / diretório</td></tr>
+  <tr><td class="en">.claude/rules/ (paths)</td><td>regras com glob no frontmatter, carregadas só ao editar arquivos que casam</td></tr>
+  <tr><td class="en">SKILL.md frontmatter</td><td>context: fork, allowed-tools, argument-hint (na prova, <code>allowed-tools</code> restringe; no produto atual só pré-aprova — card 🧭 da aula 07)</td></tr>
+  <tr><td class="en">plan mode</td><td>modo de planejamento para mudanças grandes/arquiteturais antes de executar</td></tr>
+  <tr><td class="en">-p / --print flag</td><td>modo não-interativo do Claude Code para CI/CD</td></tr>
+  <tr><td class="en">--output-format json / --json-schema</td><td>saída estruturada parseável em pipeline</td></tr>
+  <tr><td class="en">few-shot prompting</td><td>2–4 exemplos concretos input/output para consistência e menos falsos positivos</td></tr>
+  <tr><td class="en">Message Batches API / custom_id</td><td>50% mais barato, janela até 24h, sem SLA; custom_id correlaciona pares</td></tr>
+  <tr><td class="en">lost in the middle</td><td>modelo perde informação no meio de inputs longos; início e fim retêm melhor</td></tr>
+  <tr><td class="en">Explore subagent</td><td>subagent que isola a saída verbosa de descoberta e devolve só o resumo ao contexto principal</td></tr>
+  <tr><td class="en">interview pattern</td><td>o Claude te entrevista antes de implementar, para revelar considerações que você não previu</td></tr>
+  <tr><td class="en">state manifest (crash recovery)</td><td>cada agente exporta estado estruturado num local conhecido; o coordinator carrega o manifest ao retomar</td></tr>
+  <tr><td class="en">detected_pattern</td><td>campo do finding que registra qual construção disparou o alerta — base para analisar descartes</td></tr>
+  <tr><td class="en">claim-source mapping</td><td>par afirmação→fonte (URL, documento, trecho, data) preservado até o relatório final</td></tr>
+  <tr><td class="en">field-level confidence</td><td>confiança por campo, calibrada com conjunto rotulado, para rotear a revisão humana</td></tr>
+</table>
+
+<h2>3. Simulado em modo prova</h2>
+
+<div class="card" style="border-left: 3px solid var(--accent2);">
+  <strong>⏱️ Como a prova real.</strong> Banco de questões <strong>inéditas</strong> — nenhuma repete as aulas —,
+  5 por cenário oficial. Cada tentativa sorteia <strong>4 dos 6 cenários</strong>, como a prova, no mesmo ritmo de
+  2 min por questão. Só inglês e sem correção imediata: risque, marque para revisar e finalize no fim. O resultado
+  mostra a % de acerto por domínio, como o relatório oficial, e o gabarito comentado em português.
+</div>
+
+<div id="exam"><div class="card">Carregando o simulado…</div></div>
+
+<h2>4. Checklist véspera de prova</h2>
+<div class="card">
+  <ul>
+    <li>🪪 <strong>Documento oficial com foto, emitido pelo governo, válido e dentro da validade</strong>, com o nome <strong>exatamente igual</strong> ao do registro. Divergiu? Corrija ANTES de agendar pelo certifications-support@anthropic.com.</li>
+    <li>💻 <strong>Rode o tech check da Pearson VUE</strong> na mesma máquina, rede e local onde vai fazer a prova (proctoring online). Webcam, microfone e conexão testados.</li>
+    <li>🧹 <strong>Mesa limpa:</strong> sem anotações, livros, celular ao alcance nem qualquer material de estudo.</li>
+    <li>🚫 <strong>Sem segundo monitor, sem fones de ouvido/headphones, sem smartwatch.</strong> Itens proibidos derrubam a sessão.</li>
+    <li>📅 Cancelamento ou remarcação: o guia (seção 11) diz até 24h antes, mas o <a href="https://anthropic-partners.skilljar.com/page/faq-certifications">FAQ</a> e a <a href="https://anthropic-partners.skilljar.com/page/policies-certifications">página de políticas</a> dizem <strong>48h</strong>. Conte com 48h: cancelar ou remarcar com menos de 48h de antecedência faz perder a taxa.</li>
+    <li>⏰ <strong>Chegue (ou comece o check-in online) com folga:</strong> faltar ou chegar depois da janela de atraso permitida faz perder a taxa e exige novo registro.</li>
+    <li>📹 Na hora: aceite o NDA, permaneça visível na webcam a sessão inteira e não fale com ninguém.</li>
+    <li>🧠 E o técnico: 2 min/questão, sintoma (ou requisito) antes das opções, causa raiz + proporcional, "select TWO" = exatamente 2, e <strong>nada em branco</strong>.</li>
+  </ul>
+</div>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir aula 14</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="aula-13.html">← Aula 13 — Propagação de erros, human review e proveniência</a></span>
+  <span><a href="index.html">Voltar ao índice →</a></span>
+</nav>
+
+</div>
+
+<script src="simulado-banco.js"></script>
+<script>
+(function () {
+  'use strict';
+  var B = window.CCARF_BANCO, root = document.getElementById('exam');
+  var KS = 'ccarf-simulado-estado', KH = 'ccarf-simulado-hist', KA = 'ccarf-aula-14';
+  var LET = 'ABCDE', NW = { 1: 'ONE', 2: 'TWO', 3: 'THREE' };
+  var DOM = { 1: 'Agentic Architecture & Orchestration', 2: 'Tool Design & MCP Integration',
+    3: 'Claude Code Configuration & Workflows', 4: 'Prompt Engineering & Structured Output',
+    5: 'Context Management & Reliability' };
+  var PESO = { 1: 27, 2: 18, 3: 20, 4: 20, 5: 15 };
+  var TS_T = {
+    '1.1': 'Loop agêntico', '1.2': 'Orquestração coordinator-subagents', '1.3': 'Invocação de subagents e passagem de contexto',
+    '1.4': 'Workflows com enforcement e handoff', '1.5': 'Hooks do Agent SDK (interceptação e normalização)',
+    '1.6': 'Estratégias de decomposição de tarefas', '1.7': 'Sessões: retomada e fork',
+    '2.1': 'Interfaces e descrições de tools', '2.2': 'Erros estruturados em MCP tools', '2.3': 'Distribuição de tools e tool_choice',
+    '2.4': 'Integração de MCP servers', '2.5': 'Tools nativas (Read, Write, Edit, Bash, Grep, Glob)',
+    '3.1': 'Hierarquia e organização do CLAUDE.md', '3.2': 'Slash commands e skills', '3.3': 'Rules por caminho (glob)',
+    '3.4': 'Plan mode vs execução direta', '3.5': 'Refinamento iterativo', '3.6': 'Claude Code em CI/CD',
+    '4.1': 'Critérios explícitos e falsos positivos', '4.2': 'Few-shot prompting', '4.3': 'Saída estruturada com tool use e JSON schema',
+    '4.4': 'Validação, retry e feedback loops', '4.5': 'Processamento em batch', '4.6': 'Review multi-instância e multi-pass',
+    '5.1': 'Contexto em interações longas', '5.2': 'Escalonamento e ambiguidade', '5.3': 'Propagação de erros em multiagente',
+    '5.4': 'Contexto na exploração de codebases grandes', '5.5': 'Revisão humana e calibração de confiança',
+    '5.6': 'Proveniência e incerteza na síntese' };
+  var MODES = { prova: { scen: 4, nome: '4 cenários sorteados' }, banco: { scen: 6, nome: 'banco completo' } };
+
+  if (!B || !B.q || !B.scen) {
+    root.innerHTML = '<div class="card">Não consegui carregar o banco de questões (<code>simulado-banco.js</code>). ' +
+      'Ele precisa estar na mesma pasta desta aula.</div>';
+    return;
+  }
+  var byId = {}, perScen = {};
+  B.q.forEach(function (q) { byId[q.id] = q; perScen[q.s] = (perScen[q.s] || 0) + 1; });
+  var st = read(KS), timer = null, ui = {};
+
+  function read(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
+  function write(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function save() { write(KS, st); }
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+  function html(tag, cls, h) { var n = el(tag, cls); n.innerHTML = h; return n; }
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function fmt(ms) { var s = Math.max(0, Math.round(ms / 1000)), m = Math.floor(s / 60); s %= 60; return m + ':' + (s < 10 ? '0' : '') + s; }
+  function isRight(q, ans) { return (ans || []).slice().sort().join(',') === q.a.slice().sort().join(','); }
+  function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+  function countFor(mode) {
+    // o banco tem o mesmo nº de questões por cenário, então qualquer sorteio dá o mesmo total
+    var per = Object.keys(B.scen).map(function (k) { return perScen[k] || 0; }), n = 0;
+    for (var i = 0; i < MODES[mode].scen && i < per.length; i++) n += per[i];
+    return n;
+  }
+
+  // ---------------------------------------------------------------- início
+  function renderStart() {
+    stopTimer(); root.innerHTML = ''; root.className = '';
+    var c = el('div', 'card');
+    c.appendChild(html('div', null, '<strong>Escolha o formato.</strong> A prova real tem 60 questões em 120 min, em 4 cenários ' +
+      'sorteados de 6. Aqui você treina o mesmo ritmo (2 min por questão) com questões inéditas.'));
+    var bt = el('div', 'btns');
+    var b1 = el('button', 'btn primary', 'Prova — 4 cenários sorteados · ' + countFor('prova') + ' questões · ' + countFor('prova') * 2 + ' min');
+    b1.onclick = function () { start('prova'); };
+    var b2 = el('button', 'btn', 'Banco completo — 6 cenários · ' + countFor('banco') + ' questões · ' + countFor('banco') * 2 + ' min');
+    b2.onclick = function () { start('banco'); };
+    bt.appendChild(b1); bt.appendChild(b2); c.appendChild(bt);
+    root.appendChild(c);
+    renderHist(root);
+  }
+
+  function renderHist(parent) {
+    var h = read(KH) || [];
+    if (!h.length) return;
+    var c = el('div', 'card');
+    c.appendChild(html('strong', null, 'Tentativas anteriores'));
+    var ul = el('ul', 'hist');
+    h.slice(0, 8).forEach(function (t) {
+      var doms = Object.keys(t.dom).sort().map(function (d) { return 'D' + d + ' ' + Math.round(100 * t.dom[d].ok / t.dom[d].n) + '%'; }).join(' · ');
+      ul.appendChild(el('li', null, new Date(t.when).toLocaleString('pt-BR') + ' — ' + MODES[t.mode].nome + ': ' +
+        t.ok + '/' + t.n + ' (' + Math.round(100 * t.ok / t.n) + '%) em ' + fmt(t.ms) + ' — ' + doms));
+    });
+    c.appendChild(ul);
+    parent.appendChild(c);
+  }
+
+  function start(mode) {
+    var keys = shuffle(Object.keys(B.scen)).slice(0, MODES[mode].scen), ids = [];
+    keys.forEach(function (k) { B.q.forEach(function (q) { if (q.s === k) ids.push(q.id); }); });
+    var now = Date.now();
+    st = { mode: mode, scen: keys, ids: ids, answers: {}, flags: {}, struck: {}, start: now,
+      deadline: now + ids.length * 2 * 60000, done: false };
+    save(); renderRun(); root.scrollIntoView({ block: 'start' });
+  }
+
+  // ---------------------------------------------------------------- prova em andamento
+  function renderRun() {
+    root.innerHTML = ''; root.className = '';
+    var N = st.ids.length;
+    var top = el('div', 'ex-top');
+    top.appendChild(el('span', 'ttl', 'Simulado CCAR-F · ' + MODES[st.mode].nome));
+    ui.tEl = el('span', 'stat'); ui.aEl = el('span', 'stat'); ui.fEl = el('span', 'stat');
+    var fin = el('button', 'btn primary', 'Finalizar prova'); fin.onclick = function () { finish(false); };
+    [ui.tEl, ui.aEl, ui.fEl, fin].forEach(function (n) { top.appendChild(n); });
+    root.appendChild(top);
+    var nav = el('details', 'nav'); nav.appendChild(el('summary', null, 'Mapa das questões — clique para pular'));
+    var grid = el('div', 'grid'); nav.appendChild(grid); root.appendChild(nav);
+    ui.cards = []; ui.cells = [];
+    var last = null;
+    st.ids.forEach(function (id, i) {
+      var q = byId[id];
+      if (q.s !== last) {
+        last = q.s;
+        var sc = el('div', 'scen');
+        sc.appendChild(el('h3', null, 'Scenario: ' + B.scen[q.s].name));
+        sc.appendChild(el('p', null, B.scen[q.s].desc));
+        root.appendChild(sc);
+      }
+      var card = el('div', 'xq'); card.id = 'xq' + (i + 1);
+      var lbl = el('div', 'lbl');
+      lbl.appendChild(el('span', null, 'Question ' + (i + 1) + ' of ' + N));
+      lbl.appendChild(el('span', 'sel-n' + (q.a.length > 1 ? ' multi' : ''), 'Select ' + NW[q.a.length]));
+      var fb = el('button', 'btn flagbtn', '⚑ Marcar p/ revisar');
+      fb.onclick = function () { if (st.flags[id]) delete st.flags[id]; else st.flags[id] = 1; save(); paint(); };
+      lbl.appendChild(fb); card.appendChild(lbl);
+      card.appendChild(el('div', 'stem', q.q));
+      var hint = el('div', 'hint');
+      q.o.forEach(function (t, k) {
+        var row = el('div', 'row'), b = el('button', 'opt');
+        b.appendChild(el('span', 'let', LET[k])); b.appendChild(el('span', 'txt', t));
+        b.onclick = function () { pick(id, k, hint); };
+        b.oncontextmenu = function (ev) { ev.preventDefault(); strike(id, k); };
+        var x = el('button', 'strike', '✕');
+        x.title = 'Riscar alternativa (ou clique direito nela)';
+        x.setAttribute('aria-label', 'Riscar alternativa ' + LET[k]);
+        x.onclick = function () { strike(id, k); };
+        row.appendChild(b); row.appendChild(x); card.appendChild(row);
+      });
+      card.appendChild(hint);
+      root.appendChild(card); ui.cards.push(card);
+      var c = el('a', null, String(i + 1)); c.href = '#xq' + (i + 1);
+      c.onclick = function (ev) { ev.preventDefault(); card.scrollIntoView({ block: 'start' }); };
+      grid.appendChild(c); ui.cells.push(c);
+    });
+    var bottom = el('div', 'btns'); var fin2 = el('button', 'btn primary', 'Finalizar prova');
+    fin2.onclick = function () { finish(false); }; bottom.appendChild(fin2); root.appendChild(bottom);
+    paint();
+    timer = setInterval(tick, 1000); tick();
+  }
+
+  function pick(id, k, hint) {
+    if (st.done) return;
+    var q = byId[id], n = q.a.length, cur = (st.answers[id] || []).slice(), at = cur.indexOf(k);
+    hint.textContent = '';
+    if (n === 1) cur = at >= 0 ? [] : [k];
+    else if (at >= 0) cur.splice(at, 1);
+    else {
+      cur.push(k);
+      if (cur.length > n) { cur.shift(); hint.textContent = 'Select ' + NW[n] + ': a nova marcação substituiu a mais antiga.'; }
+    }
+    if (cur.length) st.answers[id] = cur; else delete st.answers[id];
+    var s = (st.struck[id] || []).filter(function (x) { return cur.indexOf(x) < 0; });
+    if (s.length) st.struck[id] = s; else delete st.struck[id];
+    save(); paint();
+  }
+
+  function strike(id, k) {
+    if (st.done) return;
+    var s = (st.struck[id] || []).slice(), at = s.indexOf(k);
+    if (at >= 0) s.splice(at, 1);
+    else {
+      s.push(k);
+      var rest = (st.answers[id] || []).filter(function (x) { return x !== k; });
+      if (rest.length) st.answers[id] = rest; else delete st.answers[id];
+    }
+    if (s.length) st.struck[id] = s; else delete st.struck[id];
+    save(); paint();
+  }
+
+  function paint() {
+    var answered = 0, flagged = 0;
+    st.ids.forEach(function (id, i) {
+      var sel = st.answers[id] || [], struck = st.struck[id] || [], card = ui.cards[i], cell = ui.cells[i];
+      if (sel.length) answered++;
+      if (st.flags[id]) flagged++;
+      card.classList.toggle('is-flagged', !!st.flags[id]);
+      Array.prototype.forEach.call(card.querySelectorAll('.row'), function (row, k) {
+        row.firstChild.classList.toggle('sel', sel.indexOf(k) >= 0);
+        row.classList.toggle('struck', struck.indexOf(k) >= 0);
+        row.lastChild.setAttribute('aria-pressed', struck.indexOf(k) >= 0 ? 'true' : 'false');
+      });
+      cell.className = (sel.length ? 'answered' : '') + (st.flags[id] ? ' flagged' : '');
+    });
+    ui.aEl.innerHTML = 'Respondidas <b>' + answered + '/' + st.ids.length + '</b>';
+    ui.fEl.innerHTML = 'Marcadas <b>' + flagged + '</b>';
+  }
+
+  function tick() {
+    var left = st.deadline - Date.now();
+    ui.tEl.innerHTML = 'Tempo <b>' + fmt(left) + '</b>';
+    ui.tEl.className = 'stat' + (left < 5 * 60000 ? ' late' : '');
+    if (left <= 0) finish(true);
+  }
+
+  // ---------------------------------------------------------------- finalização e resultado
+  function score() {
+    var dom = {}, ok = 0;
+    st.ids.forEach(function (id) {
+      var q = byId[id], d = dom[q.d] || (dom[q.d] = { ok: 0, n: 0 });
+      d.n++; if (isRight(q, st.answers[id])) { d.ok++; ok++; }
+    });
+    return { ok: ok, n: st.ids.length, dom: dom };
+  }
+
+  function finish(timeout) {
+    if (!st || st.done) return;
+    var N = st.ids.length, ans = Object.keys(st.answers).length, fl = Object.keys(st.flags).length;
+    if (!timeout) {
+      var msg = 'Finalizar a prova agora?';
+      if (N - ans > 0) msg += '\n• ' + (N - ans) + ' sem resposta (chute não penaliza)';
+      if (fl > 0) msg += '\n• ' + fl + ' marcada(s) para revisar';
+      if (!window.confirm(msg)) return;
+    }
+    stopTimer();
+    st.done = true; st.timeout = !!timeout; st.end = Math.min(Date.now(), st.deadline);
+    st.res = score(); save();
+    var h = read(KH) || [];
+    h.unshift({ when: Date.now(), mode: st.mode, scen: st.scen, ok: st.res.ok, n: st.res.n, dom: st.res.dom, ms: st.end - st.start });
+    write(KH, h.slice(0, 30));
+    try {
+      localStorage.setItem(KA, new Date().toLocaleDateString('pt-BR') + ' · simulado ' + st.res.ok + '/' + st.res.n +
+        ' (' + Math.round(100 * st.res.ok / st.res.n) + '%)');
+    } catch (e) {}
+    renderResult();
+    root.scrollIntoView({ block: 'start' });
+  }
+
+  function renderResult() {
+    stopTimer(); root.innerHTML = ''; root.className = 'done';
+    var r = st.res || score(), pct = Math.round(100 * r.ok / r.n);
+    var c = el('div', 'card');
+    c.appendChild(html('div', null, '<strong>Resultado: ' + r.ok + ' de ' + r.n + ' (' + pct + '%)</strong>' +
+      (st.timeout ? ' · <span style="color:var(--err)">tempo esgotado</span>' : '')));
+    c.appendChild(el('div', 'stat', 'Tempo usado: ' + fmt(st.end - st.start) + ' de ' + fmt(st.deadline - st.start) +
+      ' · cenários: ' + st.scen.map(function (k) { return B.scen[k].name; }).join(' · ')));
+    var tb = el('table', 'dom');
+    tb.appendChild(html('tr', null, '<th>Domínio (peso na prova)</th><th>Acertos</th><th></th><th>%</th>'));
+    Object.keys(r.dom).sort().forEach(function (d) {
+      var x = r.dom[d], p = Math.round(100 * x.ok / x.n);
+      tb.appendChild(html('tr', null, '<td>D' + d + ' · ' + DOM[d] + ' (' + PESO[d] + '%)</td><td>' + x.ok + '/' + x.n +
+        '</td><td><div class="bar"><i class="' + (p < 70 ? 'low' : '') + '" style="width:' + p + '%"></i></div></td><td>' + p + '%</td>'));
+    });
+    c.appendChild(tb);
+    c.appendChild(el('div', 'stat', 'Como no relatório oficial: % de acerto por domínio. A nota da prova é escalada ' +
+      '(100–1.000, corte 720) e equalizada entre versões; não existe conversão oficial de % para essa escala. ' +
+      'Use os domínios em vermelho para escolher o que revisar.'));
+    var bt = el('div', 'btns');
+    var again = el('button', 'btn primary', 'Nova tentativa — 4 cenários'); again.onclick = function () { start('prova'); };
+    var full = el('button', 'btn', 'Banco completo'); full.onclick = function () { start('banco'); };
+    var onlyWrong = el('button', 'btn', 'Mostrar só os erros');
+    onlyWrong.onclick = function () {
+      var on = !onlyWrong.classList.contains('on'); onlyWrong.classList.toggle('on', on);
+      Array.prototype.forEach.call(root.querySelectorAll('.xq'), function (n) { n.classList.toggle('hide', on && n.dataset.ok === '1'); });
+    };
+    var pt = el('button', 'btn', '🇧🇷 Mostrar tradução');
+    pt.onclick = function () { var on = !root.classList.contains('show-pt'); root.classList.toggle('show-pt', on); pt.classList.toggle('on', on); };
+    [again, full, onlyWrong, pt].forEach(function (n) { bt.appendChild(n); });
+    c.appendChild(bt);
+    root.appendChild(c);
+    renderHist(root);
+
+    var last = null;
+    st.ids.forEach(function (id, i) {
+      var q = byId[id], sel = st.answers[id] || [], ok = isRight(q, sel);
+      if (q.s !== last) {
+        last = q.s;
+        var sc = el('div', 'scen');
+        sc.appendChild(el('h3', null, 'Scenario: ' + B.scen[q.s].name));
+        sc.appendChild(el('p', null, B.scen[q.s].desc));
+        sc.appendChild(el('p', 'xpt', B.scen[q.s].pt));
+        root.appendChild(sc);
+      }
+      var card = el('div', 'xq'); card.dataset.ok = ok ? '1' : '0';
+      var lbl = el('div', 'lbl');
+      lbl.appendChild(el('span', 'res ' + (ok ? 'ok' : 'ko'), ok ? '✓ Acertou' : (sel.length ? '✗ Errou' : '✗ Em branco')));
+      lbl.appendChild(el('span', null, 'Question ' + (i + 1)));
+      lbl.appendChild(el('span', 'sel-n' + (q.a.length > 1 ? ' multi' : ''), 'Select ' + NW[q.a.length]));
+      if (st.flags[id]) lbl.appendChild(el('span', null, '⚑ marcada'));
+      card.appendChild(lbl);
+      card.appendChild(el('div', 'stem', q.q));
+      card.appendChild(el('div', 'xpt', q.qpt));
+      q.o.forEach(function (t, k) {
+        var row = el('div', 'row'), b = el('div', 'opt'), good = q.a.indexOf(k) >= 0, chosen = sel.indexOf(k) >= 0;
+        b.className = 'opt' + (chosen ? ' sel' : '') + (good ? ' correct' : '') + (chosen && !good ? ' incorrect' : '');
+        b.appendChild(el('span', 'let', LET[k]));
+        var tx = el('span', 'txt', t); tx.appendChild(el('span', 'xpt', q.opt[k])); b.appendChild(tx);
+        row.appendChild(b); card.appendChild(row);
+      });
+      var ex = html('div', 'expl', '<strong>Gabarito: ' + q.a.map(function (k) { return LET[k]; }).join(' e ') + '.</strong> ' + q.e);
+      ex.appendChild(el('span', 'ts', 'Domínio ' + q.d + ' · TS ' + q.t + ' — ' + TS_T[q.t]));
+      card.appendChild(ex);
+      root.appendChild(card);
+    });
+  }
+
+  // ---------------------------------------------------------------- boot
+  if (st && st.ids && st.ids.every(function (id) { return byId[id]; })) {
+    if (st.done) renderResult();
+    else if (Date.now() >= st.deadline) finish(true);
+    else renderRun();
+  } else {
+    st = null; renderStart();
+  }
+
+  // botão "Concluir aula 14" (fora do simulado)
+  var fbtn = document.getElementById('finish'), msg = document.getElementById('donemsg');
+  if (fbtn) {
+    if (localStorage.getItem(KA)) msg.textContent = 'Aula já concluída — ' + localStorage.getItem(KA);
+    fbtn.addEventListener('click', function () {
+      var h = read(KH) || [], rec = new Date().toLocaleDateString('pt-BR') +
+        (h.length ? ' · último simulado ' + h[0].ok + '/' + h[0].n + ' (' + Math.round(100 * h[0].ok / h[0].n) + '%)' : ' · leitura concluída');
+      localStorage.setItem(KA, rec);
+      msg.textContent = 'Concluída: ' + rec;
+    });
+  }
+})();
+
+</script>
+</body>
+</html>

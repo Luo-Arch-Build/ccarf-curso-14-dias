@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 02 — Orquestração multi-agent: coordinator e subagents · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.uso { color: var(--pt); font-size: 13px; font-style: italic; }
+  .pt { color: var(--pt); font-size: 13.5px; }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 4px 0 10px; }
+  body.hide-pt .pt, body.hide-pt .pt-block { display: none; }
+  .toggle-pt { position: sticky; top: 12px; float: right; z-index: 5; background: var(--card2);
+    border: 1px solid var(--border); color: var(--muted); border-radius: 999px;
+    padding: 6px 14px; font-size: 12.5px; cursor: pointer; }
+  .toggle-pt:hover { color: var(--text); border-color: var(--accent); }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q .cenario { float: right; text-transform: none; letter-spacing: 0; font-size: 11.5px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
+  .q .feedback .ts { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<button class="toggle-pt" onclick="document.body.classList.toggle('hide-pt'); this.textContent = document.body.classList.contains('hide-pt') ? '🇧🇷 mostrar traduções' : '🇧🇷 ocultar traduções';">🇧🇷 ocultar traduções</button>
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Aula 02</div>
+  <h1>Aula 02 — Orquestração multi-agent: coordinator e subagents</h1>
+  <div class="meta">
+    <span class="tag">Domínio 1 · Agentic Architecture &amp; Orchestration (27%)</span>
+    <span class="tag">Task Statements 1.2 e 1.3</span>
+    <span class="tag">~60 min</span>
+  </div>
+</header>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo do dia.</strong> Dominar o padrão <strong>hub-and-spoke</strong>: um coordinator que decompõe,
+  delega e agrega, e subagents com <strong>contexto isolado</strong> que recebem tudo explicitamente no prompt.
+  Você vai saber configurar <code>allowedTools</code> com <code>"Task"</code>, definir <code>AgentDefinition</code>s,
+  disparar subagents em paralelo e — o favorito da prova — diagnosticar quando o problema está na
+  <strong>decomposição do coordinator</strong>, não nos subagents.
+</div>
+
+<h2>1. Hub-and-spoke: toda comunicação passa pelo coordinator (TS 1.2)</h2>
+<p>Num sistema multi-agent bem arquitetado, os subagents <strong>não conversam entre si</strong>. O coordinator é o hub:
+ele gerencia toda a comunicação inter-subagent, o tratamento de erros e o roteamento de informação. As pontas (spokes)
+são subagents especializados — um busca na web, um analisa documentos, um sintetiza, um gera o relatório.</p>
+<p>Por que centralizar? Três motivos que a prova cobra:</p>
+<ul>
+  <li><strong>Observabilidade</strong> — um único ponto onde você vê o que foi delegado, o que voltou e o que falhou</li>
+  <li><strong>Tratamento de erro consistente</strong> — falhas de subagents sobem para um lugar que decide: retry, alternativa ou seguir com resultado parcial</li>
+  <li><strong>Fluxo de informação controlado</strong> — o coordinator decide <em>o que</em> cada subagent precisa saber, em vez de todo mundo ver tudo</li>
+</ul>
+<p>O atalho tentador é deixar um subagent chamar outro direto ("economiza um turno do coordinator"). O preço aparece
+na primeira falha: o erro morre na ponta, o coordinator nunca fica sabendo e ninguém consegue reconstruir o que foi
+feito. Logs, filas compartilhadas ou retries locais não devolvem ao coordinator o papel de decidir.
+<strong>Regra de bolso:</strong> <em>subagent fala com o coordinator, nunca com outro subagent.</em></p>
+
+<h3>Os 4 papéis do coordinator</h3>
+<ol>
+  <li><strong>Decomposição</strong> — quebrar a query do usuário em subtarefas que cubram o tópico inteiro</li>
+  <li><strong>Delegação</strong> — atribuir cada subtarefa ao subagent certo, particionando o escopo para minimizar duplicação (subtópicos ou tipos de fonte distintos para cada um)</li>
+  <li><strong>Agregação</strong> — juntar os resultados estruturados e montar a entrada do próximo estágio</li>
+  <li><strong>Seleção dinâmica</strong> — decidir <em>quais</em> subagents invocar com base na complexidade da query. Pergunta simples não precisa do pipeline completo; rotear sempre pelo pipeline inteiro é desperdício</li>
+</ol>
+<p>Os papéis 2 e 4 aparecem juntos na prova como problema de custo e qualidade: pergunta de um fato só rodando busca,
+análise, síntese e relatório; subagents em paralelo recebendo o tópico inteiro e devolvendo as mesmas fontes. As duas
+correções moram no coordinator — avaliar a query antes de delegar e dar a cada subagent um subtópico ou tipo de fonte
+distinto. <strong>Regra de bolso:</strong> <em>o coordinator dimensiona o trabalho: só os subagents que a query exige,
+e nenhum escopo repetido entre eles.</em></p>
+
+<h3>O risco clássico: decomposição estreita demais</h3>
+<p>É <strong>a</strong> questão oficial sobre orquestração (adaptada na Q1 abaixo). O sintoma: todos os subagents
+completam com sucesso, o relatório final é coerente — mas cobre só uma fatia do tópico. Nos logs, o coordinator
+quebrou um tema amplo em subtarefas de um nicho só. Os subagents executaram <em>corretamente o escopo que receberam</em>;
+o problema é <strong>o que foi atribuído</strong>. A causa raiz mora na decomposição do coordinator, e é lá que se corrige
+(ex.: instruir o coordinator a enumerar primeiro as dimensões do tópico antes de delegar, e conferir cobertura).</p>
+
+<h3>Loops de refinamento iterativo</h3>
+<p>O coordinator não é "dispara e esquece". O padrão maduro é um <strong>iterative refinement loop</strong>:</p>
+<ol>
+  <li>Coordinator avalia a saída da síntese procurando <strong>gaps de cobertura</strong></li>
+  <li>Re-delega aos subagents de busca/análise com <strong>queries direcionadas</strong> aos gaps</li>
+  <li>Re-invocar a síntese com os novos achados</li>
+  <li>Repete até a cobertura ser suficiente</li>
+</ol>
+
+<h2>2. Spawning: Task tool, allowedTools e AgentDefinition (TS 1.3)</h2>
+<p>O mecanismo de spawn de subagents é a <strong>Task tool</strong>. Detalhe que derruba candidato: para o coordinator
+conseguir invocar subagents, o <code>allowedTools</code> dele <strong>precisa incluir <code>"Task"</code></strong>.
+Sem isso, o coordinator simplesmente não tem como delegar — e o sintoma em produção é um sistema "multi-agent"
+onde o coordinator tenta fazer tudo sozinho.</p>
+<pre><code>// Coordinator
+const coordinator = {
+  allowedTools: ["Task", "Read", "Grep"],   // "Task" é OBRIGATÓRIO para spawnar subagents
+  systemPrompt: `Você coordena uma equipe de pesquisa. Analise a query,
+    enumere as dimensões do tópico, delegue subtarefas distintas aos subagents
+    disponíveis e avalie a síntese final quanto a gaps de cobertura.`
+};</code></pre>
+<p>Cada tipo de subagent é declarado numa <strong>AgentDefinition</strong>, com três elementos que a prova cita por nome:</p>
+<pre><code>// AgentDefinition de um subagent especializado
+const webSearcher = {
+  description: "Busca fontes na web sobre um subtópico específico e retorna achados estruturados com URLs",
+  prompt: "Você é um pesquisador web. Cubra APENAS o subtópico recebido no prompt...",   // o system prompt do subagent
+  tools: ["WebSearch", "WebFetch"]   // tool restrictions: só as tools do papel dele
+};</code></pre>
+<ul>
+  <li><strong>description</strong> — é como o coordinator decide <em>qual</em> subagent chamar (equivalente à tool description da aula sobre tools)</li>
+  <li><strong>prompt</strong> (o system prompt do subagent) — define o papel, o escopo e o formato de saída do subagent</li>
+  <li><strong>tool restrictions</strong> — cada subagent recebe só as tools do papel dele (um agent de síntese com acesso a web search vai tentar pesquisar em vez de sintetizar — misuse cross-role)</li>
+</ul>
+<p><strong>A description escolhe; quem restringe são as tools e o system prompt.</strong> A description diz ao
+coordinator <em>quando</em> usar aquele subagent — ela não limita o que o subagent pode fazer. Se um subagent só pode
+trabalhar com os documentos que recebe, isso se garante na lista de tools dele (só leitura de documentos) e no system
+prompt (papel e formato de saída), e não escrevendo "não use a web" na description.
+<strong>Regra de bolso:</strong> <em>description = critério de seleção; tools + system prompt = limite do papel.</em></p>
+
+<div class="card" style="border-left: 3px solid var(--accent2);">
+  <strong>🧭 Prova × produto atual</strong> <span style="color:var(--muted);font-size:12.5px">(documentação do Claude Code conferida em 20/10/2026)</span>
+  <ul>
+    <li><strong>Task → Agent.</strong> Na versão 2.1.63 do Claude Code, a Task tool passou a se chamar <code>Agent</code>; referências <code>Task(...)</code> em settings e definições de agente continuam valendo como alias. O guia e a prova dizem <code>"Task"</code>.</li>
+    <li><strong><code>allowedTools</code> no Agent SDK atual só auto-aprova</strong> as tools listadas — não limita o conjunto. Quem limita é a opção <code>tools</code> (ou <code>disallowedTools</code> com o nome puro da tool). No guia, <code>allowedTools</code> é a lista que precisa conter <code>"Task"</code>.</li>
+    <li><strong>AgentDefinition sem o campo <code>tools</code> herda</strong> todas as tools disponíveis para subagents. Para limitar o papel, declare a lista explicitamente — coerente com a regra de bolso acima.</li>
+  </ul>
+  <em>Na prova, responda como o guia: o allowedTools do coordinator precisa incluir "Task".</em>
+</div>
+
+<h2>3. Contexto isolado: subagents NÃO herdam histórico</h2>
+<p>Esta é a regra mais testada do TS 1.3: <strong>subagents operam com contexto isolado</strong>. Eles não herdam
+automaticamente o histórico da conversa do coordinator <em>nem</em> compartilham memória entre invocações. Tudo que um
+subagent precisa saber tem que ir <strong>explicitamente no prompt</strong> da Task call.</p>
+<p>Consequência prática: quando o agent de síntese precisa dos achados da busca web e da análise de documentos,
+o coordinator coloca esses achados <strong>completos</strong> no prompt dele:</p>
+<pre><code>// Coordinator montando o prompt do subagent de síntese
+const synthesisPrompt = `
+Tópico original: ${userQuery}
+
+ACHADOS DA BUSCA WEB (completos):
+${JSON.stringify(webFindings, null, 2)}
+
+ANÁLISE DOS DOCUMENTOS (completa):
+${JSON.stringify(docAnalysis, null, 2)}
+
+Sintetize um relatório preservando a atribuição de cada claim à sua fonte.`;</code></pre>
+<p>Se o subagent de síntese "esquece" o que a busca encontrou, a causa raiz não é o subagent — é o coordinator
+que não passou o contexto. E reinvocar "o mesmo" subagent esperando que ele lembre da invocação anterior não funciona:
+<strong>não há memória compartilhada entre invocações</strong>.</p>
+
+<h3>Formatos estruturados: separar conteúdo de metadados</h3>
+<p>Ao passar contexto entre agents, use estruturas que separam o <strong>conteúdo</strong> dos <strong>metadados</strong>
+(URL da fonte, nome do documento, número da página, data). É o que preserva a <strong>atribuição</strong> na síntese final:</p>
+<pre><code>{
+  "claim": "Adoção de IA generativa em estúdios de jogos cresceu 40% em 2025",
+  "evidence": "trecho literal do texto...",
+  "source_url": "https://exemplo.com/relatorio-2025",
+  "document_name": "Game Industry Report 2025",
+  "page": 14,
+  "published": "2025-11-02"
+}</code></pre>
+<p>Achados passados como prosa solta ("a pesquisa diz que...") perdem o mapeamento claim→fonte na primeira
+sumarização. Estrutura preserva; prosa dilui. (Esse tema volta com força no Domínio 5, provenance.)</p>
+
+<h2>4. Subagents em paralelo: múltiplos Task calls numa única resposta</h2>
+<p>Para paralelizar, o coordinator emite <strong>múltiplas chamadas da Task tool na mesma resposta</strong> — não em
+turnos separados. Uma resposta com 3 blocos <code>tool_use</code> de Task dispara 3 subagents concorrentes; três turnos
+sequenciais com 1 Task cada os serializa. Partições de escopo independentes (subtópicos distintos, tipos de fonte
+distintos) são o caso ideal: rodam em paralelo, minimizam duplicação e reduzem a latência total.</p>
+<pre><code>// Resposta do coordinator: 3 Task calls NO MESMO turno → paralelas
+[
+  { "type": "tool_use", "name": "Task", "input": { "subagent": "web_searcher",
+      "prompt": "Pesquise o subtópico: impacto da automação na indústria musical..." } },
+  { "type": "tool_use", "name": "Task", "input": { "subagent": "web_searcher",
+      "prompt": "Pesquise o subtópico: impacto da automação na produção cinematográfica..." } },
+  { "type": "tool_use", "name": "Task", "input": { "subagent": "doc_analyzer",
+      "prompt": "Analise os papers anexos sobre automação no mercado editorial..." } }
+]</code></pre>
+
+<h3>Paralelo só para o que é independente</h3>
+<p>Só saem na mesma resposta as subtarefas que não dependem umas das outras. Se a subtarefa D usa o resultado de A, B
+e C, ela vai num <strong>turno seguinte</strong>, com esses resultados colocados explicitamente no prompt dela — o
+subagent não "vê" o que os outros acharam (contexto isolado). Disparar a dependente junto com as outras só faz ela
+começar sem material; deixar que ela chame os outros subagents direto quebra o hub-and-spoke.
+<strong>Regra de bolso:</strong> <em>independentes na mesma resposta; dependentes no turno seguinte, com os
+resultados no prompt.</em></p>
+
+<h3>Prompts do coordinator: metas, não procedimentos</h3>
+<p>Último ponto do blueprint: escreva prompts de coordinator que especificam <strong>objetivos de pesquisa e critérios
+de qualidade</strong> ("cubra todos os setores relevantes; toda claim precisa de fonte"), não instruções procedurais
+passo a passo ("primeiro chame X, depois Y"). Instrução procedural engessa os subagents e mata a adaptabilidade —
+justamente a vantagem de ter um modelo decidindo. A receita quebra no primeiro caso que ela não previu (outra fonte,
+outro formato), e acrescentar ramos ou fallbacks só adia a próxima quebra. O coordinator não perde visibilidade com
+isso: os resultados continuam voltando estruturados por ele. <strong>Regra de bolso:</strong> <em>diga o que e com
+que qualidade, não como.</em> E lembre: <code>fork_session</code> existe para explorar abordagens
+divergentes a partir de uma baseline de análise compartilhada (aprofundado na aula de sessões).</p>
+
+<h2>5. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
+  <tr><td class="en">hub-and-spoke</td><td>arquitetura hub-and-spoke (coordinator central)</td><td class="uso">"route all subagent communication through the coordinator"</td></tr>
+  <tr><td class="en">coordinator agent</td><td>agente coordenador</td><td class="uso">"the coordinator handles decomposition, delegation, and aggregation"</td></tr>
+  <tr><td class="en">subagent</td><td>subagente especializado</td><td class="uso">"subagents operate with isolated context"</td></tr>
+  <tr><td class="en">task decomposition</td><td>decomposição de tarefas</td><td class="uso">"the coordinator's task decomposition is too narrow"</td></tr>
+  <tr><td class="en">result aggregation</td><td>agregação de resultados</td><td class="uso">"the coordinator aggregates structured results from each subagent"</td></tr>
+  <tr><td class="en">iterative refinement loop</td><td>loop de refinamento iterativo</td><td class="uso">"the coordinator re-delegates with targeted queries until coverage is sufficient"</td></tr>
+  <tr><td class="en">coverage gap</td><td>lacuna de cobertura</td><td class="uso">"evaluate the synthesis output for gaps"</td></tr>
+  <tr><td class="en">Task tool</td><td>tool de spawn de subagents</td><td class="uso">"the Task tool is the mechanism for spawning subagents"</td></tr>
+  <tr><td class="en">allowedTools</td><td>lista de tools permitidas do agent</td><td class="uso">"allowedTools must include Task for the coordinator to invoke subagents"</td></tr>
+  <tr><td class="en">AgentDefinition</td><td>definição de subagent (description, system prompt, tools)</td><td class="uso">"each AgentDefinition includes a description, system prompt, and tool restrictions"</td></tr>
+  <tr><td class="en">isolated context</td><td>contexto isolado (sem herança de histórico)</td><td class="uso">"subagents do not inherit the coordinator's conversation history"</td></tr>
+  <tr><td class="en">attribution</td><td>atribuição (mapeamento claim→fonte)</td><td class="uso">"separate content from metadata to preserve attribution"</td></tr>
+  <tr><td class="en">dynamic subagent selection</td><td>seleção dinâmica de subagents (só os que a query exige)</td><td class="uso">"invoke only the subagents the query requires rather than the full pipeline"</td></tr>
+  <tr><td class="en">scope partitioning</td><td>particionamento de escopo entre subagents</td><td class="uso">"assign distinct subtopics or source types to minimize duplication"</td></tr>
+  <tr><td class="en">research goals and quality criteria</td><td>objetivos de pesquisa e critérios de qualidade</td><td class="uso">"specify goals rather than step-by-step procedural instructions"</td></tr>
+  <tr><td class="en">independent subtasks</td><td>subtarefas independentes (paralelizáveis)</td><td class="uso">"emit multiple Task calls in a single coordinator response"</td></tr>
+  <tr><td class="en">tool restrictions</td><td>restrição de tools por papel do subagent</td><td class="uso">"restrict each subagent's tool set to those relevant to its role"</td></tr>
+</table>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha do dia</h3>
+  <p>Questões do tipo "todos os subagents rodaram com sucesso, mas o resultado final está incompleto/errado".
+  Os distratores sempre culpam um subagent específico ("o search agent precisa de queries melhores", "o synthesis
+  agent filtrou fontes"). Se o enunciado diz que cada subagent executou bem <em>dentro do escopo recebido</em>,
+  a causa raiz está <strong>no coordinator</strong> — decomposição estreita, contexto não passado, ou seleção errada
+  de subagents. Regra de bolso: <em>subagent executa o escopo que recebe; escopo errado é problema de quem delegou,
+  não de quem executou.</em></p>
+</div>
+
+<h2>6. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
+<div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
+
+<div class="q" data-correct="c" data-ts="1.2" data-dom="1">
+  <div class="qnum">Questão 1 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">Your multi-agent research system runs on the query "how is automation reshaping labor markets?" Every subagent finishes without errors: the search agent returns solid articles, the analysis agent summarizes them well, and the synthesis agent writes a fluent report. Yet the report discusses only factory and warehouse work, ignoring gig platforms, clerical work, and service jobs entirely. The coordinator's log shows it issued three subtasks: "robots in manufacturing," "warehouse automation," and "assembly-line AI." What is the most likely root cause?</div>
+  <div class="pt-block pt">Seu sistema multi-agent de pesquisa roda a query "como a automação está remodelando o mercado de trabalho?" Todos os subagents terminam sem erros: o agent de busca retorna bons artigos, o de análise os resume bem, e o de síntese escreve um relatório fluente. Mas o relatório cobre apenas trabalho fabril e de armazém, ignorando plataformas de gig, trabalho administrativo e serviços. O log do coordinator mostra três subtarefas: "robôs na manufatura", "automação de armazéns" e "IA em linhas de montagem". Qual é a causa raiz mais provável?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q1" value="a">A. The synthesis agent's prompt lacks instructions to flag sectors that are missing from the material it receives.<div class="pt">O prompt do agent de síntese não tem instruções para sinalizar setores que faltam no material que ele recebe.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="b">B. The search agent's queries are too shallow and should be broadened to cover sectors outside heavy industry.<div class="pt">As queries do agent de busca são rasas demais e deveriam ser ampliadas para cobrir setores fora da indústria pesada.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. The coordinator split a broad topic into too-narrow subtasks, so most of the labor market was never delegated.<div class="pt">O coordinator dividiu um tópico amplo em subtarefas estreitas demais, então a maior parte do mercado de trabalho nunca foi delegada.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="d">D. The analysis agent discarded sources on service and clerical jobs because its relevance threshold is too strict.<div class="pt">O agent de análise descartou fontes sobre serviços e trabalho administrativo porque seu limiar de relevância é estrito demais.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> O log entrega a causa raiz: "labor markets" virou só manufatura/armazém/linha de montagem — decomposição estreita do coordinator. Os subagents executaram corretamente o escopo que receberam; corrigir é alargar a decomposição (e validar cobertura) no coordinator. A culpa o agent de síntese por não adivinhar material que nunca recebeu. B culpa o search agent, que só podia buscar os subtópicos delegados. D inventa um filtro que o enunciado não evidencia — e ainda assim miraria o componente errado.<span class="ts">Domínio 1 · TS 1.2 — Orquestração coordinator-subagents</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="1.3" data-dom="1">
+  <div class="qnum">Questão 2 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">In production, your synthesis subagent repeatedly produces reports that ignore the web search findings gathered earlier in the same run, as if it had never seen them. The coordinator did run the search subagent first and received its results. What is the root cause and the correct fix?</div>
+  <div class="pt-block pt">Em produção, seu subagent de síntese repetidamente produz relatórios que ignoram os achados da busca web coletados antes na mesma execução, como se nunca os tivesse visto. O coordinator de fato rodou o subagent de busca antes e recebeu seus resultados. Qual é a causa raiz e a correção correta?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q2" value="a">A. The synthesis subagent's context window is too small for the findings; move it to a model with a larger window.<div class="pt">A janela de contexto do subagent de síntese é pequena demais para os achados; migrá-lo para um modelo com janela maior.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="b">B. Subagents don't inherit the coordinator's history; the coordinator must put the findings in the synthesis prompt.<div class="pt">Subagents não herdam o histórico do coordinator; o coordinator precisa colocar os achados no prompt da síntese.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="c">C. Re-invoke the same search subagent instance first, so that its memory of the run is shared with the synthesis subagent.<div class="pt">Re-invocar antes a mesma instância do subagent de busca, para que a memória dela sobre a execução seja compartilhada com o subagent de síntese.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="d">D. Add a line to the synthesis system prompt telling it to remember and use every finding from earlier in the run.<div class="pt">Adicionar uma linha ao system prompt da síntese mandando ele lembrar e usar todos os achados anteriores da execução.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Regra central do TS 1.3: contexto isolado, sem herança de histórico e sem memória entre invocações — o contexto vai explícito no prompt da Task call. A é over-engineering: o problema não é tamanho de janela, é ausência do conteúdo. C descreve um mecanismo inexistente: subagents não compartilham memória entre si nem entre invocações. D é remendo cosmético via prompt: instruir a "lembrar" não injeta dado nenhum no contexto isolado.<span class="ts">Domínio 1 · TS 1.3 — Invocação de subagents e passagem de contexto</span></div>
+</div>
+
+<div class="q" data-correct="a,c" data-ts="1.3" data-dom="1">
+  <div class="qnum">Questão 3 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">Your coordinator must spawn three independent research subagents in parallel. Which TWO conditions are required for this to work?</div>
+  <div class="pt-block pt">Seu coordinator precisa spawnar três subagents de pesquisa independentes em paralelo. Quais DUAS condições são necessárias para isso funcionar?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q3" value="a">A. The coordinator's allowedTools includes "Task", the tool used to spawn subagents.<div class="pt">O allowedTools do coordinator inclui "Task", a tool usada para spawnar subagents.</div></label>
+    <label class="opt"><input type="checkbox" name="q3" value="b">B. The coordinator emits one Task call per turn across three turns, so the order stays predictable.<div class="pt">O coordinator emite uma Task call por turno, ao longo de três turnos, para a ordem ficar previsível.</div></label>
+    <label class="opt"><input type="checkbox" name="q3" value="c">C. The coordinator emits the three Task tool calls together, in a single response.<div class="pt">O coordinator emite as três Task calls juntas, numa única resposta.</div></label>
+    <label class="opt"><input type="checkbox" name="q3" value="d">D. Each AgentDefinition grants access to the other subagents' tools, so they can cover for each other.<div class="pt">Cada AgentDefinition dá acesso às tools dos outros subagents, para que um cubra o outro.</div></label>
+    <label class="opt"><input type="checkbox" name="q3" value="e">E. Each subagent shares the coordinator's history, so the three stay in sync.<div class="pt">Cada subagent compartilha o histórico do coordinator, para os três ficarem sincronizados.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A e C.</strong> Sem <code>"Task"</code> no <code>allowedTools</code>, o coordinator não consegue spawnar nada (A); e o paralelismo vem de múltiplas Task calls na mesma resposta (C), não de turnos separados. B é o oposto do paralelo: um Task por turno serializa a execução. D viola o princípio de tool restrictions por papel (e não tem relação com paralelismo). E descreve um mecanismo que não existe: subagents não herdam o histórico do coordinator — o contexto de cada um vai explícito no prompt da Task call.<span class="ts">Domínio 1 · TS 1.3 — Invocação de subagents e passagem de contexto</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="1.3" data-dom="1">
+  <div class="qnum">Questão 4 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">Your research pipeline passes each subagent's findings to the next stage as free-form prose summaries. In the final report, most claims have lost their source attribution, and the citations that remain are frequently attached to the wrong claims. What change most directly addresses the root cause?</div>
+  <div class="pt-block pt">Seu pipeline de pesquisa passa os achados de cada subagent para o estágio seguinte como resumos em prosa livre. No relatório final, a maioria das claims perdeu a atribuição de fonte, e as citações restantes frequentemente estão ligadas às claims erradas. Qual mudança ataca mais diretamente a causa raiz?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q4" value="a">A. Tell the synthesis subagent in its system prompt to be extra careful to attach each citation to the right claim.<div class="pt">Mandar o subagent de síntese, no system prompt, ter cuidado redobrado para ligar cada citação à claim certa.</div></label>
+    <label class="opt"><input type="radio" name="q4" value="b">B. Remove the synthesis stage and let the web search subagent write the report, so citations are never re-summarized.<div class="pt">Remover o estágio de síntese e deixar o subagent de busca web escrever o relatório, para as citações nunca serem re-resumidas.</div></label>
+    <label class="opt"><input type="radio" name="q4" value="c">C. Move the synthesis stage to a more capable model that keeps track of sources mentioned in prose more reliably.<div class="pt">Migrar o estágio de síntese para um modelo mais capaz, que rastreie com mais confiabilidade as fontes mencionadas na prosa.</div></label>
+    <label class="opt"><input type="radio" name="q4" value="d">D. Return structured findings that pair each claim with its source metadata, and have later stages preserve them.<div class="pt">Retornar achados estruturados que pareiam cada claim com os metadados da fonte, e fazer os estágios seguintes preservá-los.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> A atribuição se perde na sumarização quando findings viajam como prosa: o mapeamento claim→fonte só sobrevive em formato estruturado, com conteúdo separado dos metadados (claim, trecho de evidência, URL, nome do documento, página, data) e preservado estágio a estágio. A é remendo cosmético via prompt contra um problema estrutural de formato de dados. B destrói a arquitetura (e a separação de papéis) sem resolver o formato. C troca de modelo sem mudar a entrada — prosa sem metadados continua entrando, atribuição continua saindo errada.<span class="ts">Domínio 1 · TS 1.3 — Invocação de subagents e passagem de contexto</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="1.2" data-dom="1">
+  <div class="qnum">Questão 5 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">User feedback shows your research reports are accurate but frequently incomplete: entire subtopics the user expected are missing. Your current pipeline is strictly one-pass — the coordinator delegates once, synthesis runs once, and the report ships. What is the most proportionate architectural improvement?</div>
+  <div class="pt-block pt">O feedback dos usuários mostra que seus relatórios são precisos, mas frequentemente incompletos: subtópicos inteiros que o usuário esperava estão faltando. Seu pipeline atual é estritamente one-pass — o coordinator delega uma vez, a síntese roda uma vez, e o relatório é entregue. Qual é a melhoria arquitetural mais proporcional?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q5" value="a">A. Have the coordinator check each synthesis for coverage gaps, re-delegate targeted queries, and re-run synthesis until covered.<div class="pt">Fazer o coordinator checar cada síntese quanto a gaps de cobertura, re-delegar queries direcionadas e re-rodar a síntese até cobrir.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. Re-run the entire pipeline three times per query and merge the reports, so that each run can fill the others' gaps.<div class="pt">Re-rodar o pipeline inteiro três vezes por query e mesclar os relatórios, para que cada execução preencha os gaps das outras.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. Spawn twice as many search subagents up front on every query, regardless of how broad the topic actually is.<div class="pt">Spawnar o dobro de subagents de busca logo de início em toda query, independentemente da amplitude real do tópico.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. Instruct the synthesis subagent to write longer, more exhaustive reports so that fewer subtopics are left out.<div class="pt">Instruir o subagent de síntese a escrever relatórios mais longos e exaustivos para que menos subtópicos fiquem de fora.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> É o <em>iterative refinement loop</em> do blueprint: avaliar gaps → re-delegar com queries direcionadas → re-sintetizar. Ataca a causa raiz (pipeline one-pass não detecta o que ficou faltando) com custo proporcional. B triplica o custo sem direcionar esforço aos gaps. C gasta tokens em queries simples e não garante cobertura — quantidade de subagents não substitui avaliação de cobertura. D confunde comprimento com cobertura: o subagent não pode sintetizar material que nunca foi pesquisado.<span class="ts">Domínio 1 · TS 1.2 — Orquestração coordinator-subagents</span></div>
+</div>
+
+<div class="q" data-correct="c,d" data-ts="1.2" data-dom="1">
+  <div class="qnum">Questão 6 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">A cost review of your research system finds two problems. About half of all queries ask for a single fact, such as which agency regulates a product or the latest version number of a standard, yet each one runs web search, document analysis, synthesis and report generation. On broad queries, the three parallel search subagents each receive the full topic and return heavily overlapping sources. Which TWO changes to the coordinator address these problems?</div>
+  <div class="pt-block pt">Uma revisão de custos do seu sistema de pesquisa encontra dois problemas. Cerca de metade das queries pede um único fato, como qual agência regula um produto ou o número da versão mais recente de uma norma, e mesmo assim cada uma roda busca web, análise de documentos, síntese e geração de relatório. Nas queries amplas, os três subagents de busca em paralelo recebem o tópico inteiro e devolvem fontes muito sobrepostas. Quais DUAS mudanças no coordinator resolvem esses problemas?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q6" value="a">A. Cache each final report by query text, so repeated fact questions skip the pipeline next time.<div class="pt">Guardar em cache cada relatório final pelo texto da query, para perguntas factuais repetidas pularem o pipeline da próxima vez.</div></label>
+    <label class="opt"><input type="checkbox" name="q6" value="b">B. Add a keyword classifier in front of the coordinator that sends any short query to a separate single-agent system.<div class="pt">Adicionar um classificador por palavras-chave antes do coordinator que manda toda query curta para um sistema separado de agente único.</div></label>
+    <label class="opt"><input type="checkbox" name="q6" value="c">C. Have the coordinator assess each query and invoke only the subagents that this particular query requires.<div class="pt">Fazer o coordinator avaliar cada query e invocar só os subagents de que essa query em particular precisa.</div></label>
+    <label class="opt"><input type="checkbox" name="q6" value="d">D. Give each search subagent a distinct subtopic or source type to cover, instead of the whole topic.<div class="pt">Dar a cada subagent de busca um subtópico ou tipo de fonte distinto para cobrir, em vez do tópico inteiro.</div></label>
+    <label class="opt"><input type="checkbox" name="q6" value="e">E. Run the three search subagents one after another, passing each one's sources to the next so it can skip them.<div class="pt">Rodar os três subagents de busca um depois do outro, passando as fontes de cada um ao seguinte para que ele as pule.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C e D.</strong> Os dois problemas são do coordinator. C é a seleção dinâmica do TS 1.2: analisar a query e invocar só os subagents necessários, em vez de rotear tudo pelo pipeline completo. D é o particionamento de escopo: subtópicos ou tipos de fonte distintos para cada subagent minimizam a duplicação sem perder o paralelismo. A só ajuda quando a mesma pergunta se repete — a primeira de cada continua pagando o pipeline inteiro. B é over-engineering com roteamento por palavra-chave: "curta" não é o mesmo que "simples", e decidir quais subagents chamar é papel do coordinator. E elimina a sobreposição sacrificando o paralelismo — a latência volta a somar.<span class="ts">Domínio 1 · TS 1.2 — Orquestração coordinator-subagents</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="1.2" data-dom="1">
+  <div class="qnum">Questão 7 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">To save a coordinator turn, a developer lets the synthesis subagent call a fact-checking subagent directly through a shared message queue. Since then, when the fact-checker times out, synthesis silently drops the affected claims, and nobody can tell from the logs which claims were actually verified. What is the best correction?</div>
+  <div class="pt-block pt">Para economizar um turno do coordinator, um desenvolvedor deixou o subagent de síntese chamar um subagent de checagem de fatos diretamente, por uma fila de mensagens compartilhada. Desde então, quando o checador dá timeout, a síntese descarta em silêncio as claims afetadas, e ninguém consegue dizer pelos logs quais claims foram de fato verificadas. Qual é a melhor correção?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q7" value="a">A. Have the synthesis subagent retry the fact-checker three times before dropping a claim, and log each attempt.<div class="pt">Fazer o subagent de síntese tentar o checador três vezes antes de descartar uma claim, registrando cada tentativa.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="b">B. Have both subagents write their results to a shared document store, so each one can read the other's latest state.<div class="pt">Fazer os dois subagents gravarem os resultados num repositório de documentos compartilhado, para cada um ler o estado mais recente do outro.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="c">C. Route all communication between subagents through the coordinator, which handles errors and controls the flow.<div class="pt">Rotear toda a comunicação entre subagents pelo coordinator, que trata os erros e controla o fluxo.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="d">D. Add correlation IDs to the queue messages and build a dashboard that joins both subagents' logs by claim.<div class="pt">Adicionar IDs de correlação às mensagens da fila e montar um dashboard que junta os logs dos dois subagents por claim.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Hub-and-spoke (TS 1.2): o coordinator gerencia toda a comunicação entre subagents, o tratamento de erros e o roteamento de informação. Com o atalho direto, a falha do checador morre dentro da síntese — o coordinator nunca sabe, e não existe um ponto único que mostre o que foi verificado. A melhora a resiliência local, mas mantém o desvio: o erro continua sem chegar a quem decide (retry, alternativa ou seguir anotando a lacuna). B troca uma via lateral por outra (estado compartilhado) e ainda tira o controle do fluxo do coordinator. D trata o sintoma de observabilidade com mais telemetria, sem corrigir o tratamento de erro nem o fluxo de informação.<span class="ts">Domínio 1 · TS 1.2 — Orquestração coordinator-subagents</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="1.3" data-dom="1">
+  <div class="qnum">Questão 8 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">Your coordinator delegates regulatory research with this prompt: "1. Open the official gazette search page. 2. Search for the bill number. 3. Copy the first five result titles. 4. Summarize them." It works for national bills, but for state rules and agency guidance the subagent returns irrelevant results or nothing at all. How should the coordinator's prompt change?</div>
+  <div class="pt-block pt">Seu coordinator delega pesquisa regulatória com este prompt: "1. Abra a página de busca do diário oficial. 2. Busque o número do projeto de lei. 3. Copie os títulos dos cinco primeiros resultados. 4. Resuma-os." Funciona para projetos de lei nacionais, mas para normas estaduais e orientações de agências o subagent devolve resultados irrelevantes ou nada. Como o prompt do coordinator deve mudar?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q8" value="a">A. Add a branch to the procedure for each source type, each with its own search page and its own fixed steps.<div class="pt">Acrescentar ao procedimento um ramo para cada tipo de fonte, cada um com sua página de busca e seus passos fixos.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="b">B. Keep the steps, but have the coordinator run them itself and pass only the copied titles to the subagent.<div class="pt">Manter os passos, mas fazer o coordinator executá-los ele mesmo e passar só os títulos copiados ao subagent.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="c">C. Keep the steps and add a fallback: when a search returns nothing, retry with the next keyword from a fixed list.<div class="pt">Manter os passos e acrescentar um fallback: quando uma busca não retornar nada, tentar de novo com a próxima palavra-chave de uma lista fixa.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="d">D. State the research goal and quality criteria, such as dated primary sources, and let the subagent choose how.<div class="pt">Declarar o objetivo da pesquisa e os critérios de qualidade, como fontes primárias datadas, e deixar o subagent escolher como.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> TS 1.3: prompts de coordinator devem especificar <strong>objetivos de pesquisa e critérios de qualidade</strong>, não procedimentos passo a passo — é isso que deixa o subagent se adaptar ao que encontra (fontes e formatos diferentes). A e C só alongam o procedimento: cada caso imprevisto pede mais um ramo ou mais um fallback, e o próximo tipo de fonte quebra de novo. B tira do subagent justamente o trabalho de pesquisa e mantém a receita rígida — agora dentro do coordinator.<span class="ts">Domínio 1 · TS 1.3 — Invocação de subagents e passagem de contexto</span></div>
+</div>
+
+<div class="q" data-correct="d,e" data-ts="1.3" data-dom="1">
+  <div class="qnum">Questão 9 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">Your coordinator plans a market-entry report with four subtasks: (1) collect competitor A's pricing, (2) collect competitor B's pricing, (3) summarize local import regulations, and (4) write a comparison that uses the outputs of 1–3. You are also adding a new "regulation-summarizer" subagent that must work only from the documents it is given. Which TWO design decisions are correct?</div>
+  <div class="pt-block pt">Seu coordinator planeja um relatório de entrada em mercado com quatro subtarefas: (1) coletar os preços do concorrente A, (2) coletar os preços do concorrente B, (3) resumir as regras locais de importação e (4) escrever uma comparação que usa as saídas de 1–3. Você também está adicionando um subagent "regulation-summarizer" que deve trabalhar só com os documentos que recebe. Quais DUAS decisões de design estão corretas?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q9" value="a">A. Emit all four Task calls in the same response, so that the comparison subagent can start as early as possible.<div class="pt">Emitir as quatro Task calls na mesma resposta, para o subagent de comparação começar o quanto antes.</div></label>
+    <label class="opt"><input type="checkbox" name="q9" value="b">B. Rely on the summarizer's description to keep it off the web, since the description defines what it may do.<div class="pt">Confiar na description do summarizer para mantê-lo fora da web, já que a description define o que ele pode fazer.</div></label>
+    <label class="opt"><input type="checkbox" name="q9" value="c">C. Let the comparison subagent call the three research subagents directly whenever it needs a missing number.<div class="pt">Deixar o subagent de comparação chamar os três subagents de pesquisa diretamente sempre que faltar um número.</div></label>
+    <label class="opt"><input type="checkbox" name="q9" value="d">D. Emit Task calls 1–3 in one response, then invoke task 4 in a later turn with their results in its prompt.<div class="pt">Emitir as Task calls 1–3 numa resposta e invocar a tarefa 4 num turno seguinte, com os resultados delas no prompt.</div></label>
+    <label class="opt"><input type="checkbox" name="q9" value="e">E. Limit the summarizer's tools to document reading, and define its role and output format in its system prompt.<div class="pt">Limitar as tools do summarizer à leitura de documentos e definir o papel e o formato de saída no system prompt dele.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D e E.</strong> D: paralelismo vale para subtarefas <em>independentes</em> — 1, 2 e 3 saem na mesma resposta; a 4 depende das três e vai num turno seguinte, com os resultados explícitos no prompt (o subagent não herda o que os outros acharam). E: na AgentDefinition, quem delimita o papel são as <strong>tools</strong> (só leitura de documentos) e o <strong>system prompt</strong> (papel e formato de saída). A dispara a comparação antes de existir o que comparar. B confunde os campos: a description serve para o coordinator escolher <em>quando</em> usar o subagent; ela não restringe nada. C quebra o hub-and-spoke: comunicação entre subagents passa pelo coordinator.<span class="ts">Domínio 1 · TS 1.3 — Invocação de subagents e passagem de contexto</span></div>
+</div>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir aula 02</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="aula-01.html">← Aula 01 — A prova e o loop agêntico</a></span>
+  <span><a href="aula-03.html">Aula 03 →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  var total = 0, score = 0;
+  document.querySelectorAll('.q').forEach(function (q) {
+    total++;
+    document.getElementById('total').textContent = total;
+    var btn = q.querySelector('button.answer');
+    var correct = q.dataset.correct.split(',').map(function (s) { return s.trim(); });
+    btn.addEventListener('click', function () {
+      var checked = Array.prototype.slice.call(q.querySelectorAll('input:checked')).map(function (i) { return i.value; });
+      if (checked.length === 0) return;
+      var ok = checked.length === correct.length && checked.every(function (v) { return correct.indexOf(v) !== -1; });
+      q.querySelectorAll('label.opt').forEach(function (l) {
+        var v = l.querySelector('input').value;
+        if (correct.indexOf(v) !== -1) l.classList.add('correct');
+        else if (l.querySelector('input').checked) l.classList.add('wrong');
+        l.querySelector('input').disabled = true;
+      });
+      var fb = q.querySelector('.feedback');
+      fb.classList.add(ok ? 'ok' : 'ko');
+      fb.innerHTML = (ok ? '✅ Correto. ' : '❌ Incorreto. ') + fb.innerHTML;
+      btn.disabled = true;
+      if (ok) score++;
+      document.getElementById('score').textContent = score;
+    });
+  });
+  var KEY = 'ccarf-aula-02';
+  var btn = document.getElementById('finish');
+  if (localStorage.getItem(KEY)) {
+    document.getElementById('donemsg').textContent = 'Aula já concluída — ' + localStorage.getItem(KEY);
+  }
+  btn.addEventListener('click', function () {
+    var rec = new Date().toLocaleDateString('pt-BR') + ' · ' + score + '/' + total + ' acertos';
+    localStorage.setItem(KEY, rec);
+    document.getElementById('donemsg').textContent = 'Concluída: ' + rec;
+  });
+})();
+</script>
+</body>
+</html>

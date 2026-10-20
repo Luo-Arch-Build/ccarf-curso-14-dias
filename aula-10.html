@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 10 — Structured output: tool_use, JSON schemas e validação-retry · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.uso { color: var(--pt); font-size: 13px; font-style: italic; }
+  .pt { color: var(--pt); font-size: 13.5px; }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 4px 0 10px; }
+  body.hide-pt .pt, body.hide-pt .pt-block { display: none; }
+  .toggle-pt { position: sticky; top: 12px; float: right; z-index: 5; background: var(--card2);
+    border: 1px solid var(--border); color: var(--muted); border-radius: 999px;
+    padding: 6px 14px; font-size: 12.5px; cursor: pointer; }
+  .toggle-pt:hover { color: var(--text); border-color: var(--accent); }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q .cenario { float: right; text-transform: none; letter-spacing: 0; font-size: 11.5px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
+  .q .feedback .ts { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<button class="toggle-pt" onclick="document.body.classList.toggle('hide-pt'); this.textContent = document.body.classList.contains('hide-pt') ? '🇧🇷 mostrar traduções' : '🇧🇷 ocultar traduções';">🇧🇷 ocultar traduções</button>
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Aula 10</div>
+  <h1>Aula 10 — Structured output: tool_use, JSON schemas e validação-retry</h1>
+  <div class="meta">
+    <span class="tag">Domínio 4 · Prompt Engineering &amp; Structured Output (20%)</span>
+    <span class="tag">~60 min</span>
+  </div>
+</header>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo do dia.</strong> Dominar os Task Statements <strong>4.3</strong> e <strong>4.4</strong>:
+  por que <code>tool_use</code> com JSON schema é a forma mais confiável de obter saída estruturada
+  (e o que ele <em>não</em> garante), como desenhar schemas que não induzem o modelo a fabricar dados,
+  e como montar o loop de validação → retry com feedback de erro — incluindo saber quando retry é inútil.
+</div>
+
+<h2>1. Por que tool_use + JSON schema (Task Statement 4.3)</h2>
+<p>O jeito ingênuo de extrair dados estruturados é pedir no prompt "responda APENAS com JSON válido" e fazer
+<code>json.loads()</code> na saída de texto. Em produção isso quebra: o modelo embeleza o JSON com
+markdown (<code>```json</code>), adiciona frase antes ("Aqui está a extração:"), solta trailing comma.
+Cada quebra é uma exceção no seu pipeline. (Saída cortada por <code>max_tokens</code> é outro problema: tool_use não
+resolve, porque o bloco <code>tool_use</code> também pode vir incompleto, com <code>stop_reason: "max_tokens"</code> — a correção é
+aumentar <code>max_tokens</code> ou dividir a tarefa.)</p>
+<p>A abordagem mais confiável — e a resposta padrão da prova para esse sintoma — é definir uma
+<strong>tool de extração</strong> cujo <code>input_schema</code> é o seu JSON schema. O modelo preenche os
+parâmetros da tool e a API devolve um bloco <code>tool_use</code> com o <code>input</code> já estruturado e
+<strong>garantidamente conforme o schema</strong>. Erros de <em>sintaxe</em> JSON desaparecem por construção —
+não porque o prompt ficou mais bonito, mas porque a estrutura é imposta pela camada de tool use.</p>
+<pre><code>tools = [{
+  "name": "extract_invoice",
+  "description": "Extract structured data from an invoice document.",
+  "strict": True,                       # produto atual: garante input exatamente conforme o schema
+  "input_schema": {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+      "invoice_number": {"type": "string"},
+      "vendor": {"type": "string"},
+      "currency": {"type": "string", "enum": ["BRL", "USD", "EUR", "other"]},
+      "currency_other_detail": {"type": "string"},
+      "stated_total": {"type": ["number", "null"]},
+      "calculated_total": {"type": ["number", "null"]},
+      "conflict_detected": {"type": "boolean"},
+      "line_items": {
+        "type": "array",
+        "items": {"type": "object", "additionalProperties": False, "properties": {
+          "description": {"type": "string"},
+          "amount": {"type": "number"}
+        }, "required": ["description", "amount"]}
+      }
+    },
+    "required": ["invoice_number", "stated_total", "calculated_total", "conflict_detected", "line_items"]
+  }
+}]
+
+resp = client.messages.create(
+    model=..., messages=[{"role": "user", "content": document}],
+    tools=tools,
+    tool_choice={"type": "tool", "name": "extract_invoice"}   # forced
+)
+data = next(b.input for b in resp.content if b.type == "tool_use")</code></pre>
+
+<h3>tool_choice no contexto de extração</h3>
+<ul>
+  <li><code>"auto"</code> (default): o modelo <strong>pode devolver texto em vez de chamar a tool</strong>.
+      Inaceitável quando você exige saída estruturada — é a porta de entrada do bug "às vezes vem prosa".</li>
+  <li><code>"any"</code>: o modelo <strong>deve chamar uma tool, mas escolhe qual</strong>. É a escolha certa
+      quando existem vários schemas de extração (nota fiscal, contrato, recibo) e o tipo do documento é
+      desconhecido — garante structured output sem hard-codar o tipo.</li>
+  <li><code>{"type": "tool", "name": "extract_metadata"}</code> (forced): o modelo <strong>deve chamar
+      exatamente essa tool</strong>. Use quando uma extração específica precisa rodar antes de etapas de
+      enriquecimento, ou quando só existe um schema possível.</li>
+</ul>
+
+<div class="card" style="border-left: 3px solid var(--accent2);">
+  <strong>🧭 Prova × produto atual</strong> <span style="color:var(--muted);font-size:12.5px">(referência da API Claude conferida em 20/10/2026)</span>
+  <ul>
+    <li><strong>Input exatamente conforme o schema</strong> é garantia de <code>strict: true</code> na definição da tool (com <code>additionalProperties: false</code> no schema). Sem ele, o modelo segue o schema, mas pode omitir campo ou errar tipo. O guia fala em "strict JSON schemas".</li>
+    <li><strong><code>tool_choice</code> <code>"any"</code> e forçado</strong> devolvem erro 400 no Claude Opus 5.5, Sonnet 5.5, Fable 5.1 e Mythos 5.1 (o Opus 5, o Sonnet 5 e modelos anteriores aceitam). Nesses modelos usa-se <code>"auto"</code> + instrução nomeando a tool + <code>strict: true</code>, ou saída estruturada (<code>output_config.format</code>) quando o objetivo é só receber JSON.</li>
+  </ul>
+  <em>Na prova, responda como o guia: "any" quando o tipo do documento é desconhecido; forced para garantir que uma extração específica rode antes.</em>
+</div>
+
+<h2>2. Schema estrito NÃO impede erros semânticos</h2>
+<p>Distinção que a prova cobra sem dó: tool_use com schema elimina <strong>erros de sintaxe</strong>
+(JSON malformado, campo faltando, tipo errado). Ele <strong>não</strong> elimina <strong>erros semânticos</strong>:
+os line items extraídos podem não somar o total da nota, um valor pode cair no campo errado
+(data de vencimento no campo de data de emissão), tudo perfeitamente válido contra o schema.</p>
+<p>A solução proporcional não é "schema ainda mais estrito" — é <strong>validação semântica no seu código</strong>
+depois da extração, combinada com self-correction embutida no próprio schema e retry com feedback (os dois na
+seção 4). Schema garante <em>forma</em>; validação garante <em>sentido</em>.</p>
+
+<h2>3. Schema design: não induza o modelo a fabricar</h2>
+<p>Campo <code>required</code> é uma ordem: "preencha isso". Se a informação <strong>não existe no
+documento</strong>, o modelo tende a inventar um valor plausível para satisfazer o schema — o pior tipo de
+erro, porque passa silenciosamente por toda validação estrutural. As ferramentas de design:</p>
+<ul>
+  <li><strong>optional / nullable</strong>: se o documento de origem pode não conter a informação, deixe o campo
+      opcional ou aceite <code>null</code>. <code>null</code> honesto é infinitamente melhor que valor fabricado.</li>
+  <li><strong>enum com <code>"unclear"</code></strong>: para campos categóricos em que o documento pode ser ambíguo,
+      ofereça a saída explícita "unclear" em vez de forçar um palpite.</li>
+  <li><strong>enum com <code>"other"</code> + campo detail string</strong>: categorias extensíveis. O modelo nunca
+      precisa entortar um caso novo para caber num enum fechado — marca <code>"other"</code> e explica em
+      <code>category_other_detail</code>.</li>
+  <li><strong>regras de normalização no prompt</strong>: formato de data, separador decimal, moeda variam entre
+      documentos. Schema estrito + instruções de normalização no prompt trabalham juntos — um cuida da
+      estrutura, o outro do formato. Não confunda com o hook PostToolUse da aula 03 — veja a pegadinha extra
+      no fim da seção 5.</li>
+</ul>
+
+<h2>4. Validação, retry e self-correction (Task Statement 4.4)</h2>
+<h3>Retry-with-error-feedback</h3>
+<p>Quando a validação semântica falha, não basta "chamar de novo". O retry eficaz reenvia na mesma
+conversa: <strong>o documento original + a extração que falhou + o erro de validação específico</strong>.
+O modelo então corrige o próprio trabalho com informação concreta do que está errado.</p>
+<pre><code>data = extract(document)                      # 1ª passada
+errors = validate(data)                       # ex.: ["line_items sum 412.00 != stated_total 421.00"]
+if errors:
+    messages += [
+      {"role": "assistant", "content": [failed_tool_use_block]},
+      {"role": "user", "content": [{
+          "type": "tool_result", "tool_use_id": failed_tool_use_block.id, "is_error": True,
+          "content": "Validation failed on your extraction:\n- " + "\n- ".join(errors) +
+                     "\nRe-read the document and correct ONLY the inconsistent fields."}]}
+    ]
+    data = extract_again(messages)            # retry COM feedback específico</code></pre>
+
+<h3>Os limites do retry</h3>
+<p>Retry funciona para <strong>erros de formato e estrutura</strong> — o dado estava lá, o modelo leu errado.
+Retry é <strong>inútil</strong> quando a informação simplesmente <strong>não existe no documento fornecido</strong>
+(ex.: o número do pedido só consta num e-mail externo que nunca entrou no contexto). Repetir a chamada com
+feedback cada vez mais enfático só aumenta o custo e a pressão para o modelo fabricar. A correção é no
+<strong>input</strong>: trazer a fonte que falta para o contexto — ou aceitar o <code>null</code> honesto.</p>
+
+<h3>Self-correction embutida no schema</h3>
+<p>Em vez de confiar cegamente no total impresso, peça <code>calculated_total</code> (soma dos line items)
+<strong>junto</strong> de <code>stated_total</code> (total impresso) e um booleano
+<code>conflict_detected</code>. O próprio modelo confronta as duas fontes a cada extração, e documentos com
+dados inconsistentes na origem saem flagados — em vez de "corrigidos" em silêncio.</p>
+
+<h3>detected_pattern: o feedback loop além da extração</h3>
+<p>Em ferramentas de análise (ex.: code review automatizado), desenvolvedores dispensam findings. Sem dados
+estruturados, você nunca sabe <em>por quê</em>. Adicione um campo <code>detected_pattern</code> a cada finding
+registrando qual construção de código disparou o alerta. Com isso você analisa sistematicamente
+<strong>quais padrões são mais dispensados</strong> e refina a tool — transformando dismiss em sinal de
+melhoria, não em ruído. Repare que isso não é um score de confiança: a confiança diz <em>quanto</em> o modelo
+acredita no finding; o <code>detected_pattern</code> diz <em>o que</em> o disparou — e é isso que permite reescrever o
+critério com base em dado.</p>
+<p><strong>Regra de bolso:</strong> <em>finding descartado é dado. Registre o padrão que o disparou, agrupe os descartes
+por ele e só então mexa no prompt.</em></p>
+
+<h2>5. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
+  <tr><td class="en">tool_use (structured output)</td><td>uso de tool para saída estruturada</td><td class="uso">"tool use with a JSON schema eliminates JSON syntax errors"</td></tr>
+  <tr><td class="en">input_schema</td><td>JSON schema dos parâmetros da tool</td><td class="uso">"define the extraction schema as the tool's input_schema"</td></tr>
+  <tr><td class="en">tool_choice: "auto"</td><td>modelo pode responder texto em vez de chamar tool</td><td class="uso">"with auto, the model may return text instead of calling a tool"</td></tr>
+  <tr><td class="en">tool_choice: "any"</td><td>modelo deve chamar uma tool, escolhe qual</td><td class="uso">"set tool_choice to any when the document type is unknown"</td></tr>
+  <tr><td class="en">forced tool selection</td><td>forçar uma tool nomeada específica</td><td class="uso">"force the specific extraction tool before enrichment steps"</td></tr>
+  <tr><td class="en">semantic error</td><td>erro de sentido (valores não somam, campo errado)</td><td class="uso">"strict schemas do not prevent semantic errors"</td></tr>
+  <tr><td class="en">required vs optional fields</td><td>campos obrigatórios vs opcionais</td><td class="uso">"make fields optional when the source may not contain them"</td></tr>
+  <tr><td class="en">nullable</td><td>que aceita null</td><td class="uso">"nullable fields prevent the model from fabricating values"</td></tr>
+  <tr><td class="en">"other" + detail pattern</td><td>enum extensível com campo de detalhe</td><td class="uso">"add an 'other' enum value with a detail string"</td></tr>
+  <tr><td class="en">"unclear" enum value</td><td>valor de enum para casos ambíguos</td><td class="uso">"include 'unclear' for ambiguous cases"</td></tr>
+  <tr><td class="en">retry-with-error-feedback</td><td>retry reenviando o erro de validação específico</td><td class="uso">"append specific validation errors on retry"</td></tr>
+  <tr><td class="en">detected_pattern</td><td>campo que registra o padrão que disparou o finding</td><td class="uso">"track detected_pattern to analyze dismissal patterns"</td></tr>
+  <tr><td class="en">conflict_detected</td><td>flag booleano de inconsistência na fonte</td><td class="uso">"extract calculated_total alongside stated_total and flag conflict_detected"</td></tr>
+  <tr><td class="en">format normalization rules</td><td>regras de normalização de formato (no prompt)</td><td class="uso">"include format normalization rules in prompts alongside strict output schemas"</td></tr>
+  <tr><td class="en">dismissal pattern</td><td>padrão dos findings descartados pelos devs</td><td class="uso">"analyze which constructs trigger dismissed findings"</td></tr>
+</table>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha do dia</h3>
+  <p>Sintoma: "o pipeline de extração quebra com JSON malformado / campos faltando / texto antes do JSON".
+  Os distratores sempre oferecem <strong>remendo de prompt</strong> ("reescreva a instrução pedindo JSON válido,
+  em letras maiúsculas") ou parser mais tolerante. Quando a exigência é garantia determinística de estrutura,
+  a resposta certa é mover a estrutura para a camada de <strong>tool_use com input_schema</strong> — e,
+  se o modelo ainda puder fugir para texto, ajustar o <code>tool_choice</code> (<code>"any"</code> ou forced).
+  Regra de bolso: <em>prompt pede; schema garante. Garantia de formato não se negocia em linguagem natural.</em></p>
+</div>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha extra — normalizar no hook ou no prompt?</h3>
+  <p>As duas respostas aparecem na prova, e as duas estão certas — cada uma no seu contexto. A pergunta que decide é
+  <strong>de onde vem o valor</strong>:</p>
+  <ul>
+    <li><strong>De um resultado de tool</strong> (uma MCP tool devolve timestamp Unix, outra ISO 8601, outra status
+        numérico) → <strong>hook PostToolUse</strong> que normaliza antes de o modelo ver (TS 1.5, aula 03). É
+        transformação mecânica e determinística sobre um dado que já chega correto.</li>
+    <li><strong>Da leitura que o próprio modelo faz do documento</strong> (datas como 03/04/26, valores como
+        "1.250,00" ou "1 250 €") → <strong>regras de normalização no prompt, junto do schema estrito, com exemplos dos
+        casos ambíguos</strong> (TS 4.3). O erro nasce na leitura; só instrução e exemplo ensinam a ler.</li>
+  </ul>
+  <p>Os distratores dos dois lados: <strong>pattern mais estrito no schema</strong> (garante a forma, não o sentido) e
+  <strong>retry</strong> (corrige formato inválido, mas não corrige dia e mês trocados nem separador mal lido, porque o valor
+  errado continua válido). Regra de bolso: <em>valor que vem de tool se normaliza no hook; valor que o modelo extrai
+  se normaliza no prompt, com exemplos.</em></p>
+</div>
+
+<h2>6. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
+<div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
+
+<div class="q" data-correct="c" data-ts="4.3" data-dom="4">
+  <div class="qnum">Questão 1 · múltipla escolha <span class="cenario">Structured Data Extraction</span></div>
+  <div class="stem">Your invoice extraction pipeline prompts the model to "respond with valid JSON only" and parses the text output. In production, roughly 8% of runs crash the parser: markdown fences around the JSON, a sentence before the object, or a trailing comma after the last field. What is the root-cause fix?</div>
+  <div class="pt-block pt">Seu pipeline de extração de notas fiscais pede no prompt "responda apenas com JSON válido" e faz parse do texto. Em produção, ~8% das execuções quebram o parser: markdown em volta do JSON, uma frase antes do objeto, ou uma vírgula sobrando depois do último campo. Qual é a correção de causa raiz?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q1" value="a">A. Rewrite the prompt with stronger wording, e.g. "CRITICAL: output ONLY raw JSON, no markdown, no commentary."<div class="pt">Reescrever o prompt com redação mais forte, ex.: "CRÍTICO: responda APENAS JSON puro, sem markdown, sem comentários."</div></label>
+    <label class="opt"><input type="radio" name="q1" value="b">B. Add a tolerant pre-parser that strips markdown fences and extracts the first {…} block before calling json.loads.<div class="pt">Adicionar um pré-parser tolerante que remove o markdown e extrai o primeiro bloco {…} antes do json.loads.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. Define an extraction tool whose input_schema is the invoice schema, and read the result from the tool_use block.<div class="pt">Definir uma tool de extração cujo input_schema é o schema da nota, e ler o resultado do bloco tool_use.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="d">D. Wrap json.loads in a retry loop that resends the same request up to 5 times, since most failures are intermittent.<div class="pt">Envolver o json.loads num loop de retry que reenvia o mesmo request até 5 vezes, já que a maioria das falhas é intermitente.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Erro de <em>sintaxe</em> JSON se resolve por construção: com tool_use + input_schema, a estrutura é garantida pela camada de tool use e o <code>input</code> já vem parseado. A é remendo cosmético — prompt não gera garantia determinística. B empilha heurística frágil em cima do problema em vez de eliminá-lo. D trata o sintoma com retry cego e caro: a falha não é intermitente, é consequência de parsear texto livre. <span class="ts">Domínio 4 · TS 4.3 — Saída estruturada com tool use e JSON schema</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="4.3" data-dom="4">
+  <div class="qnum">Questão 2 · múltipla escolha <span class="cenario">Structured Data Extraction</span></div>
+  <div class="stem">Your document intake receives invoices, contracts, and receipts mixed together, and you have one extraction tool per document type. Every run must produce structured output for downstream systems, but you do not know the document type in advance. Which tool_choice setting fits?</div>
+  <div class="pt-block pt">Sua entrada de documentos recebe notas, contratos e recibos misturados, e você tem uma tool de extração por tipo. Toda execução precisa produzir saída estruturada para sistemas downstream, mas você não sabe o tipo do documento de antemão. Qual tool_choice se encaixa?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q2" value="a">A. "auto" — let the model decide freely whether to call a tool or describe the document in text.<div class="pt">"auto" — deixar o modelo decidir livremente se chama uma tool ou descreve o documento em texto.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="b">B. "any" — the model must call one of the extraction tools, choosing which based on the document.<div class="pt">"any" — o modelo deve chamar uma das tools de extração, escolhendo qual com base no documento.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="c">C. Force the invoice tool for every document, since invoices are the most common type in the intake.<div class="pt">Forçar a tool de nota fiscal para todo documento, já que notas são o tipo mais comum na entrada.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="d">D. Run a cheap classifier first and then call the API without any tools, asking for JSON in the prompt.<div class="pt">Rodar um classificador barato primeiro e depois chamar a API sem tools, pedindo JSON no prompt.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> <code>"any"</code> é exatamente o caso do guide: múltiplos schemas de extração + tipo desconhecido + structured output obrigatório — o modelo é obrigado a chamar uma tool, mas escolhe a correta. A falha no requisito: com <code>"auto"</code> o modelo pode devolver prosa. C força o schema errado em contratos e recibos. D joga fora a garantia estrutural (volta a parsear texto) e adiciona um componente desnecessário. <span class="ts">Domínio 4 · TS 4.3 — Saída estruturada com tool use e JSON schema</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="4.4" data-dom="4">
+  <div class="qnum">Questão 3 · múltipla escolha <span class="cenario">Structured Data Extraction</span></div>
+  <div class="stem">After migrating invoice extraction to tool use with a strict JSON schema, syntax errors dropped to zero — but finance reports that in some extractions the line items do not add up to the extracted total. What is the most proportional response?</div>
+  <div class="pt-block pt">Depois de migrar a extração de notas para tool use com JSON schema estrito, os erros de sintaxe zeraram — mas o financeiro reporta que em algumas extrações os line items não somam o total extraído. Qual é a resposta mais proporcional?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q3" value="a">A. Tighten the schema with minimum, maximum and multipleOf constraints so the model cannot emit inconsistent amounts.<div class="pt">Restringir o schema com minimum, maximum e multipleOf para que o modelo não consiga emitir valores inconsistentes.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="b">B. Switch the extraction to a larger model, since arithmetic consistency across line items improves with model size.<div class="pt">Trocar a extração para um modelo maior, já que a consistência aritmética entre line items melhora com o tamanho do modelo.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="c">C. Reject the whole batch and re-extract every document with a prompt that stresses checking the arithmetic first.<div class="pt">Rejeitar o lote inteiro e re-extrair todos os documentos com um prompt que enfatiza conferir a aritmética antes.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="d">D. Extract calculated_total beside stated_total, set conflict_detected on mismatch, and retry flagged items with the error.<div class="pt">Extrair calculated_total ao lado de stated_total, marcar conflict_detected na divergência e refazer os itens flagados com o erro.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> Schema estrito garante <em>sintaxe</em>, não <em>semântica</em> — a solução é validação semântica: self-correction (calculated_total vs stated_total + conflict_detected) e retry-with-error-feedback mirado nos documentos flagados. A pede o impossível: minimum/maximum validam cada número isolado, mas JSON schema não expressa "os itens somam o total". B troca de modelo sem atacar a ausência de validação — over-engineering. C reprocessa tudo com prompt (caro, cego) em vez de retry com o erro específico só nos falhos. <span class="ts">Domínio 4 · TS 4.4 — Validação, retry e feedback loops</span></div>
+</div>
+
+<div class="q" data-correct="b,e" data-ts="4.3" data-dom="4">
+  <div class="qnum">Questão 4 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Structured Data Extraction</span></div>
+  <div class="stem">Your contract extraction marks every field as required and uses a closed enum for clause_type. Reviewers found that when a contract lacks a termination clause, the model invents a plausible termination date, and when a clause is ambiguous or matches no enum value, it forces the closest category. Which TWO schema design changes directly address this fabrication?</div>
+  <div class="pt-block pt">Sua extração de contratos marca todos os campos como required e usa um enum fechado para clause_type. Revisores descobriram que, quando o contrato não tem cláusula de rescisão, o modelo inventa uma data plausível, e quando uma cláusula é ambígua ou não bate com nenhum valor do enum, ele força a categoria mais próxima. Quais DUAS mudanças de design de schema atacam diretamente essa fabricação?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q4" value="a">A. Keep every field required and add a prompt line: "Never fabricate values; quote the contract exactly."<div class="pt">Manter todos os campos required e adicionar no prompt: "Nunca fabrique valores; cite o contrato exatamente."</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="b">B. Make fields optional or nullable when the source document may not contain the information.<div class="pt">Tornar campos opcionais ou nullable quando o documento de origem pode não conter a informação.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="c">C. Lower the temperature to 0 so the model stops filling missing clauses with creative, plausible values.<div class="pt">Baixar a temperatura para 0 para o modelo parar de preencher cláusulas ausentes com valores criativos e plausíveis.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="d">D. Add "format": "date" to termination_date so that an invented value fails JSON schema validation.<div class="pt">Adicionar "format": "date" ao termination_date para que um valor inventado falhe na validação do JSON schema.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="e">E. For categorical fields, add "unclear" for ambiguous cases and "other" plus a detail string for new ones.<div class="pt">Para campos categóricos, adicionar "unclear" para casos ambíguos e "other" mais uma string de detalhe para os novos.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B e E.</strong> Campo required é uma ordem de preenchimento: se a informação pode não existir, optional/nullable (B) dá ao modelo a saída honesta (<code>null</code>); e, no <code>clause_type</code>, enums com "unclear"/"other"+detail (E) absorvem ambiguidade e casos novos sem forçar a categoria mais próxima. A é remendo de prompt contra uma pressão estrutural criada pelo próprio schema — instrução não vence campo obrigatório. C é o distrator clássico: temperatura não tem relação com fabricação induzida por schema. D valida só a forma: uma data inventada e bem-formada passa no <code>format: date</code>. <span class="ts">Domínio 4 · TS 4.3 — Saída estruturada com tool use e JSON schema</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="4.4" data-dom="4">
+  <div class="qnum">Questão 5 · múltipla escolha <span class="cenario">Structured Data Extraction</span></div>
+  <div class="stem">Your extraction keeps failing validation on the purchase_order_number field for one vendor's documents. You retry three times with increasingly detailed error feedback, and each attempt returns a different invented number. Investigation shows the PO number only exists in a confirmation email that is never included in the extraction context. What should you do?</div>
+  <div class="pt-block pt">Sua extração continua falhando a validação no campo purchase_order_number para os documentos de um fornecedor. Você tenta de novo três vezes com feedback de erro cada vez mais detalhado, e cada tentativa devolve um número inventado diferente. A investigação mostra que o número do pedido só existe num e-mail de confirmação que nunca entra no contexto de extração. O que fazer?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q5" value="a">A. Stop retrying and fix the input: add the confirmation email to the context, or accept null when the value is absent.<div class="pt">Parar de tentar de novo e corrigir o input: incluir o e-mail de confirmação no contexto, ou aceitar null quando o valor não existe.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. Retry once more with the validation error in bold and uppercase, so the model treats the PO field as mandatory.<div class="pt">Tentar mais uma vez com o erro de validação em negrito e maiúsculas, para o modelo tratar o campo do pedido como obrigatório.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. Make purchase_order_number required with a stricter regex pattern, so invented numbers fail schema validation.<div class="pt">Tornar purchase_order_number required com um pattern de regex mais estrito, para números inventados falharem no schema.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. Raise the retry cap from 3 to 10 and switch to a larger model on the last attempts, since it reads documents better.<div class="pt">Subir o limite de retry de 3 para 10 e trocar para um modelo maior nas últimas tentativas, já que ele lê documentos melhor.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> Retry-with-error-feedback funciona para erros de formato/leitura — quando o dado <em>está</em> no documento. Aqui a informação está fora do contexto: cada retry é pressão extra para fabricar, e foi exatamente o que aconteceu. A correção é no input (trazer o e-mail) ou no schema (nullable). B e D escalam a mesma estratégia condenada com mais custo. C endossa o erro de design: manter required um campo que pode não existir é a causa da fabricação, e um pattern não detecta número inventado bem-formado. <span class="ts">Domínio 4 · TS 4.4 — Validação, retry e feedback loops</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="4.4" data-dom="4">
+  <div class="qnum">Questão 6 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">Your CI review bot posts structured findings on pull requests, and developers can dismiss any finding. Dashboards show that 60% of findings in the error-handling category are dismissed, versus 8% for security, but nobody can tell which kinds of code are behind the dismissals, so every prompt change is guesswork. Which change gives the team a systematic way to refine the error-handling criteria?</div>
+  <div class="pt-block pt">Seu bot de review no CI publica findings estruturados nos pull requests, e os devs podem descartar qualquer finding. Os dashboards mostram que 60% dos findings da categoria error-handling são descartados, contra 8% em segurança, mas ninguém sabe dizer que tipo de código está por trás dos descartes — então toda mudança no prompt é chute. Qual mudança dá ao time um jeito sistemático de refinar os critérios de error-handling?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q6" value="a">A. Add a self-reported confidence score from 1 to 10 to each finding and hide findings that score below 7.<div class="pt">Adicionar a cada finding um score de confiança autorreportado de 1 a 10 e ocultar os findings abaixo de 7.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="b">B. Ask developers to type a free-text reason on every dismissal and have a model summarize the reasons monthly.<div class="pt">Pedir aos devs um motivo em texto livre a cada descarte e fazer um modelo resumir os motivos todo mês.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="c">C. Split the error-handling category into narrower subcategories and compare their dismissal rates each sprint.<div class="pt">Dividir a categoria error-handling em subcategorias mais estreitas e comparar as taxas de descarte a cada sprint.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. Add a detected_pattern field naming the construct that triggered each finding, and group dismissals by it.<div class="pt">Adicionar um campo detected_pattern com a construção que disparou cada finding, e agrupar os descartes por ele.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> O <code>detected_pattern</code> registra qual construção de código disparou cada finding; agrupando os descartes por ele, o time vê exatamente quais padrões geram falso positivo (ex.: <em>catch</em> que só loga dentro de um wrapper de retry) e reescreve o critério com base em dado — é o feedback loop do TS 4.4. A é filtragem por autoconfiança: esconde findings sem explicar por que eles são descartados, e confiança crua não melhora precisão. B gera texto livre difícil de agregar e depende de o dev escrever algo útil a cada descarte. C muda a taxonomia antes de saber o que causa o descarte: continua sendo chute, só que em categorias menores. <span class="ts">Domínio 4 · TS 4.4 — Validação, retry e feedback loops</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="4.3" data-dom="4">
+  <div class="qnum">Questão 7 · múltipla escolha <span class="cenario">Structured Data Extraction</span></div>
+  <div class="stem">Your pipeline extracts amounts from supplier invoices issued in several countries. The tool schema declares total_amount as a number, and every output validates. Audits show that European-style amounts such as "1.250,00" are sometimes extracted as 1.25 instead of 1250.00, and some invoices write "1 250 €". The wrong values pass validation because they are valid numbers. What should you add?</div>
+  <div class="pt-block pt">Seu pipeline extrai valores de notas de fornecedores emitidas em vários países. O schema da tool declara total_amount como number, e toda saída valida. As auditorias mostram que valores no padrão europeu, como "1.250,00", às vezes são extraídos como 1.25 em vez de 1250.00, e algumas notas escrevem "1 250 €". Os valores errados passam na validação porque são números válidos. O que você deve acrescentar?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q7" value="a">A. Separator normalization rules in the extraction prompt, beside the schema, with examples of the ambiguous cases.<div class="pt">Regras de normalização de separadores no prompt de extração, ao lado do schema, com exemplos dos casos ambíguos.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="b">B. A PostToolUse hook that converts each extracted amount to one canonical decimal format after the call returns.<div class="pt">Um hook PostToolUse que converte cada valor extraído para um formato decimal canônico depois que a chamada retorna.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="c">C. A stricter schema: a minimum of 10 and a two-decimal pattern on total_amount, so misread values are rejected.<div class="pt">Um schema mais estrito: mínimo de 10 e pattern de duas casas decimais no total_amount, para rejeitar valores mal lidos.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="d">D. A retry that resends the document with the validation error whenever total_amount fails its format check.<div class="pt">Um retry que reenvia o documento com o erro de validação sempre que total_amount falhar na checagem de formato.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> Schema estrito garante a forma (é um número), não a leitura correta do documento. Quando a fonte usa formatos inconsistentes, o guia manda pôr <strong>regras de normalização no prompt, junto do schema</strong>, com exemplos dos casos ambíguos (TS 4.3): o modelo aprende a ler "1.250,00" como 1250.00 <em>antes</em> de preencher o campo. B é a ferramenta certa no contexto errado: hook PostToolUse normaliza dado que já chega correto de uma tool (TS 1.5); aqui o erro nasce na leitura do documento, e depois que o valor virou 1.25 nenhum hook sabe que era 1250. C confunde forma com conteúdo: um mínimo arbitrário quebra notas legítimas de valor baixo e um pattern não detecta o valor mal lido. D nunca dispara: 1.25 é um número válido, então não há erro de validação para reenviar. <span class="ts">Domínio 4 · TS 4.3 — Saída estruturada com tool use e JSON schema</span></div>
+</div>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir aula 10</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="aula-09.html">← Aula 09</a></span>
+  <span><a href="aula-11.html">Aula 11 →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  var total = 0, score = 0;
+  document.querySelectorAll('.q').forEach(function (q) {
+    total++;
+    document.getElementById('total').textContent = total;
+    var btn = q.querySelector('button.answer');
+    var correct = q.dataset.correct.split(',').map(function (s) { return s.trim(); });
+    btn.addEventListener('click', function () {
+      var checked = Array.prototype.slice.call(q.querySelectorAll('input:checked')).map(function (i) { return i.value; });
+      if (checked.length === 0) return;
+      var ok = checked.length === correct.length && checked.every(function (v) { return correct.indexOf(v) !== -1; });
+      q.querySelectorAll('label.opt').forEach(function (l) {
+        var v = l.querySelector('input').value;
+        if (correct.indexOf(v) !== -1) l.classList.add('correct');
+        else if (l.querySelector('input').checked) l.classList.add('wrong');
+        l.querySelector('input').disabled = true;
+      });
+      var fb = q.querySelector('.feedback');
+      fb.classList.add(ok ? 'ok' : 'ko');
+      fb.innerHTML = (ok ? '✅ Correto. ' : '❌ Incorreto. ') + fb.innerHTML;
+      btn.disabled = true;
+      if (ok) score++;
+      document.getElementById('score').textContent = score;
+    });
+  });
+  var KEY = 'ccarf-aula-10';
+  var btn = document.getElementById('finish');
+  if (localStorage.getItem(KEY)) {
+    document.getElementById('donemsg').textContent = 'Aula já concluída — ' + localStorage.getItem(KEY);
+  }
+  btn.addEventListener('click', function () {
+    var rec = new Date().toLocaleDateString('pt-BR') + ' · ' + score + '/' + total + ' acertos';
+    localStorage.setItem(KEY, rec);
+    document.getElementById('donemsg').textContent = 'Concluída: ' + rec;
+  });
+})();
+</script>
+</body>
+</html>

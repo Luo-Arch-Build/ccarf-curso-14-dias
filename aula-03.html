@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 03 — Enforcement, hooks e gerenciamento de sessões · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.uso { color: var(--pt); font-size: 13px; font-style: italic; }
+  .pt { color: var(--pt); font-size: 13.5px; }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 4px 0 10px; }
+  body.hide-pt .pt, body.hide-pt .pt-block { display: none; }
+  .toggle-pt { position: sticky; top: 12px; float: right; z-index: 5; background: var(--card2);
+    border: 1px solid var(--border); color: var(--muted); border-radius: 999px;
+    padding: 6px 14px; font-size: 12.5px; cursor: pointer; }
+  .toggle-pt:hover { color: var(--text); border-color: var(--accent); }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q .cenario { float: right; text-transform: none; letter-spacing: 0; font-size: 11.5px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
+  .q .feedback .ts { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<button class="toggle-pt" onclick="document.body.classList.toggle('hide-pt'); this.textContent = document.body.classList.contains('hide-pt') ? '🇧🇷 mostrar traduções' : '🇧🇷 ocultar traduções';">🇧🇷 ocultar traduções</button>
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Aula 03</div>
+  <h1>Aula 03 — Enforcement, hooks e gerenciamento de sessões</h1>
+  <div class="meta">
+    <span class="tag">Domínio 1 · Agentic Architecture &amp; Orchestration (27%)</span>
+    <span class="tag">Task Statements 1.4 – 1.7</span>
+    <span class="tag">~60 min</span>
+  </div>
+</header>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo do dia.</strong> Aprender a transformar regras de negócio em garantias
+  <em>determinísticas</em> via hooks e prerequisite gates (nunca só via prompt quando a regra é determinística e
+  checável em código — identidade antes de operação financeira, limite de valor, ordem obrigatória de etapas), montar handoffs estruturados para humanos, escolher entre prompt chaining e
+  decomposição dinâmica, e gerenciar sessões com <code>--resume</code>, <code>fork_session</code> e
+  recomeços com resumo estruturado.
+</div>
+
+<h2>1. Enforcement programático vs prompt-based (TS 1.4)</h2>
+<p>Esta é <strong>a</strong> regra central da aula e uma das mais cobradas da prova inteira:</p>
+<div class="card">
+  <strong>Regra de ouro:</strong> quando uma regra de negócio exige <strong>compliance determinístico</strong>
+  (verificação de identidade antes de operação financeira, limite de valor, ordem obrigatória de etapas),
+  instrução no prompt tem <strong>taxa de falha não-zero</strong> — por melhor que seja o prompt, o modelo é
+  probabilístico. Enforcement programático (hooks, prerequisite gates) é <strong>determinístico</strong>:
+  a tool simplesmente não executa.
+</div>
+<p>O sintoma clássico na prova: "em X% dos casos o agente pula a etapa A e chama a tool B diretamente".
+O candidato fraco propõe reforçar o system prompt ou adicionar few-shot examples — isso <em>reduz</em> a
+taxa de erro, mas não a <em>elimina</em>. A resposta certa implementa um <strong>prerequisite gate</strong>:</p>
+<pre><code># Prerequisite gate: tools downstream bloqueadas até o pré-requisito
+state = {"verified_customer_id": None}
+
+def guard(tool_name, tool_input):
+    if tool_name in ("lookup_order", "process_refund"):
+        if state["verified_customer_id"] is None:
+            return block("get_customer must return a verified customer ID first")
+    return allow()</code></pre>
+<p>Note o desenho: o gate bloqueia <code>lookup_order</code> <em>e</em> <code>process_refund</code> até que
+<code>get_customer</code> tenha retornado um customer ID verificado. Não é o modelo que "decide obedecer" —
+é o seu código que torna a violação <strong>impossível</strong>.</p>
+
+<h3>Handoff estruturado para humanos</h3>
+<p>Outro padrão do TS 1.4: quando o agente escala para um atendente humano no meio do processo, o humano
+<strong>não tem acesso ao transcript da conversa</strong>. Mandar "resuma a conversa" gera handoff fraco.
+O handoff correto é um <strong>protocolo estruturado</strong> com campos fixos:</p>
+<ul>
+  <li><strong>customer ID</strong> (verificado, não o nome declarado)</li>
+  <li><strong>root cause</strong> — o que a investigação já concluiu</li>
+  <li><strong>valor envolvido</strong> (ex.: refund amount)</li>
+  <li><strong>ação recomendada</strong> — o próximo passo que o humano deve executar/aprovar</li>
+</ul>
+<p>Trecho da conversa, transcript inteiro ou "resuma o que aconteceu" obrigam o atendente a reler e refazer o
+diagnóstico; score de prioridade ou autoconfiança do modelo não dizem o que fazer. <strong>Regra de bolso:</strong>
+<em>o humano tem que conseguir agir sem reler nada — campos fixos com a conclusão e o próximo passo.</em></p>
+
+<h3>Pedido com vários assuntos (multi-concern)</h3>
+<p>"Meu pedido atrasou, quero trocar o endereço de entrega e tem uma cobrança duplicada." Tratar só o primeiro
+assunto e encerrar derruba a resolução no primeiro contato. O padrão do TS 1.4:</p>
+<ol>
+  <li><strong>Decompor</strong> a mensagem em itens distintos</li>
+  <li><strong>Investigar cada item em paralelo</strong>, usando o <strong>contexto compartilhado</strong> (o mesmo
+      cliente verificado, os mesmos dados de conta) — em vez de um fluxo serial que mistura estados</li>
+  <li><strong>Sintetizar uma resolução unificada</strong>: uma resposta que fecha todos os itens</li>
+</ol>
+<p>Escalar "porque tem muita coisa" não é saída: complexidade não é gatilho de escalonamento (os gatilhos são pedido
+explícito de humano, lacuna de política e falta de progresso). <strong>Regra de bolso:</strong> <em>vários assuntos →
+itens investigados em paralelo com o mesmo contexto → uma resposta só.</em></p>
+
+<h2>2. Hooks do Agent SDK (TS 1.5)</h2>
+<p>Hooks são pontos de interceptação no ciclo de vida da tool call. A prova cobra dois usos:</p>
+
+<h3>2.1 PostToolUse — normalizar dados heterogêneos</h3>
+<p>Cenário: seu agente consome várias MCP tools e cada uma devolve dados num formato diferente — uma retorna
+timestamps Unix (<code>1712345678</code>), outra ISO 8601 (<code>2024-04-05T14:21:18Z</code>), outra códigos
+numéricos de status (<code>3</code> em vez de <code>"shipped"</code>). Se você joga isso cru no modelo, ele
+precisa gastar raciocínio (e errar) fazendo parsing. Solução: um hook <code>PostToolUse</code> intercepta o
+tool result <strong>antes de o modelo processá-lo</strong> e normaliza para um formato canônico:</p>
+<pre><code>def post_tool_use(tool_name, tool_result):
+    if "created_at" in tool_result:
+        tool_result["created_at"] = to_iso8601(tool_result["created_at"])
+    if isinstance(tool_result.get("status"), int):
+        tool_result["status"] = STATUS_MAP[tool_result["status"]]
+    return tool_result   # modelo recebe dados já normalizados</code></pre>
+<p>Alternativa errada que aparece como distrator: "ensinar no prompt que timestamps Unix devem ser
+convertidos" — de novo, probabilístico. A normalização é transformação mecânica; faça-a mecanicamente.</p>
+
+<h3>2.2 Interceptação de tool call — bloquear violação de política</h3>
+<p>Cenário: a política diz que reembolsos acima de <strong>$500</strong> exigem aprovação humana. A garantia
+correta é um hook que intercepta a chamada <em>antes</em> da execução, bloqueia a violação e
+<strong>redireciona para o workflow alternativo</strong> (escalação humana):</p>
+<pre><code>def intercept(tool_name, tool_input):
+    if tool_name == "process_refund" and tool_input["amount"] &gt; 500:
+        return block_and_redirect(
+            reason="refund exceeds $500 policy threshold",
+            redirect_to="human_approval_workflow")
+    return allow()</code></pre>
+<p>A frase-chave do guide: <em>"choosing hooks over prompt-based enforcement when business rules require
+guaranteed compliance"</em>. Distrator clássico: "adicionar ao system prompt que refunds acima de $500 devem
+ser escalados" — funciona 95% das vezes, e os 5% restantes viram prejuízo financeiro.</p>
+
+<h2>3. Decomposição de tarefas: chaining vs dinâmica (TS 1.6)</h2>
+<p>Duas estratégias, e a prova testa se você sabe <em>quando usar cada uma</em>:</p>
+<table class="gloss">
+  <tr><th>Estratégia</th><th>Quando usar</th><th>Exemplo canônico</th></tr>
+  <tr>
+    <td><strong>Prompt chaining</strong> (pipeline sequencial fixo)</td>
+    <td>Workflow <strong>previsível</strong>, com etapas conhecidas de antemão e múltiplos aspectos a revisar</td>
+    <td>Code review: analisar cada arquivo individualmente → depois um pass de integração cross-file</td>
+  </tr>
+  <tr>
+    <td><strong>Decomposição dinâmica adaptativa</strong></td>
+    <td>Investigação <strong>aberta</strong>, onde os próximos passos dependem do que se descobre</td>
+    <td>"Adicionar testes a um codebase legado": mapear estrutura → identificar áreas de alto impacto → plano priorizado que se adapta conforme dependências surgem</td>
+  </tr>
+</table>
+<p>O padrão de code review merece destaque porque cai muito: revisar um PR gigante "de uma vez" causa
+<strong>attention dilution</strong> — o modelo perde foco em meio a dezenas de arquivos e deixa passar bugs.
+A arquitetura correta:</p>
+<ol>
+  <li><strong>Pass local por arquivo</strong>: cada arquivo é revisado isoladamente, com atenção total</li>
+  <li><strong>Pass de integração cross-file</strong>: um pass separado analisa como os arquivos interagem
+      (assinaturas quebradas, contratos mudados, efeitos colaterais entre módulos)</li>
+</ol>
+<p>O pass cross-file existe porque bugs de integração <em>não são visíveis</em> olhando arquivo por arquivo —
+mas tentar pegar os dois tipos de bug num único pass dilui a atenção e piora os dois. Separação de concerns
+aplicada a review.</p>
+
+<h2>4. Sessões: resume, fork e recomeço (TS 1.7)</h2>
+<p>Claude Code persiste sessões nomeadas. Três operações que a prova cobra:</p>
+
+<h3>4.1 --resume &lt;session-name&gt;</h3>
+<p>Continua uma conversa anterior específica — ex.: uma investigação nomeada que atravessa vários dias de
+trabalho (<code>claude --resume investigacao-checkout</code>). Use quando o contexto anterior ainda é
+<strong>majoritariamente válido</strong>.</p>
+<p><strong>Detalhe que cai na prova:</strong> se arquivos foram modificados desde a sessão original,
+<strong>informe o agente sobre as mudanças específicas</strong> ao retomar ("os arquivos X e Y mudaram desde
+ontem; re-analise-os"). Isso permite re-análise <em>direcionada</em> em vez de re-exploração completa — e evita
+que o agente raciocine sobre tool results velhos que já não refletem o disco.</p>
+
+<h3>4.2 fork_session</h3>
+<p>Cria <strong>ramificações independentes</strong> a partir de uma baseline de análise compartilhada.
+Caso de uso: você já fez a análise do codebase uma vez e quer explorar duas abordagens divergentes —
+ex.: comparar duas estratégias de teste ou dois planos de refatoração — sem que uma contamine o contexto da
+outra. O fork herda a baseline; daí em diante, cada branch evolui isolado.</p>
+
+<h3>4.3 Nova sessão com resumo estruturado &gt; retomar com tool results velhos</h3>
+<p>Quando o contexto antigo está <strong>stale</strong> (tool results de dias atrás, codebase mudou muito,
+a investigação tomou outro rumo), retomar a sessão injeta lixo no contexto e o modelo raciocina sobre dados
+desatualizados. A prática mais confiável: <strong>iniciar uma sessão nova injetando um resumo estruturado</strong>
+das conclusões relevantes da sessão anterior. Você preserva o <em>conhecimento</em> sem carregar os
+<em>artefatos podres</em>. Regra de decisão:</p>
+<ul>
+  <li>Contexto anterior ainda válido → <code>--resume</code> (e avise das mudanças pontuais em arquivos)</li>
+  <li>Tool results stale / codebase mudou muito → sessão nova + resumo estruturado</li>
+  <li>Quer explorar caminhos divergentes da mesma baseline → <code>fork_session</code></li>
+</ul>
+
+<h2>5. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
+  <tr><td class="en">programmatic enforcement</td><td>enforcement programático (garantia em código)</td><td class="uso">"programmatic enforcement provides deterministic guarantees"</td></tr>
+  <tr><td class="en">prompt-based guidance</td><td>orientação via prompt (probabilística)</td><td class="uso">"prompt instructions alone have a non-zero failure rate"</td></tr>
+  <tr><td class="en">prerequisite gate</td><td>porta de pré-requisito (bloqueia tools downstream)</td><td class="uso">"block downstream tool calls until prerequisite steps complete"</td></tr>
+  <tr><td class="en">structured handoff</td><td>handoff estruturado para humano</td><td class="uso">"handoff summary with customer ID, root cause, and recommended action"</td></tr>
+  <tr><td class="en">recommended action</td><td>ação recomendada (próximo passo para o humano)</td><td class="uso">"handoff protocols include root cause analysis and recommended actions"</td></tr>
+  <tr><td class="en">multi-concern request</td><td>pedido com vários assuntos</td><td class="uso">"decompose multi-concern customer requests into distinct items"</td></tr>
+  <tr><td class="en">shared context</td><td>contexto compartilhado (mesmo cliente, mesmos dados)</td><td class="uso">"investigate each item in parallel using shared context"</td></tr>
+  <tr><td class="en">unified resolution</td><td>resolução unificada (uma resposta para todos os itens)</td><td class="uso">"synthesize a unified resolution"</td></tr>
+  <tr><td class="en">PostToolUse hook</td><td>hook que intercepta o resultado da tool</td><td class="uso">"a PostToolUse hook normalizes heterogeneous data formats"</td></tr>
+  <tr><td class="en">tool call interception</td><td>interceptação da chamada de tool (antes de executar)</td><td class="uso">"intercept tool calls to block policy-violating actions"</td></tr>
+  <tr><td class="en">policy threshold</td><td>limite de política (ex.: refund &gt; $500)</td><td class="uso">"refunds exceeding $500 require human approval"</td></tr>
+  <tr><td class="en">deterministic vs probabilistic compliance</td><td>conformidade determinística vs probabilística</td><td class="uso">"business rules requiring guaranteed compliance"</td></tr>
+  <tr><td class="en">prompt chaining</td><td>encadeamento de prompts (pipeline sequencial fixo)</td><td class="uso">"prompt chaining for predictable multi-aspect reviews"</td></tr>
+  <tr><td class="en">dynamic decomposition</td><td>decomposição dinâmica adaptativa</td><td class="uso">"adaptive subtasks based on intermediate findings"</td></tr>
+  <tr><td class="en">cross-file integration pass</td><td>pass de integração entre arquivos</td><td class="uso">"per-file analysis plus a separate cross-file integration pass"</td></tr>
+  <tr><td class="en">attention dilution</td><td>diluição de atenção</td><td class="uso">"splitting large reviews avoids attention dilution"</td></tr>
+  <tr><td class="en">--resume &lt;session-name&gt;</td><td>retomar sessão nomeada</td><td class="uso">"use --resume to continue a named investigation session"</td></tr>
+  <tr><td class="en">fork_session</td><td>ramificar sessão a partir de uma baseline</td><td class="uso">"fork_session creates independent branches from a shared baseline"</td></tr>
+  <tr><td class="en">stale tool results</td><td>resultados de tool desatualizados</td><td class="uso">"a fresh session with a structured summary beats resuming with stale tool results"</td></tr>
+</table>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha do dia</h3>
+  <p>O distrator número 1 deste bloco é o <strong>remendo cosmético via prompt</strong>: o stem descreve uma
+  violação de regra de negócio em produção (etapa pulada, refund acima do limite) e as opções oferecem
+  "fortalecer o system prompt", "adicionar few-shot examples", "deixar a instrução mais enfática". Tudo isso é
+  probabilístico. A resposta certa é sempre a que move a regra para <strong>código determinístico</strong>
+  (hook, prerequisite gate, interceptação). Regra de bolso: <em>regra de negócio determinística (checável em código: etapa obrigatória,
+  limite de valor) com consequência financeira ou de compliance não pode morar no prompt — exige enforcement
+  programático. Decisão de julgamento (quando escalar, qual tool escolher) é outra coisa: corrige-se primeiro com
+  critérios explícitos + few-shot no prompt (questão 3 oficial, aula 12) — hook não sabe o que é exceção de política.</em></p>
+</div>
+
+<h2>6. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
+<div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
+
+<div class="q" data-correct="c" data-ts="1.4" data-dom="1">
+  <div class="qnum">Questão 1 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">Telemetry from your support agent shows that in roughly 1 out of 8 conversations, the agent never calls get_customer and goes straight to process_refund using the name the user typed, which has already caused refunds to the wrong account. Which change most effectively eliminates this failure mode?</div>
+  <div class="pt-block pt">A telemetria do seu agente de suporte mostra que em cerca de 1 de cada 8 conversas o agente nunca chama get_customer e vai direto para process_refund usando o nome que o usuário digitou, o que já causou reembolsos para a conta errada. Qual mudança elimina esse modo de falha com mais eficácia?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q1" value="a">A. Strengthen the system prompt with an explicit, highlighted rule that identity verification is mandatory before any refund.<div class="pt">Reforçar o system prompt com uma regra explícita e em destaque de que a verificação de identidade é obrigatória antes de qualquer reembolso.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="b">B. Add few-shot examples showing conversations in which the agent always verifies identity before discussing a refund.<div class="pt">Adicionar exemplos few-shot mostrando conversas em que o agente sempre verifica a identidade antes de tratar de um reembolso.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. Add a programmatic prerequisite that blocks process_refund until get_customer has returned a verified customer ID.<div class="pt">Adicionar um pré-requisito programático que bloqueia process_refund até que get_customer tenha retornado um customer ID verificado.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="d">D. Add a pre-routing classifier that inspects each message and only exposes refund tools when the intent looks legitimate.<div class="pt">Adicionar um classificador de pré-roteamento que inspeciona cada mensagem e só expõe as tools de reembolso quando a intenção parece legítima.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Quando uma sequência de tools é obrigatória por regra de negócio crítica (identidade antes de dinheiro), só enforcement programático dá garantia determinística — a tool violadora simplesmente não executa. A e B são compliance probabilística via prompt: reduzem a taxa de erro, não a zeram — e o erro aqui tem custo financeiro. D resolve disponibilidade de tools, não ordenação — o problema é a <em>ordem</em> das chamadas, não quais tools existem.<span class="ts">Domínio 1 · TS 1.4 — Workflows com enforcement e handoff</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="1.5" data-dom="1">
+  <div class="qnum">Questão 2 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">Company policy states that any refund above $500 needs human approval. Today the only safeguard is a system-prompt instruction, and audits found several cases where the agent processed $700+ refunds autonomously. What is the correct fix?</div>
+  <div class="pt-block pt">A política da empresa diz que qualquer reembolso acima de $500 precisa de aprovação humana. Hoje a única proteção é uma instrução no system prompt, e auditorias encontraram vários casos em que o agente processou reembolsos de $700+ sozinho. Qual é a correção correta?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q2" value="a">A. Rewrite the system-prompt rule to state the $500 threshold twice, mark it as critical, and add two worked examples.<div class="pt">Reescrever a regra do system prompt citando o limite de $500 duas vezes, marcá-la como crítica e acrescentar dois exemplos resolvidos.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="b">B. Intercept process_refund calls in code; above $500, block the call and redirect the case to human approval.<div class="pt">Interceptar as chamadas a process_refund em código; acima de $500, bloquear a chamada e redirecionar o caso para aprovação humana.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="c">C. Lower the model's temperature so that it applies the written refund policy more literally and consistently.<div class="pt">Baixar a temperatura do modelo para que ele aplique a política de reembolso escrita de forma mais literal e consistente.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="d">D. Split process_refund into small_refund and large_refund, and describe the $500 threshold in each tool's description.<div class="pt">Dividir process_refund em small_refund e large_refund, e descrever o limite de $500 na descrição de cada tool.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Regra de política com consequência financeira = guaranteed compliance = hook de interceptação que bloqueia e redireciona para escalação humana. A é o remendo cosmético clássico — instrução repetida (até com exemplos) continua probabilística. C confunde temperatura com enforcement: sampling mais conservador não vira garantia. D é engenharia pela metade: descrições de tool guiam o modelo, mas nada <em>impede</em> uma chamada a large_refund.<span class="ts">Domínio 1 · TS 1.5 — Hooks do Agent SDK (interceptação e normalização)</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="1.5" data-dom="1">
+  <div class="qnum">Questão 3 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">Your support agent aggregates order data from three MCP tools. One returns Unix timestamps, another returns ISO 8601 strings, and a third returns numeric status codes. The model frequently misinterprets these fields when reasoning across sources. What is the best architectural fix?</div>
+  <div class="pt-block pt">Seu agente de suporte agrega dados de pedidos de três MCP tools. Uma retorna timestamps Unix, outra strings ISO 8601 e a terceira códigos numéricos de status. O modelo frequentemente interpreta esses campos errado ao raciocinar entre as fontes. Qual é a melhor correção arquitetural?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q3" value="a">A. Add a PostToolUse hook that converts each tool result to canonical formats before the model ever processes it.<div class="pt">Adicionar um hook PostToolUse que converte cada tool result para formatos canônicos antes de o modelo sequer processá-lo.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="b">B. Document in the system prompt how to convert Unix timestamps and what each numeric status code means.<div class="pt">Documentar no system prompt como converter timestamps Unix e o que significa cada código numérico de status.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="c">C. Ask each MCP server's maintainers to change their response schemas to match the format your agent expects.<div class="pt">Pedir aos mantenedores de cada MCP server que mudem seus schemas de resposta para o formato que seu agente espera.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="d">D. Route each MCP tool to its own specialized subagent, so that the three formats never meet in one context.<div class="pt">Rotear cada MCP tool para um subagente especializado próprio, para que os três formatos nunca se encontrem num mesmo contexto.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> Normalização de dados é transformação mecânica e determinística — o lugar certo é um hook <code>PostToolUse</code> que intercepta o resultado antes de o modelo vê-lo (datas em ISO 8601, status como texto). B joga trabalho de parsing no modelo (probabilístico, gasta raciocínio, erra). C é irrealista e não escala — você não controla os mantenedores. D é over-engineering: os dados ainda precisam convergir para uma síntese, e o problema de formato volta na agregação.<span class="ts">Domínio 1 · TS 1.5 — Hooks do Agent SDK (interceptação e normalização)</span></div>
+</div>
+
+<div class="q" data-correct="a,d" data-ts="1.7" data-dom="1">
+  <div class="qnum">Questão 4 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">Your team uses Claude Code for refactoring work that spans several days. Which TWO practices align with correct session management?</div>
+  <div class="pt-block pt">Seu time usa o Claude Code em trabalhos de refatoração que duram vários dias. Quais DUAS práticas estão alinhadas com o gerenciamento correto de sessões?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q4" value="a">A. When resuming after files were edited, tell the agent which files changed so it re-analyzes only those.<div class="pt">Ao retomar depois que arquivos foram editados, dizer ao agente quais arquivos mudaram para ele re-analisar só esses.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="b">B. Resume the longest-running session available, since its accumulated history holds the most context about the codebase.<div class="pt">Retomar a sessão mais longa disponível, já que o histórico acumulado nela guarda o maior contexto sobre o codebase.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="c">C. Run /compact right after resuming, since compacting the context refreshes any tool results that are out of date.<div class="pt">Rodar /compact logo depois de retomar, já que compactar o contexto atualiza os tool results que estiverem desatualizados.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="d">D. Use fork_session to explore two divergent approaches from one shared analysis baseline.<div class="pt">Usar fork_session para explorar duas abordagens divergentes a partir de uma baseline de análise compartilhada.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="e">E. When a prior session's tool results are stale, resume it anyway and let the model work out which are outdated.<div class="pt">Quando os tool results de uma sessão anterior estão velhos, retomá-la mesmo assim e deixar o modelo descobrir quais estão desatualizados.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A e D.</strong> A é a prática exata do guia: informar as mudanças específicas em arquivos permite re-análise direcionada em vez de re-exploração completa. D é o caso de uso canônico do <code>fork_session</code> — ramos independentes a partir de uma baseline compartilhada, sem um contaminar o outro. B confunde quantidade com qualidade de contexto: o histórico mais longo é também o que mais carrega tool results stale, que poluem o raciocínio. C confunde compactar com atualizar: <code>/compact</code> reduz o contexto, mas não reexecuta nenhuma tool — os dados velhos continuam velhos, só que resumidos. E inverte a regra: com resultados stale, o correto é sessão nova com um resumo estruturado das conclusões.<span class="ts">Domínio 1 · TS 1.7 — Sessões: retomada e fork</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="1.6" data-dom="1">
+  <div class="qnum">Questão 5 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">Your team runs Claude over pull requests with 40+ changed files, and reviews keep missing cross-module breakage (renamed function signatures, changed contracts). The current setup asks the model to review the entire diff in one pass. What decomposition strategy best fixes this?</div>
+  <div class="pt-block pt">Seu time roda o Claude sobre pull requests com 40+ arquivos alterados, e as revisões continuam deixando passar quebras entre módulos (assinaturas de função renomeadas, contratos alterados). O setup atual pede ao modelo para revisar o diff inteiro num pass só. Qual estratégia de decomposição corrige melhor isso?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q5" value="a">A. Use dynamic adaptive decomposition, letting the model invent a new investigation plan as it reads the diff.<div class="pt">Usar decomposição dinâmica adaptativa, deixando o modelo inventar um plano de investigação novo conforme lê o diff.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. Increase max_tokens so that the model can hold and discuss the entire 40-file diff in a single response.<div class="pt">Aumentar max_tokens para que o modelo comporte e discuta o diff inteiro de 40 arquivos numa única resposta.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. Add a warning to the review prompt asking the model to pay extra attention to issues that cross file boundaries.<div class="pt">Adicionar ao prompt de revisão um aviso pedindo ao modelo atenção extra a problemas que atravessam arquivos.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. Use prompt chaining: a focused pass per file for local issues, then a separate cross-file integration pass.<div class="pt">Usar prompt chaining: um pass focado por arquivo para problemas locais, depois um pass separado de integração cross-file.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> Code review multi-aspecto e previsível é o caso canônico de prompt chaining: pass local por arquivo (atenção total) + pass de integração cross-file (pega quebras de contrato invisíveis arquivo a arquivo) — evitando attention dilution. A é desproporcional: o workflow é conhecido de antemão, não é investigação aberta. B ataca o sintoma errado — o problema não é caber o diff, é a atenção diluída. C é remendo via prompt: "seja mais cuidadoso" não muda a arquitetura que causa as falhas.<span class="ts">Domínio 1 · TS 1.6 — Estratégias de decomposição de tarefas</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="1.4" data-dom="1">
+  <div class="qnum">Questão 6 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">A customer writes: "My annual plan renewed at the old price instead of the promotional one, the discount code from your newsletter is rejected at checkout, and please send future invoices to my accountant." The agent fixes the renewal price and closes the conversation. Logs show that multi-issue conversations have the lowest first-contact resolution. Which design best handles requests like this?</div>
+  <div class="pt-block pt">Um cliente escreve: "Meu plano anual renovou pelo preço antigo em vez do promocional, o cupom da newsletter é recusado no checkout, e por favor enviem as próximas faturas para o meu contador." O agente corrige o preço da renovação e encerra a conversa. Os logs mostram que conversas com vários assuntos têm a menor resolução no primeiro contato. Qual design trata melhor pedidos assim?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q6" value="a">A. Classify each message into one primary intent with a router model, then run only the workflow for that intent.<div class="pt">Classificar cada mensagem numa intenção principal com um modelo roteador e rodar só o workflow dessa intenção.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="b">B. Split the request into distinct items, investigate them in parallel with shared context, then reply once.<div class="pt">Dividir o pedido em itens distintos, investigá-los em paralelo com contexto compartilhado e então responder uma vez só.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="c">C. Raise max_tokens so that the agent has enough room to address all three issues in one long reply.<div class="pt">Aumentar max_tokens para o agente ter espaço suficiente para tratar os três assuntos numa única resposta longa.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. Escalate any message with more than one request to a human, since multi-issue cases are complex by nature.<div class="pt">Escalar para um humano toda mensagem com mais de um pedido, já que casos com vários assuntos são complexos por natureza.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> TS 1.4: pedido com várias questões se decompõe em itens distintos, cada um investigado em paralelo usando o contexto compartilhado (o mesmo cliente verificado, os mesmos dados de conta), e a resposta sai como uma resolução unificada. A força tudo numa intenção só — exatamente o que fez o agente esquecer dois dos três assuntos. C confunde espaço de saída com decomposição: o agente não parou por falta de tokens, e sim por tratar só o primeiro item. D usa "complexidade" como gatilho de escalonamento; os gatilhos certos são pedido explícito de humano, lacuna de política e falta de progresso — e os três itens estão ao alcance do agente.<span class="ts">Domínio 1 · TS 1.4 — Workflows com enforcement e handoff</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="1.4" data-dom="1">
+  <div class="qnum">Questão 7 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">When a refund exceeds the agent's limit, it calls escalate_to_human with the last three messages of the conversation as the handoff note. Human agents cannot see the conversation, and they report spending several minutes per case re-asking for account details and re-investigating the problem before they can act. What should the handoff contain?</div>
+  <div class="pt-block pt">Quando um reembolso excede o limite do agente, ele chama escalate_to_human com as três últimas mensagens da conversa como nota de handoff. Os atendentes humanos não veem a conversa e relatam gastar vários minutos por caso pedindo de novo os dados da conta e reinvestigando o problema antes de poder agir. O que o handoff deve conter?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q7" value="a">A. The full conversation transcript, verbatim, so that the human can read every detail before replying.<div class="pt">O transcript completo da conversa, na íntegra, para que o humano leia todos os detalhes antes de responder.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="b">B. The customer's first message plus the agent's self-rated confidence for each step it took before escalating.<div class="pt">A primeira mensagem do cliente mais a autoavaliação de confiança do agente em cada passo que deu antes de escalar.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="c">C. A structured summary: verified customer ID, root cause found, refund amount, and recommended next action.<div class="pt">Um resumo estruturado: customer ID verificado, causa raiz encontrada, valor do reembolso e próxima ação recomendada.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="d">D. A priority score based on the customer's lifetime value, so the most valuable cases reach a human first.<div class="pt">Um score de prioridade baseado no valor do cliente ao longo do tempo, para os casos mais valiosos chegarem primeiro a um humano.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> TS 1.4: o humano que recebe a escalação não tem o transcript, então o handoff precisa ser autossuficiente e estruturado — customer ID verificado, causa raiz já apurada, valor envolvido e ação recomendada. Com isso ele age em vez de reinvestigar. A entrega volume, não conclusão: o atendente ainda precisa ler tudo e refazer o diagnóstico. B usa a autoconfiança do modelo, que é mal calibrada e não diz ao humano o que fazer. D resolve outra coisa (a ordem da fila) e não elimina o retrabalho de cada caso.<span class="ts">Domínio 1 · TS 1.4 — Workflows com enforcement e handoff</span></div>
+</div>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir aula 03</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="aula-02.html">← Aula 02 — Orquestração multi-agent</a></span>
+  <span><a href="aula-04.html">Aula 04 — Design de tools: descrições, distribuição e tool_choice →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  var total = 0, score = 0;
+  document.querySelectorAll('.q').forEach(function (q) {
+    total++;
+    document.getElementById('total').textContent = total;
+    var btn = q.querySelector('button.answer');
+    var correct = q.dataset.correct.split(',').map(function (s) { return s.trim(); });
+    btn.addEventListener('click', function () {
+      var checked = Array.prototype.slice.call(q.querySelectorAll('input:checked')).map(function (i) { return i.value; });
+      if (checked.length === 0) return;
+      var ok = checked.length === correct.length && checked.every(function (v) { return correct.indexOf(v) !== -1; });
+      q.querySelectorAll('label.opt').forEach(function (l) {
+        var v = l.querySelector('input').value;
+        if (correct.indexOf(v) !== -1) l.classList.add('correct');
+        else if (l.querySelector('input').checked) l.classList.add('wrong');
+        l.querySelector('input').disabled = true;
+      });
+      var fb = q.querySelector('.feedback');
+      fb.classList.add(ok ? 'ok' : 'ko');
+      fb.innerHTML = (ok ? '✅ Correto. ' : '❌ Incorreto. ') + fb.innerHTML;
+      btn.disabled = true;
+      if (ok) score++;
+      document.getElementById('score').textContent = score;
+    });
+  });
+  var KEY = 'ccarf-aula-03';
+  var btn = document.getElementById('finish');
+  if (localStorage.getItem(KEY)) {
+    document.getElementById('donemsg').textContent = 'Aula já concluída — ' + localStorage.getItem(KEY);
+  }
+  btn.addEventListener('click', function () {
+    var rec = new Date().toLocaleDateString('pt-BR') + ' · ' + score + '/' + total + ' acertos';
+    localStorage.setItem(KEY, rec);
+    document.getElementById('donemsg').textContent = 'Concluída: ' + rec;
+  });
+})();
+</script>
+</body>
+</html>

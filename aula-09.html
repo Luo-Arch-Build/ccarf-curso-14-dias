@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 09 — Critérios explícitos e few-shot prompting · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.uso { color: var(--pt); font-size: 13px; font-style: italic; }
+  .pt { color: var(--pt); font-size: 13.5px; }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 4px 0 10px; }
+  body.hide-pt .pt, body.hide-pt .pt-block { display: none; }
+  .toggle-pt { position: sticky; top: 12px; float: right; z-index: 5; background: var(--card2);
+    border: 1px solid var(--border); color: var(--muted); border-radius: 999px;
+    padding: 6px 14px; font-size: 12.5px; cursor: pointer; }
+  .toggle-pt:hover { color: var(--text); border-color: var(--accent); }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q .cenario { float: right; text-transform: none; letter-spacing: 0; font-size: 11.5px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
+  .q .feedback .ts { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<button class="toggle-pt" onclick="document.body.classList.toggle('hide-pt'); this.textContent = document.body.classList.contains('hide-pt') ? '🇧🇷 mostrar traduções' : '🇧🇷 ocultar traduções';">🇧🇷 ocultar traduções</button>
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Aula 09</div>
+  <h1>Aula 09 — Critérios explícitos e few-shot prompting</h1>
+  <div class="meta">
+    <span class="tag">Domínio 4 · Prompt Engineering &amp; Structured Output (20%)</span>
+    <span class="tag">~60 min</span>
+  </div>
+</header>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo do dia.</strong> Dominar as duas técnicas de prompt que a prova mais cobra no
+  Domínio 4: substituir instruções vagas ("be conservative") por <strong>critérios categóricos explícitos</strong>
+  para derrubar falsos positivos, e usar <strong>few-shot prompting</strong> — 2 a 4 exemplos mirados em casos
+  ambíguos, mostrando o raciocínio — para obter formato consistente e reduzir alucinação em extração.
+</div>
+
+<h2>1. Critérios explícitos &gt; instruções vagas (Task Statement 4.1)</h2>
+<p>O cenário clássico da prova: seu review automatizado gera <strong>falsos positivos demais</strong> e o time
+começa a ignorar os comentários. A tentação é adicionar ao prompt algo como
+<em>"be conservative"</em> ou <em>"only report high-confidence findings"</em>. <strong>Não funciona.</strong>
+Essas instruções são vagas — cada execução do modelo interpreta "conservador" e "alta confiança" de um jeito,
+e a precisão não melhora de forma mensurável.</p>
+<p>O que funciona: <strong>critérios categóricos explícitos</strong> que dizem exatamente o que reportar e o que pular.
+Compare:</p>
+<pre><code># ❌ Vago — a prova usa isso como DISTRATOR
+"Check that comments are accurate. Be conservative and only report
+ high-confidence findings."
+
+# ✅ Categórico — define o que entra e o que sai
+"Flag a comment ONLY when the behavior it claims contradicts the actual
+ code behavior (e.g., comment says 'returns null on empty input' but the
+ code throws). Do NOT report: wording style, missing docstrings, comment
+ formatting, or comments that are merely incomplete but not wrong."</code></pre>
+<p>Note o padrão: o critério bom é <strong>testável</strong> — dado um achado, você consegue dizer objetivamente
+se ele entra ou não na categoria. "High-confidence" não é testável; "claimed behavior contradicts actual
+code behavior" é.</p>
+
+<h3>Falsos positivos corroem a confiança do time inteiro</h3>
+<p>Segundo ponto que a prova cobra: uma categoria com taxa alta de FP <strong>não prejudica só ela</strong> —
+ela mina a confiança dos desenvolvedores nas categorias <em>precisas</em> também. Dev que descarta 8 achados
+lixos de "performance" passa a descartar os achados reais de "security" por reflexo.</p>
+<p>A jogada proporcional enquanto você melhora o prompt: <strong>desabilitar temporariamente a categoria
+com alto FP</strong>. É melhor rodar 3 categorias confiáveis do que 5 categorias das quais 2 ensinam o time
+a clicar em "dismiss" sem ler. Quando o prompt da categoria problemática estiver reescrito (com critérios
+explícitos + few-shot), reabilite.</p>
+
+<h3>Severidade: critérios + exemplos de código por nível</h3>
+<p>Classificação de severidade inconsistente (o mesmo bug vira <code>critical</code> num PR e <code>minor</code>
+em outro) se resolve do mesmo jeito: defina cada nível com um critério explícito <strong>e um exemplo de código
+concreto</strong>:</p>
+<pre><code>SEVERITY CRITERIA (report exactly one per finding):
+
+- critical: data loss, security vulnerability, or crash in production paths.
+  Example: user input concatenated into a SQL query without parameterization.
+
+- major: incorrect behavior under realistic inputs, no data loss.
+  Example: retry loop that double-charges the customer when the gateway
+  times out, because the charge call is not idempotent.
+
+- minor: maintainability issues with no behavioral impact.
+  Example: duplicated date-parsing logic that could drift apart.</code></pre>
+<p>Sem os exemplos, "major" vs "minor" vira julgamento de humor do modelo. Com exemplos, a classificação
+fica consistente entre PRs e entre desenvolvedores.</p>
+
+<h2>2. Few-shot prompting (Task Statement 4.2)</h2>
+<p>Quando instruções detalhadas sozinhas produzem saída <strong>inconsistente</strong> — formato variando,
+campos faltando, julgamento errático — a técnica <strong>mais eficaz</strong> é few-shot: incluir no prompt
+2 a 4 exemplos completos de entrada → saída desejada. A prova trata isso quase como regra:
+<em>instrução descreve; exemplo demonstra</em>.</p>
+
+<h3>Como escolher os exemplos (é aqui que a prova pega)</h3>
+<ul>
+  <li><strong>Mire nos cenários ambíguos</strong>, não nos óbvios. Um exemplo de caso fácil já fixa o formato,
+      mas ensina pouco sobre julgamento. O valor está em mostrar o que fazer quando duas ações parecem plausíveis
+      (qual tool chamar num pedido ambíguo, se um padrão de código é issue real ou padrão aceitável do time).</li>
+  <li><strong>Mostre o raciocínio</strong> de por que aquela ação foi escolhida em vez da alternativa plausível.
+      É isso que permite ao modelo <strong>generalizar o julgamento</strong> para padrões novos, em vez de só
+      "casar" com os casos que você listou.</li>
+  <li><strong>Demonstre o formato exato da saída</strong> — ex.: <code>location, issue, severity, suggested_fix</code>.
+      Formato demonstrado em exemplo é seguido com muito mais consistência do que formato descrito em prosa.</li>
+  <li><strong>2 a 4 exemplos</strong> bastam. Mais que isso gasta contexto e começa a overfitar nos casos listados.</li>
+</ul>
+<pre><code>## Example 1 (ambiguous tool choice — chosen action + reasoning)
+Input: "Can you check why my order never arrived?"
+Chosen action: lookup_order(order_id from context) → NOT escalate_to_human
+Reasoning: the request is trackable with existing tools and involves no
+policy exception; escalation would add wait time without adding capability.
+
+## Example 2 (review finding — exact output format + reasoning)
+Input: src/orders/retry.py, line 42 — on gateway timeout the loop calls
+charge(order) again, with no idempotency key.
+Output:
+{
+  "location": "src/orders/retry.py:42",
+  "issue": "non-idempotent charge retried on timeout",
+  "severity": "major",
+  "suggested_fix": "pass an idempotency key derived from order_id"
+}
+Reasoning: major, not critical — wrong behavior under realistic inputs
+(double charge) without data loss, security hole or crash.</code></pre>
+
+<h3>Few-shot contra alucinação em extração</h3>
+<p>Em extração de dados (notas fiscais, papers, contratos), os documentos reais chegam em
+<strong>formatos variados</strong>: citações inline vs bibliografia, seção de metodologia vs detalhes embutidos
+no texto, medidas informais ("meia xícara", "cerca de 2 colheres"). Sem exemplos, o modelo tende a
+<strong>inventar valores</strong> para preencher campos ou retornar vazio/nulo quando o layout foge do esperado.</p>
+<p>A correção é incluir few-shot mostrando a extração correta <strong>em cada variação de estrutura</strong> —
+inclusive o exemplo que demonstra "quando a informação não está no documento, retorne <code>null</code>,
+não fabrique". Isso reduz alucinação porque o modelo aprende, por demonstração, o comportamento esperado
+diante da ambiguidade do mundo real.</p>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha do dia</h3>
+  <p>O distrator favorito desse tema é o <strong>confidence score autorreportado cru</strong>: "peça ao modelo
+  para dar nota de confiança de 1 a 10 em cada achado e só mostre os acima de 8". Parece engenhoso, mas a
+  confiança autorreportada <strong>crua</strong> é <strong>mal calibrada</strong> — o agente pode estar confiante justamente
+  nos casos difíceis em que erra; usada crua como filtro ou como gatilho de escalonamento, é distrator. Variantes do mesmo distrator: "be conservative", "só reporte achados de
+  alta confiança", "treine um classificador separado" (over-engineering antes de tentar prompt).
+  Regra de bolso: <em>precisão se ganha com critérios categóricos testáveis + few-shot de casos ambíguos
+  com raciocínio, não com filtro por confiança crua. Confiança autorreportada só vira sinal de roteamento para
+  revisão humana depois de calibrada contra um conjunto rotulado (TS 4.6 e 5.5, aulas 11 e 13).</em></p>
+</div>
+
+<h2>3. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
+  <tr><td class="en">explicit criteria</td><td>critérios explícitos (testáveis, categóricos)</td><td class="uso">"explicit categorical criteria improve precision more than vague instructions"</td></tr>
+  <tr><td class="en">false positive (FP)</td><td>falso positivo (achado reportado que não é problema real)</td><td class="uso">"high false-positive categories undermine trust in accurate ones"</td></tr>
+  <tr><td class="en">precision</td><td>precisão (% de achados reportados que são reais)</td><td class="uso">"improve review precision by defining which issues to report vs skip"</td></tr>
+  <tr><td class="en">developer trust</td><td>confiança do time (no sistema de review)</td><td class="uso">"false positives erode developer trust across all categories"</td></tr>
+  <tr><td class="en">temporarily disable a category</td><td>desabilitar temporariamente uma categoria</td><td class="uso">"disable the noisiest category while its prompt is being improved"</td></tr>
+  <tr><td class="en">severity criteria</td><td>critérios de severidade (com exemplo de código por nível)</td><td class="uso">"define severity levels with concrete code examples for consistency"</td></tr>
+  <tr><td class="en">few-shot prompting</td><td>prompt com poucos exemplos (entrada→saída desejada)</td><td class="uso">"few-shot examples are the most effective technique for consistent formatting"</td></tr>
+  <tr><td class="en">ambiguous case</td><td>caso ambíguo (duas ações plausíveis)</td><td class="uso">"target 2-4 few-shot examples at ambiguous scenarios"</td></tr>
+  <tr><td class="en">reasoning trace</td><td>raciocínio demonstrado (por que a ação foi escolhida)</td><td class="uso">"examples should show why one action was chosen over alternatives"</td></tr>
+  <tr><td class="en">generalization</td><td>generalização (julgamento aplicado a padrões novos)</td><td class="uso">"few-shot enables generalizing judgment to novel patterns"</td></tr>
+  <tr><td class="en">hallucination</td><td>alucinação (valor fabricado pelo modelo)</td><td class="uso">"few-shot reduces hallucination in extraction from varied documents"</td></tr>
+  <tr><td class="en">self-reported confidence</td><td>confiança autorreportada pelo modelo (crua: mal calibrada; calibrada com dados rotulados: sinal de roteamento)</td><td class="uso">"self-reported confidence scores are unreliable proxies for actual case complexity"</td></tr>
+</table>
+
+<h2>4. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
+<div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
+
+<div class="q" data-correct="c" data-ts="4.1" data-dom="4">
+  <div class="qnum">Questão 1 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">Your automated PR review flags too many non-issues, and developers have started dismissing comments without reading them. The current prompt ends with: "Be conservative and only report findings you are highly confident about." Why is this instruction failing to improve precision?</div>
+  <div class="pt-block pt">Seu review automatizado de PR sinaliza problemas demais que não são reais, e os devs começaram a descartar comentários sem ler. O prompt atual termina com: "Be conservative and only report findings you are highly confident about." Por que essa instrução não está melhorando a precisão?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q1" value="a">A. The model gives less weight to instructions at the end of a prompt, so this one is mostly ignored.<div class="pt">O modelo dá menos peso a instruções no final do prompt, então esta é quase toda ignorada.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="b">B. The instruction is too specific, so the model suppresses genuine findings along with the false ones.<div class="pt">A instrução é específica demais, então o modelo suprime achados genuínos junto com os falsos.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. It gives no testable criterion, so each run interprets "conservative" and "high-confidence" its own way.<div class="pt">Ela não dá nenhum critério testável, então cada execução interpreta "conservador" e "alta confiança" do seu jeito.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="d">D. Precision depends on model size more than on prompt wording, so only a larger model will reduce the noise.<div class="pt">Precisão depende mais do tamanho do modelo do que da redação do prompt, então só um modelo maior vai reduzir o ruído.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Instruções vagas de postura ("be conservative", "only high-confidence") não melhoram precisão porque não são verificáveis — o que funciona é critério categórico explícito ("reporte X quando Y; pule estilo, padrões locais"). A inventa uma regra de posição que não existe; B inverte o problema (a instrução é vaga, não específica demais); D é o distrator "modelo maior resolve tudo" — trocar de modelo não corrige critério mal definido.<span class="ts">Domínio 4 · TS 4.1 — Critérios explícitos e falsos positivos</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="4.1" data-dom="4">
+  <div class="qnum">Questão 2 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">Your code review agent reports five finding categories. The "performance" category has a 70% false-positive rate, and you notice developers are now also dismissing accurate "security" findings. You need two weeks to rework the performance prompt. What should you do in the meantime?</div>
+  <div class="pt-block pt">Seu agente de review reporta cinco categorias de achados. A categoria "performance" tem 70% de falsos positivos, e você percebe que os devs agora também descartam achados corretos de "security". Você precisa de duas semanas para refazer o prompt de performance. O que fazer nesse meio-tempo?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q2" value="a">A. Keep all five categories running, adding a disclaimer that performance findings may be inaccurate.<div class="pt">Manter as cinco categorias rodando, adicionando um aviso de que achados de performance podem estar imprecisos.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="b">B. Temporarily disable the performance category and re-enable it once its prompt has explicit criteria.<div class="pt">Desabilitar temporariamente a categoria performance e reabilitá-la quando seu prompt tiver critérios explícitos.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="c">C. Ask the model to attach a 1-10 confidence score to each performance finding and hide anything below 8.<div class="pt">Pedir ao modelo para anexar uma nota de confiança de 1 a 10 a cada achado de performance e esconder os abaixo de 8.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="d">D. Pause the whole review agent until all five categories have been reworked and validated again.<div class="pt">Pausar o agente de review inteiro até que as cinco categorias tenham sido refeitas e validadas de novo.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> FP alto numa categoria contamina a confiança em todas — a jogada proporcional é desligar <em>só</em> a categoria ruidosa enquanto melhora o prompt dela. A mantém o vazamento de confiança (aviso não impede o descarte por reflexo); C é o distrator clássico do confidence score autorreportado cru, sem calibração; D é desproporcional — joga fora o valor das categorias precisas.<span class="ts">Domínio 4 · TS 4.1 — Critérios explícitos e falsos positivos</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="5.2" data-dom="5">
+  <div class="qnum">Questão 3 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">A support agent resolves only 55% of tickets without human help, far below target. Logs reveal it escalates routine cases (like standard warranty replacements with receipt photos) while trying to handle alone complex cases that need policy exceptions. What is the most effective first fix for this miscalibration?</div>
+  <div class="pt-block pt">Um agente de suporte resolve só 55% dos tickets sem ajuda humana, bem abaixo da meta. Os logs mostram que ele escala casos rotineiros (como trocas padrão de garantia com foto do recibo) enquanto tenta resolver sozinho casos complexos que exigem exceção de política. Qual é a primeira correção mais eficaz para essa descalibração?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q3" value="a">A. Write explicit escalation criteria into the system prompt, with few-shot examples of escalate versus resolve.<div class="pt">Escrever critérios explícitos de escalonamento no system prompt, com exemplos few-shot de escalar vs resolver.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="b">B. Have the agent output a confidence score before acting and auto-escalate anything below a threshold.<div class="pt">Fazer o agente emitir uma nota de confiança antes de agir e escalar automaticamente o que ficar abaixo de um limiar.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="c">C. Train a dedicated classifier on historical tickets to decide escalation before the agent even starts.<div class="pt">Treinar um classificador dedicado em tickets históricos para decidir o escalonamento antes mesmo de o agente começar.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="d">D. Escalate automatically whenever sentiment analysis detects strong frustration in the customer's message.<div class="pt">Escalar automaticamente sempre que a análise de sentimento detectar frustração forte na mensagem do cliente.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> A causa raiz é a fronteira de decisão mal definida — critérios explícitos + few-shot de casos ambíguos atacam isso diretamente, antes de qualquer infraestrutura nova. B falha porque a confiança autorreportada crua é mal calibrada: o agente já está <em>incorretamente confiante</em> nos casos difíceis. C é over-engineering (dados rotulados + pipeline de ML) quando prompt ainda nem foi tentado. D resolve outro problema: sentimento não se correlaciona com complexidade do caso.<span class="ts">Domínio 5 · TS 5.2 — Escalonamento e ambiguidade</span></div>
+</div>
+
+<div class="q" data-correct="a,c" data-ts="4.2" data-dom="4">
+  <div class="qnum">Questão 4 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">Your automated review's output format keeps drifting — fields in different orders, missing severities, inconsistent phrasing — even though the prompt describes the desired JSON format in detail. You decide to add few-shot examples. Which TWO design choices make the examples effective?</div>
+  <div class="pt-block pt">O formato de saída do seu review automatizado vive variando — campos em ordens diferentes, severidades faltando, redação inconsistente — mesmo com o prompt descrevendo o JSON desejado em detalhes. Você decide adicionar exemplos few-shot. Quais DUAS escolhas de design tornam os exemplos eficazes?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q4" value="a">A. Aim 2-4 examples at ambiguous cases, showing why one action was chosen over a plausible alternative.<div class="pt">Mirar 2-4 exemplos em casos ambíguos, mostrando por que uma ação foi escolhida em vez de uma alternativa plausível.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="b">B. Include as many examples as possible, 15 or more, so that every case the model might meet is covered.<div class="pt">Incluir o máximo de exemplos possível, 15 ou mais, para cobrir todo caso que o modelo possa encontrar.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="c">C. Make each example show the exact output format: location, issue, severity and suggested fix.<div class="pt">Fazer cada exemplo mostrar o formato exato de saída: location, issue, severity e suggested fix.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="d">D. Use only straightforward cases, so the model is not confused by edge cases while it learns the format.<div class="pt">Usar só casos diretos, para o modelo não se confundir com casos de borda enquanto aprende o formato.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="e">E. Describe each example's structure in prose instead of showing it, so the prompt stays shorter and cheaper.<div class="pt">Descrever a estrutura de cada exemplo em prosa em vez de mostrá-la, para o prompt ficar mais curto e barato.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A e C.</strong> Few-shot funciona quando (A) mira nos casos ambíguos mostrando o raciocínio — é isso que faz o modelo generalizar julgamento para padrões novos — e (C) demonstra o formato exato da saída, seguido com muito mais consistência do que formato descrito em prosa. B é over-engineering de prompt: exemplos demais gastam contexto e overfitam nos casos listados. D joga fora o principal valor do few-shot, que é ensinar justamente o tratamento dos casos difíceis. E desfaz a técnica: descrever a estrutura em prosa é o que já estava falhando — exemplo demonstra, instrução descreve.<span class="ts">Domínio 4 · TS 4.2 — Few-shot prompting</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="4.2" data-dom="4">
+  <div class="qnum">Questão 5 · múltipla escolha <span class="cenario">Structured Data Extraction</span></div>
+  <div class="stem">Your pipeline extracts study metadata from research PDFs. It works on papers with a dedicated methodology section, but on papers where methods are embedded in running text it fabricates plausible-looking values or returns empty fields. The format instructions are already detailed. What is the best fix?</div>
+  <div class="pt-block pt">Seu pipeline extrai metadados de estudos de PDFs de pesquisa. Funciona em papers com seção de metodologia dedicada, mas em papers com métodos embutidos no texto corrido ele fabrica valores plausíveis ou retorna campos vazios. As instruções de formato já são detalhadas. Qual é a melhor correção?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q5" value="a">A. Reject any PDF that lacks a clearly delimited methodology section and route it to manual handling.<div class="pt">Rejeitar qualquer PDF sem uma seção de metodologia claramente delimitada e encaminhá-lo para tratamento manual.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. Add a stricter instruction telling the model never to invent values under any circumstances.<div class="pt">Adicionar uma instrução mais rígida dizendo ao modelo para nunca inventar valores, em nenhuma circunstância.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. Run the extraction three times and keep only the values that appear in all three of the runs.<div class="pt">Rodar a extração três vezes e manter só os valores que aparecem nas três execuções.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. Add few-shot examples for each document structure, including null when the data is truly absent.<div class="pt">Adicionar exemplos few-shot para cada estrutura de documento, incluindo null quando o dado está de fato ausente.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> A causa raiz é que o modelo nunca viu demonstrado como se comportar diante de layouts variados — few-shot por variação de estrutura (incluindo o exemplo "ausente → null, não fabrique") é a técnica comprovada para reduzir alucinação em extração. A encolhe o produto em vez de consertar o pipeline; B é o remendo cosmético — instrução negativa genérica não ensina comportamento; C é custo 3x para tratar sintoma, e valores fabricados costumam ser consistentes entre runs, passando no filtro.<span class="ts">Domínio 4 · TS 4.2 — Few-shot prompting</span></div>
+</div>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir aula 09</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="aula-08.html">← Aula 08</a></span>
+  <span><a href="aula-10.html">Aula 10 →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  var total = 0, score = 0;
+  document.querySelectorAll('.q').forEach(function (q) {
+    total++;
+    document.getElementById('total').textContent = total;
+    var btn = q.querySelector('button.answer');
+    var correct = q.dataset.correct.split(',').map(function (s) { return s.trim(); });
+    btn.addEventListener('click', function () {
+      var checked = Array.prototype.slice.call(q.querySelectorAll('input:checked')).map(function (i) { return i.value; });
+      if (checked.length === 0) return;
+      var ok = checked.length === correct.length && checked.every(function (v) { return correct.indexOf(v) !== -1; });
+      q.querySelectorAll('label.opt').forEach(function (l) {
+        var v = l.querySelector('input').value;
+        if (correct.indexOf(v) !== -1) l.classList.add('correct');
+        else if (l.querySelector('input').checked) l.classList.add('wrong');
+        l.querySelector('input').disabled = true;
+      });
+      var fb = q.querySelector('.feedback');
+      fb.classList.add(ok ? 'ok' : 'ko');
+      fb.innerHTML = (ok ? '✅ Correto. ' : '❌ Incorreto. ') + fb.innerHTML;
+      btn.disabled = true;
+      if (ok) score++;
+      document.getElementById('score').textContent = score;
+    });
+  });
+  var KEY = 'ccarf-aula-09';
+  var btn = document.getElementById('finish');
+  if (localStorage.getItem(KEY)) {
+    document.getElementById('donemsg').textContent = 'Aula já concluída — ' + localStorage.getItem(KEY);
+  }
+  btn.addEventListener('click', function () {
+    var rec = new Date().toLocaleDateString('pt-BR') + ' · ' + score + '/' + total + ' acertos';
+    localStorage.setItem(KEY, rec);
+    document.getElementById('donemsg').textContent = 'Concluída: ' + rec;
+  });
+})();
+</script>
+</body>
+</html>

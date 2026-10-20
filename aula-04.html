@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 04 — Design de tools: descrições, distribuição e tool_choice · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.uso { color: var(--pt); font-size: 13px; font-style: italic; }
+  .pt { color: var(--pt); font-size: 13.5px; }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 4px 0 10px; }
+  body.hide-pt .pt, body.hide-pt .pt-block { display: none; }
+  .toggle-pt { position: sticky; top: 12px; float: right; z-index: 5; background: var(--card2);
+    border: 1px solid var(--border); color: var(--muted); border-radius: 999px;
+    padding: 6px 14px; font-size: 12.5px; cursor: pointer; }
+  .toggle-pt:hover { color: var(--text); border-color: var(--accent); }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q .cenario { float: right; text-transform: none; letter-spacing: 0; font-size: 11.5px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
+  .q .feedback .ts { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<button class="toggle-pt" onclick="document.body.classList.toggle('hide-pt'); this.textContent = document.body.classList.contains('hide-pt') ? '🇧🇷 mostrar traduções' : '🇧🇷 ocultar traduções';">🇧🇷 ocultar traduções</button>
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Aula 04</div>
+  <h1>Aula 04 — Design de tools: descrições, distribuição e tool_choice</h1>
+  <div class="meta">
+    <span class="tag">Domínio 2 · Tool Design &amp; MCP Integration (18%)</span>
+    <span class="tag">~60 min</span>
+  </div>
+</header>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo do dia.</strong> Dominar a regra de ouro do Task Statement 2.1: a <strong>descrição da tool
+  é o mecanismo primário que o modelo usa para escolher qual tool chamar</strong> — e aprender a diagnosticar e
+  corrigir misrouting causado por descrições mínimas ou sobrepostas. Depois, o Task Statement 2.3: distribuir
+  tools entre agentes com <strong>scoped access</strong> (só as tools do papel de cada agente, least privilege) e escolher o
+  <code>tool_choice</code> certo (<code>"auto"</code> vs <code>"any"</code> vs forced).
+</div>
+
+<h2>1. A descrição da tool é o mecanismo de seleção (TS 2.1)</h2>
+<p>Quando o modelo decide qual tool chamar, ele não executa código nem consulta um índice: ele <strong>lê as
+descrições</strong> que você declarou e raciocina sobre elas. Descrição é documentação que o modelo consome em
+tempo de decisão. Por isso o guide é direto: <em>minimal descriptions lead to unreliable selection among similar
+tools</em>.</p>
+<p>Cenário clássico de prova: duas tools parecidas (<code>get_customer</code> e <code>lookup_order</code>), ambas
+com descrições de uma linha ("Retrieves customer information" / "Retrieves order details") e identificadores
+parecidos. Resultado: o usuário pergunta "check my order #12345" e o agente chama a tool errada. A correção de
+primeiro passo, barata e de alto impacto: <strong>expandir as descrições</strong>.</p>
+
+<h3>Anatomia de uma boa descrição</h3>
+<ul>
+  <li><strong>Propósito</strong> — o que a tool faz, em linguagem específica do domínio</li>
+  <li><strong>Formatos de input</strong> — o que ela aceita (ex.: "order ID no formato ORD-XXXXX, não email nem CPF")</li>
+  <li><strong>Exemplos de queries</strong> — frases de usuário que devem rotear para ela ("where is my package?")</li>
+  <li><strong>Edge cases</strong> — o que acontece com ID inexistente, pedido antigo, múltiplos resultados</li>
+  <li><strong>Fronteiras (boundaries)</strong> — quando usar esta tool <em>versus</em> a tool similar:
+      "use para status de pedido; para dados cadastrais do cliente, use get_customer"</li>
+</ul>
+<pre><code>// ANTES — descrição mínima, seleção não confiável
+{ "name": "lookup_order", "description": "Retrieves order details" }
+
+// DEPOIS — propósito + input + exemplos + edge cases + fronteira
+{ "name": "lookup_order",
+  "description": "Looks up the status and contents of a customer order.
+    Input: an order ID in the format ORD-XXXXX (not an email or customer ID).
+    Use for queries like 'check my order #12345', 'where is my package?'.
+    Returns 'not found' for unknown or archived (>2 years) orders.
+    For customer profile data (name, address, plan), use get_customer instead." }</code></pre>
+
+<h2>2. Overlap, renomeação, split — e o sequestro via system prompt</h2>
+<h3>Descrições sobrepostas causam misrouting</h3>
+<p>Se <code>analyze_content</code> e <code>analyze_document</code> têm descrições quase idênticas, o modelo não tem
+como diferenciá-las — ele vai escolher de forma inconsistente, e o sintoma em produção é <strong>misrouting</strong>.
+As duas correções do guide:</p>
+<ol>
+  <li><strong>Renomear e especializar</strong>: <code>analyze_content</code> → <code>extract_web_results</code>,
+      com descrição específica de web. O nome da tool também é sinal de seleção.</li>
+  <li><strong>Dividir a tool genérica</strong>: um <code>analyze_document</code> faz-tudo vira tools com
+      contratos definidos de input/output — <code>extract_data_points</code>, <code>summarize_content</code>,
+      <code>verify_claim_against_source</code>. Cada uma com propósito único e inconfundível.</li>
+</ol>
+
+<h3>System prompt keyword-sensitive sequestra a seleção</h3>
+<p>Descrições ótimas podem ser <strong>sobrescritas por instruções frágeis do system prompt</strong>. Exemplo ilustrativo (o guide enuncia só o
+princípio, sem exemplo): uma instrução tipo "for anything order-related, use lookup_order" faz o agente chamar
+<code>lookup_order</code> até quando o usuário escreve "in <em>order</em> to reset my password…". A instrução
+reage à <strong>keyword literal</strong>, não à intenção. O fix é revisar o system prompt e reescrever a
+instrução descrevendo <strong>intenção</strong> ("use lookup_order para perguntas sobre status de pedidos"),
+não palavras-chave. Nas questões, se o stem diz "descriptions are well written" e o agente ainda erra de forma
+sistemática numa keyword, suspeite do system prompt.</p>
+
+<h2>3. Distribuição de tools e tool_choice (TS 2.3)</h2>
+<h3>Menos tools por agente = seleção melhor</h3>
+<p>Dar <strong>18 tools</strong> a um agente degrada a confiabilidade da seleção: cada tool a mais aumenta a
+complexidade da decisão e a chance de overlap semântico. O guide ilustra com 18 tools em vez de 4–5,
+mas o que a prova cobra é o princípio — <strong>cada agente só com as tools do seu papel</strong> —, não uma cota
+numérica. Além disso, agentes com tools fora da especialização tendem a
+<em>misusá-las</em> (ex.: o synthesis agent tentando fazer web search sozinho).</p>
+<ul>
+  <li><strong>Scoped tool access</strong>: cada subagente recebe apenas as tools do seu papel.</li>
+  <li><strong>Substituir tools genéricas por versões restritas</strong>: trocar <code>fetch_url</code> (abre
+      qualquer URL) por <code>load_document</code>, que valida se o destino é um documento e recusa o resto. A
+      restrição passa a morar no <em>contrato</em> da tool: o agente não consegue usá-la fora do papel dele, por
+      mais que o raciocínio o leve para lá. Regra de bolso: <em>se um agente usa uma tool genérica fora da
+      especialização dele, estreite a tool — não peça por favor no prompt.</em></li>
+  <li><strong>Cross-role de alta frequência, com escopo</strong>: se o synthesis agent precisa checar fatos
+      simples (datas, nomes, estatísticas) com frequência, dê a ele uma <code>verify_fact</code> <em>escopada</em> —
+      e continue roteando verificações complexas para o web-search agent via coordinator. É o princípio do
+      <strong>least privilege</strong>: só o necessário para o caso comum, sem abrir o arsenal inteiro.</li>
+</ul>
+
+<h3>tool_choice: auto vs any vs forced</h3>
+<pre><code>// "auto" (default): o modelo PODE chamar tool ou responder com texto
+tool_choice: {"type": "auto"}
+
+// "any": o modelo É OBRIGADO a chamar alguma tool (sem resposta conversacional)
+tool_choice: {"type": "any"}
+
+// forced: o modelo É OBRIGADO a chamar ESTA tool específica
+tool_choice: {"type": "tool", "name": "extract_metadata"}</code></pre>
+<ul>
+  <li>Use <code>"any"</code> quando você precisa <strong>garantir uma chamada de tool</strong> — ex.: extração
+      estruturada onde resposta em texto livre quebraria o pipeline.</li>
+  <li>Use <strong>forced</strong> quando uma tool específica precisa rodar <strong>primeiro</strong> — ex.: forçar
+      <code>extract_metadata</code> antes das tools de enrichment, e processar os passos seguintes em turnos
+      posteriores.</li>
+  <li>Ponto-chave de prova: quando o requisito é garantir que o modelo <strong>chame uma tool</strong> — alguma
+      (<code>"any"</code>) ou uma específica naquele turno (forced) —, a solução é <code>tool_choice</code>, não frase imperativa
+      no system prompt ("ALWAYS call a tool"), que continua probabilística. Já <strong>ordem obrigatória entre tools</strong>
+      ao longo do workflow e regra de negócio (process_refund só depois de get_customer devolver um ID verificado;
+      refund acima do limite) pedem enforcement programático: hook ou prerequisite gate (aula 03, TS 1.4/1.5).</li>
+</ul>
+
+<h2>4. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
+  <tr><td class="en">tool description</td><td>descrição da tool</td><td class="uso">"tool descriptions are the primary mechanism for tool selection"</td></tr>
+  <tr><td class="en">misrouting</td><td>roteamento errado (tool errada escolhida)</td><td class="uso">"overlapping descriptions cause misrouting"</td></tr>
+  <tr><td class="en">boundary</td><td>fronteira da tool (quando usar vs. alternativa)</td><td class="uso">"boundaries explaining when to use it versus similar tools"</td></tr>
+  <tr><td class="en">edge case</td><td>caso de borda</td><td class="uso">"include input formats, example queries, and edge cases"</td></tr>
+  <tr><td class="en">functional overlap</td><td>sobreposição funcional entre tools</td><td class="uso">"rename tools to eliminate functional overlap"</td></tr>
+  <tr><td class="en">keyword-sensitive instruction</td><td>instrução sensível a palavra-chave (no system prompt)</td><td class="uso">"keyword-sensitive instructions create unintended tool associations"</td></tr>
+  <tr><td class="en">scoped tool access</td><td>acesso a tools restrito ao papel do agente</td><td class="uso">"restrict each subagent's tool set to those relevant to its role"</td></tr>
+  <tr><td class="en">least privilege</td><td>menor privilégio</td><td class="uso">"give the synthesis agent only what it needs"</td></tr>
+  <tr><td class="en">cross-role tool</td><td>tool compartilhada entre papéis (com escopo)</td><td class="uso">"a scoped verify_fact tool for the synthesis agent"</td></tr>
+  <tr><td class="en">constrained alternative</td><td>alternativa restrita: tool de contrato estreito no lugar de uma genérica</td><td class="uso">"replace fetch_url with load_document that validates document URLs"</td></tr>
+  <tr><td class="en">tool_choice</td><td>configuração de escolha de tool</td><td class="uso">"tool_choice options: auto, any, and forced selection"</td></tr>
+  <tr><td class="en">"auto" / "any"</td><td>modelo pode responder texto / modelo deve chamar alguma tool</td><td class="uso">"set tool_choice 'any' to guarantee a tool call"</td></tr>
+  <tr><td class="en">forced tool selection</td><td>seleção forçada de uma tool específica</td><td class="uso">"force extract_metadata with {'type': 'tool', 'name': ...}"</td></tr>
+</table>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha do dia</h3>
+  <p>Questões de misrouting quase sempre oferecem os mesmos três distratores: <strong>few-shot examples no
+  system prompt</strong> (remendo caro quando a causa é a descrição mínima), <strong>routing layer por keywords</strong>
+  (over-engineering que ignora a capacidade de linguagem do modelo) e <strong>fundir as tools numa genérica
+  única</strong> (esforço grande demais para um primeiro passo). E quando o requisito é determinístico
+  ("the model MUST call a tool"), o distrator clássico é a frase imperativa no prompt — a resposta é
+  <code>tool_choice</code>. Regra de bolso: <em>descrição mínima ou sobreposta se conserta na descrição (primeiro
+  passo); instrução por palavra-chave no system prompt se conserta reescrevendo-a por intenção; pedido
+  genuinamente ambíguo, com descrições já boas, pede 2–4 few-shot com o raciocínio da escolha (TS 4.2, aula 09);
+  garantia de chamada se impõe com tool_choice.</em></p>
+</div>
+
+<h2>5. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
+<div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
+
+<div class="q" data-correct="b" data-ts="2.1" data-dom="2">
+  <div class="qnum">Questão 1 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">Production logs show your support agent frequently calls fetch_account when customers ask about shipments ("where is my package?"), even though a track_shipment tool exists. Both tools have one-line descriptions ("Gets account info" / "Gets shipment info") and accept similar identifiers. What is the most effective first step to improve tool selection reliability?</div>
+  <div class="pt-block pt">Logs de produção mostram que seu agente de suporte chama com frequência fetch_account quando clientes perguntam sobre envios ("where is my package?"), embora exista uma tool track_shipment. Ambas as tools têm descrições de uma linha ("Gets account info" / "Gets shipment info") e aceitam identificadores parecidos. Qual é o primeiro passo mais eficaz para melhorar a confiabilidade da seleção de tools?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q1" value="a">A. Add few-shot examples to the system prompt that demonstrate correct routing, with several shipment questions mapped to track_shipment.<div class="pt">Adicionar few-shot examples ao system prompt demonstrando o roteamento correto, com várias perguntas sobre envio mapeadas para track_shipment.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="b">B. Expand both descriptions with accepted input formats, example queries, edge cases, and when to use each tool over the other.<div class="pt">Expandir as duas descrições com formatos de input aceitos, exemplos de queries, edge cases e quando usar cada tool em vez da outra.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. Add a routing layer that matches keywords in the customer's message and pre-selects the tool before the model sees the request.<div class="pt">Adicionar uma camada de roteamento que casa palavras-chave na mensagem do cliente e pré-seleciona a tool antes de o modelo ver o pedido.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="d">D. Merge both tools into one generic lookup tool that accepts any identifier and decides internally which backend to query.<div class="pt">Fundir as duas tools numa única tool genérica de lookup que aceita qualquer identificador e decide internamente qual backend consultar.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> A descrição da tool é o mecanismo primário de seleção; descrições mínimas entre tools similares são a causa raiz do misrouting, e expandi-las é o fix de baixo custo e alto impacto. A adiciona overhead de tokens sem corrigir a descrição deficiente. C é over-engineering que descarta a compreensão de linguagem do modelo. D é uma escolha arquitetural válida em alguns casos, mas esforço grande demais para o "first step" quando o problema imediato é a descrição.<span class="ts">Domínio 2 · TS 2.1 — Interfaces e descrições de tools</span></div>
+</div>
+
+<div class="q" data-correct="b,e" data-ts="2.1" data-dom="2">
+  <div class="qnum">Questão 2 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">Your research system's document-analysis subagent exposes three tools — analyze_content, analyze_document, and process_document — with near-identical descriptions, and the model misroutes about a third of requests. Which TWO changes fix the root cause of the misrouting?</div>
+  <div class="pt-block pt">O subagent de análise de documentos do seu sistema de pesquisa expõe três tools — analyze_content, analyze_document e process_document — com descrições quase idênticas, e o modelo roteia errado cerca de um terço das requisições. Quais DUAS mudanças corrigem a causa raiz do misrouting?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q2" value="a">A. Lower the model's temperature so that its choice among the three similar tools becomes more deterministic.<div class="pt">Reduzir a temperatura do modelo para que a escolha entre as três tools parecidas fique mais determinística.</div></label>
+    <label class="opt"><input type="checkbox" name="q2" value="b">B. Rename each tool and rewrite its description around one distinct purpose (e.g., analyze_content → extract_web_results).<div class="pt">Renomear cada tool e reescrever sua descrição em torno de um propósito distinto (ex.: analyze_content → extract_web_results).</div></label>
+    <label class="opt"><input type="checkbox" name="q2" value="c">C. Move the three tools into a dedicated MCP server so the model treats them as one coherent group of capabilities.<div class="pt">Mover as três tools para um MCP server dedicado, para que o modelo as trate como um grupo coerente de capacidades.</div></label>
+    <label class="opt"><input type="checkbox" name="q2" value="d">D. Put a keyword-based routing layer in front of the model that pre-selects one of the three tools for each request.<div class="pt">Colocar na frente do modelo uma camada de roteamento por palavras-chave que pré-seleciona uma das três tools a cada requisição.</div></label>
+    <label class="opt"><input type="checkbox" name="q2" value="e">E. Split the generic process_document into purpose-specific tools, each with a defined input/output contract.<div class="pt">Dividir a genérica process_document em tools de propósito específico, cada uma com um contrato de input/output definido.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B e E.</strong> As duas atacam a causa raiz — sobreposição funcional e semântica: nome e descrição especializados eliminam a ambiguidade (B), e a tool genérica dividida ganha contratos claros (E). A não resolve ambiguidade: temperatura muda a variação da amostragem, não a falta de informação para diferenciar as tools. C não muda nada do que o modelo lê — as tools de todos os servers ficam disponíveis juntas, com as mesmas descrições sobrepostas. D é over-engineering que duplica a lógica de roteamento fora do modelo em vez de consertar as descrições: não remove a ambiguidade, só a contorna com casamento de palavra-chave — o mesmo mecanismo frágil da Questão 3.<span class="ts">Domínio 2 · TS 2.1 — Interfaces e descrições de tools</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="2.1" data-dom="2">
+  <div class="qnum">Questão 3 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">Your tool descriptions are thorough and well differentiated, yet the agent calls lookup_order whenever a user message contains the word "order" — including messages like "in order to reset my password, what should I do?". The system prompt contains the instruction: "For anything order-related, use lookup_order." What is the root cause and the right fix?</div>
+  <div class="pt-block pt">Suas descrições de tool são completas e bem diferenciadas, mas o agente chama lookup_order sempre que a mensagem do usuário contém a palavra "order" — inclusive mensagens como "in order to reset my password, what should I do?". O system prompt contém a instrução: "For anything order-related, use lookup_order." Qual é a causa raiz e a correção certa?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q3" value="a">A. The agent has too many tools in its list; remove tools until its selection stabilizes for these messages.<div class="pt">O agente tem tools demais na lista; remover tools até a seleção se estabilizar para essas mensagens.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="b">B. The keyword instruction in the system prompt overrides the descriptions; rewrite it in terms of the user's intent.<div class="pt">A instrução por palavra-chave no system prompt sobrescreve as descrições; reescrevê-la em termos da intenção do usuário.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="c">C. The model cannot tell a keyword from an intent; deploy a classifier in front of the agent to filter such messages.<div class="pt">O modelo não distingue palavra-chave de intenção; colocar um classificador na frente do agente para filtrar essas mensagens.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="d">D. Force lookup_order with tool_choice whenever the word "order" appears, so that at least the behavior is predictable.<div class="pt">Forçar lookup_order via tool_choice sempre que a palavra "order" aparecer, para que ao menos o comportamento seja previsível.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> O stem já diz que as descrições são boas — então o problema está acima delas: a instrução do system prompt reage à keyword "order" e sequestra a seleção; a correção é descrever intenção, não palavra-chave. A inventa um problema (o stem não indica excesso de tools). C é over-engineering com infraestrutura de ML desnecessária. D agrava o bug, forçando deterministicamente a tool errada exatamente nos casos problemáticos.<span class="ts">Domínio 2 · TS 2.1 — Interfaces e descrições de tools</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="2.3" data-dom="2">
+  <div class="qnum">Questão 4 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">In your multi-agent research system, the synthesis agent often needs to confirm a date, name, or statistic while combining findings. Today it returns control to the coordinator, which invokes the web search agent, then re-invokes synthesis with the results — adding 2-3 round trips per task and noticeable latency. Your evaluation shows the large majority of these checks are simple fact lookups, while a small share require deeper investigation. What reduces overhead while maintaining reliability?</div>
+  <div class="pt-block pt">No seu sistema multi-agent de pesquisa, o synthesis agent frequentemente precisa confirmar uma data, nome ou estatística enquanto combina os achados. Hoje ele devolve o controle ao coordinator, que invoca o web search agent e depois re-invoca o synthesis com os resultados — adicionando 2-3 round trips por tarefa e latência perceptível. Sua avaliação mostra que a grande maioria dessas checagens são lookups simples de fatos, enquanto uma parcela pequena exige investigação mais profunda. O que reduz o overhead mantendo a confiabilidade?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q4" value="a">A. Give the synthesis agent a scoped verify_fact tool for simple lookups, while complex checks still go through the coordinator.<div class="pt">Dar ao synthesis agent uma tool verify_fact escopada para lookups simples, enquanto checagens complexas continuam passando pelo coordinator.</div></label>
+    <label class="opt"><input type="radio" name="q4" value="b">B. Give the synthesis agent the full web search tool set so it can resolve any verification without coordinator round trips.<div class="pt">Dar ao synthesis agent todo o conjunto de tools de web search para que ele resolva qualquer verificação sem round trips pelo coordinator.</div></label>
+    <label class="opt"><input type="radio" name="q4" value="c">C. Have the synthesis agent collect all of its verification needs and return them to the coordinator as one batch at the end.<div class="pt">Fazer o synthesis agent juntar todas as suas necessidades de verificação e devolvê-las ao coordinator num único lote no final.</div></label>
+    <label class="opt"><input type="radio" name="q4" value="d">D. Have the web search agent cache extra context around each source up front, anticipating what synthesis will need to check.<div class="pt">Fazer o web search agent cachear contexto extra em torno de cada fonte logo no início, antecipando o que a síntese vai precisar checar.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> Least privilege na veia: cobre o caso comum (a maioria das checagens) com uma tool escopada e preserva o padrão de coordenação para os casos complexos. B sobreprovisiona o synthesis agent, viola a separação de papéis e convida ao misuse de tools fora da especialização. C cria dependências bloqueantes — passos da síntese podem depender de fatos verificados antes. D aposta em cache especulativo que não consegue prever de forma confiável o que será verificado.<span class="ts">Domínio 2 · TS 2.3 — Distribuição de tools e tool_choice</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="2.3" data-dom="2">
+  <div class="qnum">Questão 5 · múltipla escolha <span class="cenario">Structured Data Extraction</span></div>
+  <div class="stem">Your document pipeline requires that every incoming file is processed by extract_metadata before any enrichment tool runs, and that the model never replies with conversational text on the first turn. A teammate suggests adding "ALWAYS call extract_metadata first" in bold to the system prompt. What is the deterministic way to meet this requirement?</div>
+  <div class="pt-block pt">Seu pipeline de documentos exige que todo arquivo recebido seja processado por extract_metadata antes de qualquer tool de enrichment, e que o modelo nunca responda com texto conversacional no primeiro turno. Um colega sugere adicionar "ALWAYS call extract_metadata first" em negrito no system prompt. Qual é a forma determinística de atender a esse requisito?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q5" value="a">A. Keep tool_choice on "auto" and strengthen the system prompt wording, since clear instructions are reliable enough in practice.<div class="pt">Manter tool_choice em "auto" e reforçar o texto do system prompt, já que instruções claras são confiáveis o bastante na prática.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. Set tool_choice to "any" so the model must call some tool, and rely on the descriptions to make it pick extract_metadata.<div class="pt">Definir tool_choice como "any" para o modelo ser obrigado a chamar alguma tool, e confiar nas descrições para ele escolher extract_metadata.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. Force {"type": "tool", "name": "extract_metadata"} on the first request, then run the enrichment steps in follow-up turns.<div class="pt">Forçar {"type": "tool", "name": "extract_metadata"} na primeira requisição e rodar os passos de enrichment nos turnos seguintes.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. Remove every tool except extract_metadata from the agent permanently, so that a wrong first choice becomes impossible.<div class="pt">Remover permanentemente do agente todas as tools exceto extract_metadata, para que uma primeira escolha errada fique impossível.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Requisito determinístico ("sempre esta tool primeiro, nunca texto") pede forced tool selection — garantia da API, não probabilidade de prompt; os passos seguintes rodam em turnos posteriores com tool_choice normal. A é exatamente o remendo via prompt que o guide marca como insuficiente quando se exige garantia. B garante <em>alguma</em> tool, mas não <em>qual</em> — a ordem continuaria probabilística. D é over-engineering destrutivo que quebraria os turnos de enrichment.<span class="ts">Domínio 2 · TS 2.3 — Distribuição de tools e tool_choice</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="2.3" data-dom="2">
+  <div class="qnum">Questão 6 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">Your document-analysis subagent was given a generic fetch_url tool so it could open the PDFs that the search subagent finds. Logs now show it also uses fetch_url to browse news sites and query public APIs, drifting into the search subagent's job and pulling unvetted pages into its analysis. What is the best change?</div>
+  <div class="pt-block pt">Seu subagent de análise de documentos recebeu uma tool genérica fetch_url para abrir os PDFs que o subagent de busca encontra. Os logs agora mostram que ele também usa fetch_url para navegar em sites de notícia e consultar APIs públicas, invadindo o papel do subagent de busca e trazendo páginas não verificadas para a análise. Qual é a melhor mudança?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q6" value="a">A. Add a system prompt rule telling the subagent to use fetch_url only for the document links passed in by the coordinator.<div class="pt">Adicionar uma regra no system prompt dizendo ao subagent para usar fetch_url só nos links de documento repassados pelo coordinator.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="b">B. Keep fetch_url, and add a reviewer subagent that approves every URL the analysis subagent wants to open before the fetch.<div class="pt">Manter fetch_url e adicionar um subagent revisor que aprova cada URL que o subagent de análise quer abrir antes do fetch.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="c">C. Remove fetch_url and have the coordinator paste the full text of every document into the analysis subagent's prompt.<div class="pt">Remover fetch_url e fazer o coordinator colar o texto completo de cada documento no prompt do subagent de análise.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. Replace fetch_url with a load_document tool that validates document URLs and rejects any other kind of target.<div class="pt">Substituir fetch_url por uma tool load_document que valida URLs de documento e recusa qualquer outro tipo de destino.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> O TS 2.3 pede exatamente isso: trocar a tool genérica por uma alternativa restrita. <code>load_document</code> só aceita URL de documento — a restrição mora no contrato da tool (determinística), não na boa vontade do modelo, e o subagent volta ao seu papel (buscar é trabalho do search agent). A é instrução de prompt: reduz o desvio, mas a tool continua aberta para qualquer URL. B é over-engineering: um agente a mais para vigiar uma tool que nem deveria ter esse escopo, com latência extra a cada fetch. C tira a capacidade de carregar documentos e despeja conteúdo inteiro no prompt, inflando o contexto do subagent sem necessidade.<span class="ts">Domínio 2 · TS 2.3 — Distribuição de tools e tool_choice</span></div>
+</div>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir aula 04</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="aula-03.html">← Aula 03</a></span>
+  <span><a href="aula-05.html">Aula 05 →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  var total = 0, score = 0;
+  document.querySelectorAll('.q').forEach(function (q) {
+    total++;
+    document.getElementById('total').textContent = total;
+    var btn = q.querySelector('button.answer');
+    var correct = q.dataset.correct.split(',').map(function (s) { return s.trim(); });
+    btn.addEventListener('click', function () {
+      var checked = Array.prototype.slice.call(q.querySelectorAll('input:checked')).map(function (i) { return i.value; });
+      if (checked.length === 0) return;
+      var ok = checked.length === correct.length && checked.every(function (v) { return correct.indexOf(v) !== -1; });
+      q.querySelectorAll('label.opt').forEach(function (l) {
+        var v = l.querySelector('input').value;
+        if (correct.indexOf(v) !== -1) l.classList.add('correct');
+        else if (l.querySelector('input').checked) l.classList.add('wrong');
+        l.querySelector('input').disabled = true;
+      });
+      var fb = q.querySelector('.feedback');
+      fb.classList.add(ok ? 'ok' : 'ko');
+      fb.innerHTML = (ok ? '✅ Correto. ' : '❌ Incorreto. ') + fb.innerHTML;
+      btn.disabled = true;
+      if (ok) score++;
+      document.getElementById('score').textContent = score;
+    });
+  });
+  var KEY = 'ccarf-aula-04';
+  var btn = document.getElementById('finish');
+  if (localStorage.getItem(KEY)) {
+    document.getElementById('donemsg').textContent = 'Aula já concluída — ' + localStorage.getItem(KEY);
+  }
+  btn.addEventListener('click', function () {
+    var rec = new Date().toLocaleDateString('pt-BR') + ' · ' + score + '/' + total + ' acertos';
+    localStorage.setItem(KEY, rec);
+    document.getElementById('donemsg').textContent = 'Concluída: ' + rec;
+  });
+})();
+</script>
+</body>
+</html>

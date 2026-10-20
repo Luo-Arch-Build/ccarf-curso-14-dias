@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 08 — Refinamento iterativo e Claude Code em CI/CD · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.uso { color: var(--pt); font-size: 13px; font-style: italic; }
+  .pt { color: var(--pt); font-size: 13.5px; }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 4px 0 10px; }
+  body.hide-pt .pt, body.hide-pt .pt-block { display: none; }
+  .toggle-pt { position: sticky; top: 12px; float: right; z-index: 5; background: var(--card2);
+    border: 1px solid var(--border); color: var(--muted); border-radius: 999px;
+    padding: 6px 14px; font-size: 12.5px; cursor: pointer; }
+  .toggle-pt:hover { color: var(--text); border-color: var(--accent); }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q .cenario { float: right; text-transform: none; letter-spacing: 0; font-size: 11.5px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
+  .q .feedback .ts { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<button class="toggle-pt" onclick="document.body.classList.toggle('hide-pt'); this.textContent = document.body.classList.contains('hide-pt') ? '🇧🇷 mostrar traduções' : '🇧🇷 ocultar traduções';">🇧🇷 ocultar traduções</button>
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Aula 08</div>
+  <h1>Aula 08 — Refinamento iterativo e Claude Code em CI/CD</h1>
+  <div class="meta">
+    <span class="tag">Domínio 3 · Claude Code Configuration &amp; Workflows (20%)</span>
+    <span class="tag">~60 min</span>
+  </div>
+</header>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo do dia.</strong> Dominar as técnicas de <em>refinamento iterativo</em> do
+  Task Statement 3.5 (exemplos input/output, iteração guiada por testes, interview pattern,
+  issues interagentes vs independentes) e a integração do Claude Code em pipelines de CI/CD do
+  Task Statement 3.6 (modo não-interativo com <code>-p</code>, output estruturado parseável,
+  revisão por instância independente e re-reviews sem comentários duplicados).
+</div>
+
+<h2>1. Refinamento iterativo (Task Statement 3.5)</h2>
+
+<h3>1.1 Exemplos concretos de input/output &gt; descrição em prosa</h3>
+<p>Quando você descreve uma transformação em prosa ("normalize os nomes de forma consistente")
+e o Claude interpreta de um jeito diferente a cada execução, o problema não é o modelo — é que
+prosa é <strong>ambígua por natureza</strong>. A correção canônica: fornecer <strong>2–3 exemplos
+concretos de input/output</strong> mostrando exatamente a transformação esperada.</p>
+<pre><code># Em vez de: "formate os registros de forma limpa"
+# Forneça pares input → output:
+
+Input:  { "nome": "MARIA  silva", "tel": "(11)98765-4321", "vip": "S" }
+Output: { "name": "Maria Silva", "phone": "+5511987654321", "tier": "vip" }
+
+Input:  { "nome": "joão PEREIRA", "tel": null, "vip": "N" }
+Output: { "name": "João Pereira", "phone": null, "tier": "standard" }</code></pre>
+<p>Exemplos resolvem de uma vez o que parágrafos de instrução não resolvem: capitalização,
+tratamento de <code>null</code>, formato de telefone, nome de campos. A prova adora o contraste
+"prosa cada vez mais detalhada" (distrator) vs "2-3 concrete input/output examples" (resposta).</p>
+
+<h3>1.2 Test-driven iteration: testes primeiro, falhas como guia</h3>
+<p>O fluxo que o Exam Guide descreve: <strong>escreva a suíte de testes antes</strong> (comportamento
+esperado, edge cases, requisitos de performance), peça a implementação, e itere
+<strong>compartilhando as falhas dos testes</strong> — não re-descrevendo o requisito em prosa.</p>
+<ol>
+  <li>Escreva os testes cobrindo o comportamento esperado e os edge cases (ex.: valores <code>null</code> num script de migração)</li>
+  <li>Peça a implementação ao Claude</li>
+  <li>Rode os testes; cole a saída exata da falha no chat: input, output esperado vs obtido</li>
+  <li>Repita até a suíte passar</li>
+</ol>
+<p>A falha do teste é uma especificação não-ambígua do bug: ela tem input concreto, expectativa
+concreta e resultado concreto. É a versão automatizada do item 1.1. Para corrigir um edge case
+específico, forneça o <strong>caso de teste com input de exemplo e output esperado</strong> —
+não "trate melhor os nulos".</p>
+<p>Regra de bolso: <em>quando a descrição em prosa de um mesmo requisito gera versões que não convergem (corrige um caso, quebra outro), pare de descrever — escreva o teste que o define e compartilhe a falha. Se são problemas distintos cujas correções interagem, é o caso do 1.4: uma única mensagem detalhada com todos.</em></p>
+
+<h3>1.3 Interview pattern: Claude pergunta antes de implementar</h3>
+<p>Em domínios que você não domina (ex.: estratégias de cache, modos de falha de um protocolo),
+você não sabe quais decisões de design importam — e o Claude, instruído a "implementar X", vai
+escolher defaults silenciosamente. O <strong>interview pattern</strong> inverte a direção: antes de
+codar, peça para o Claude <strong>entrevistar você</strong> com perguntas sobre o problema.</p>
+<pre><code>Before implementing, interview me: ask questions about requirements,
+constraints, and failure modes I may not have considered. Only start
+coding after I answer.</code></pre>
+<p>Isso faz emergir considerações que você não antecipou (invalidação de cache, comportamento em
+falha parcial, concorrência) <em>antes</em> de virarem retrabalho. Distrator clássico: "escreva um
+prompt mais detalhado" — você não consegue detalhar o que não sabe que existe.</p>
+<p>Regra de bolso: <em>domínio desconhecido → o Claude pergunta antes de codar; transformação conhecida mas descrita de forma ambígua → exemplos de input/output (1.1).</em></p>
+
+<h3>1.4 Issues interagentes numa única mensagem vs independentes em sequência</h3>
+<p>Quando há vários problemas para corrigir, a decisão é:</p>
+<ul>
+  <li><strong>Fixes que interagem</strong> (ex.: refresh de token e timeout de sessão — mexer num muda o
+      comportamento do outro) → <strong>uma única mensagem detalhada</strong> descrevendo todos. O Claude
+      precisa raciocinar sobre a interação e produzir uma solução coerente. Corrigir em sequência gera
+      o ciclo "consertei A, quebrei B; consertei B, quebrei A".</li>
+  <li><strong>Issues independentes</strong> (bug no parser + typo no log) → iteração sequencial normal,
+      um de cada vez, sem custo.</li>
+</ul>
+<p>A pergunta de prova é sempre: <em>os fixes se tocam?</em> Se sim, mesma mensagem.</p>
+
+<h2>2. Claude Code em CI/CD (Task Statement 3.6)</h2>
+
+<h3>2.1 Modo não-interativo: a flag <code>-p</code> / <code>--print</code></h3>
+<p>Num pipeline não há humano para digitar. Se você rodar <code>claude "Analyze this pull request"</code>
+num job de CI, o processo <strong>trava esperando input interativo</strong> e o job morre por timeout.
+A solução documentada é a flag <code>-p</code> (ou <code>--print</code>): processa o prompt, imprime o
+resultado em stdout e <strong>encerra</strong>.</p>
+<pre><code># Trava no CI (modo interativo):
+claude "Analyze this pull request for security issues"
+
+# Correto para pipelines:
+claude -p "Analyze this pull request for security issues"</code></pre>
+
+<h3>2.2 Output estruturado: <code>--output-format json</code> + <code>--json-schema</code></h3>
+<p>Texto livre não é parseável pelo pipeline. Para postar findings automaticamente como
+<strong>comentários inline no PR</strong>, o output precisa ser JSON válido num schema conhecido:</p>
+<pre><code>claude -p "Review this diff for bugs" \
+  --output-format json \
+  --json-schema '{"type":"object","properties":{
+    "findings":{"type":"array","items":{"type":"object","properties":{
+      "file":{"type":"string"},"line":{"type":"integer"},
+      "severity":{"type":"string"},"issue":{"type":"string"},
+      "suggested_fix":{"type":"string"}},"required":["file","line","severity","issue"]}}}}'</code></pre>
+<p>Com isso o job faz <code>jq</code>/parse determinístico e posta cada finding na linha certa do PR —
+sem regex em cima de texto livre.</p>
+<p>Note a divisão de trabalho: <code>--output-format json</code> faz a saída ser JSON parseável; o <code>--json-schema</code> é o que fixa a <strong>estrutura</strong> (chaves, tipos, campos obrigatórios). Descrever o formato no prompt reduz a variação, mas continua probabilístico. Regra de bolso: <em>se um script consome a saída, a estrutura é imposta por schema, não pedida em texto.</em></p>
+
+<div class="card" style="border-left: 3px solid var(--accent2);">
+  <strong>🧭 Fora do guia, mas útil no CI real</strong> <span style="color:var(--muted);font-size:12.5px">(documentação do Claude Code conferida em 20/10/2026)</span>
+  <ul>
+    <li>Com <code>--json-schema</code>, o resultado validado vem no campo <code>structured_output</code> do JSON de saída (só no modo <code>-p</code>).</li>
+    <li><strong>Revisor que não pode editar o repositório:</strong> restrinja as tools nativas com <code>--tools</code> (por exemplo, só leitura) ou remova as de edição com <code>--disallowedTools</code>. <code>--allowedTools</code> <strong>não restringe</strong>: só pré-aprova, para não pedir permissão.</li>
+    <li><strong>Trava contra execução descontrolada:</strong> <code>--max-turns</code> limita os turnos agênticos e <code>--max-budget-usd</code> encerra a execução num gasto estimado (os dois só no modo <code>-p</code>).</li>
+  </ul>
+  <em>Nada disso está no guia; a prova cobra -p, --output-format json e --json-schema.</em>
+</div>
+
+<h3>2.3 CLAUDE.md provê contexto ao Claude invocado no CI</h3>
+<p>O Claude Code rodando no runner lê o <code>CLAUDE.md</code> do repositório como sempre. É lá que
+você documenta <strong>padrões de teste, convenções de fixtures, critérios de review e o que é um
+teste valioso</strong> — sem isso, a geração de testes no CI produz testes triviais de baixo valor.
+O CLAUDE.md é o mecanismo de contexto de projeto tanto na sua máquina quanto no CI; não é preciso
+(nem recomendado) duplicar essas instruções dentro do prompt do pipeline.</p>
+<p>Por isso, convenções coladas no prompt de cada job são um anti-padrão: valem só para aquele job, viram cópias que divergem e não chegam ao próximo pipeline que alguém criar. No CLAUDE.md, toda invocação no repositório recebe o mesmo contexto. Documente lá também as <strong>fixtures disponíveis</strong> e o que torna um teste <strong>valioso</strong> (comportamento, edge cases, regressões) — sem esse critério, a geração produz testes triviais, que só verificam que a função não lança exceção. Regra de bolso: <em>contexto de projeto para o CI mora no CLAUDE.md, não no YAML do job.</em></p>
+
+<h3>2.4 Self-review bias: a sessão que gerou o código é pior revisora dele</h3>
+<p>A mesma sessão que escreveu o código já "decidiu" que aquela abordagem é correta — o contexto
+dela está contaminado pelo raciocínio que produziu o código. Resultado: review raso, tendência a
+aprovar as próprias escolhas. A correção arquitetural: <strong>revisar numa instância independente</strong>,
+que vê só o diff e os critérios de review, sem o histórico de geração. Em CI isso é natural: o job de
+review é uma invocação nova de <code>claude -p</code>, não a continuação da sessão do autor.</p>
+
+<h3>2.5 Re-rodando reviews após novos commits: só issues novos/não-resolvidos</h3>
+<p>Cenário clássico: o review roda a cada push. Sem cuidado, cada execução reposta os mesmos
+findings e o PR acumula comentários duplicados — devs passam a ignorar o bot. A solução:
+<strong>incluir os findings anteriores no contexto</strong> da nova execução e instruir explicitamente:
+<em>report only new issues or previously reported issues that are still unaddressed</em>.</p>
+<pre><code>claude -p "You previously reported these findings on this PR:
+$(cat previous-findings.json)
+Review the new commits. Report ONLY new issues or prior issues that
+remain unaddressed. Do not repeat findings that were fixed." \
+  --output-format json --json-schema "$SCHEMA"</code></pre>
+<p>O mesmo princípio vale para <strong>geração de testes</strong>: inclua os arquivos de teste existentes
+no contexto, para o Claude não sugerir cenários que a suíte já cobre.</p>
+
+<h2>3. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
+  <tr><td class="en">iterative refinement</td><td>refinamento iterativo (melhoria progressiva)</td><td class="uso">"apply iterative refinement techniques for progressive improvement"</td></tr>
+  <tr><td class="en">concrete input/output examples</td><td>exemplos concretos de entrada/saída</td><td class="uso">"provide 2-3 concrete input/output examples to clarify the transformation"</td></tr>
+  <tr><td class="en">test-driven iteration</td><td>iteração guiada por testes (testes primeiro)</td><td class="uso">"write the test suite first, then iterate by sharing test failures"</td></tr>
+  <tr><td class="en">interview pattern</td><td>padrão de entrevista (Claude pergunta antes de codar)</td><td class="uso">"use the interview pattern to surface design considerations before implementing"</td></tr>
+  <tr><td class="en">interacting issues</td><td>problemas que interagem entre si</td><td class="uso">"address multiple interacting issues in a single detailed message"</td></tr>
+  <tr><td class="en">non-interactive mode</td><td>modo não-interativo</td><td class="uso">"the -p flag runs Claude Code in non-interactive mode"</td></tr>
+  <tr><td class="en">-p / --print flag</td><td>flag que imprime o resultado e encerra</td><td class="uso">"use the --print flag to prevent interactive input hangs in CI"</td></tr>
+  <tr><td class="en">--output-format json</td><td>flag de formato de saída em JSON</td><td class="uso">"produce machine-parseable output with --output-format json"</td></tr>
+  <tr><td class="en">--json-schema</td><td>flag que força o output a um schema JSON</td><td class="uso">"enforce structured findings using --json-schema"</td></tr>
+  <tr><td class="en">inline PR comments</td><td>comentários inline no pull request</td><td class="uso">"structured findings posted as inline PR comments"</td></tr>
+  <tr><td class="en">independent review instance</td><td>instância de revisão independente</td><td class="uso">"an independent review instance rather than the session that generated the code"</td></tr>
+  <tr><td class="en">prior review findings</td><td>findings de reviews anteriores</td><td class="uso">"include prior review findings and report only new or unaddressed issues"</td></tr>
+  <tr><td class="en">fixture conventions</td><td>convenções de fixtures (dados e setup de teste reutilizáveis)</td><td class="uso">"document available fixtures and fixture conventions in CLAUDE.md"</td></tr>
+  <tr><td class="en">valuable test criteria</td><td>critérios do que torna um teste valioso</td><td class="uso">"document valuable test criteria to reduce low-value test output"</td></tr>
+  <tr><td class="en">machine-parseable</td><td>parseável por máquina (pronto para automação)</td><td class="uso">"machine-parseable structured findings for inline PR comments"</td></tr>
+  <tr><td class="en">edge case</td><td>caso de borda</td><td class="uso">"specific test cases with example input and expected output to fix edge case handling"</td></tr>
+</table>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha do dia</h3>
+  <p>Nas questões de CI/CD, os distratores quase sempre são <strong>features que não existem</strong>
+  (<code>CLAUDE_HEADLESS=true</code>, <code>--batch</code>, <code>--ci-mode</code>) ou gambiarras de shell
+  (<code>&lt; /dev/null</code>, <code>timeout 60 claude ...</code>) que não resolvem a causa raiz. A resposta
+  certa usa as flags documentadas: <code>-p</code>/<code>--print</code>, <code>--output-format json</code>,
+  <code>--json-schema</code>. Regra de bolso: <em>flag ou variável de ambiente que não está na documentação do Claude Code é
+  distrator; quando o job trava esperando input, a correção é a flag oficial de modo não-interativo
+  (<code>-p</code>/<code>--print</code>); quando o problema é a estrutura da saída, <code>--output-format json</code> + <code>--json-schema</code>.</em></p>
+</div>
+
+<h2>4. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
+<div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
+
+<div class="q" data-correct="c" data-ts="3.6" data-dom="3">
+  <div class="qnum">Questão 1 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">Your GitHub Actions job invokes claude "Summarize the changes in this diff" as a build step. Every run times out after 30 minutes, and the logs show the process idle, waiting for a prompt that never comes. What is the correct fix?</div>
+  <div class="pt-block pt">Seu job do GitHub Actions invoca claude "Summarize the changes in this diff" como etapa de build. Toda execução estoura o timeout de 30 minutos, e os logs mostram o processo parado, esperando um prompt que nunca chega. Qual é a correção correta?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q1" value="a">A. Pipe the prompt through stdin and close the stream: echo "Summarize the changes" | claude<div class="pt">Passar o prompt pelo stdin e fechar o stream: echo "Summarize the changes" | claude</div></label>
+    <label class="opt"><input type="radio" name="q1" value="b">B. Export CLAUDE_NONINTERACTIVE=1 in the job environment before the step invokes the CLI.<div class="pt">Exportar CLAUDE_NONINTERACTIVE=1 no ambiente do job antes de a etapa invocar o CLI.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. Run the step in print mode instead: claude -p "Summarize the changes in this diff"<div class="pt">Rodar a etapa em modo print: claude -p "Summarize the changes in this diff"</div></label>
+    <label class="opt"><input type="radio" name="q1" value="d">D. Wrap the call in a timeout with automatic retries, so that a later attempt eventually completes.<div class="pt">Envolver a chamada num timeout com retries automáticos, para uma tentativa posterior acabar concluindo.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> A causa raiz é que o CLI entrou em modo interativo — e a forma documentada de rodar em pipeline é a flag <code>-p</code>/<code>--print</code>: processa o prompt, escreve em stdout e sai. A (pipe por stdin) é gambiarra de shell que não ativa o modo correto nem garante encerramento limpo. B inventa uma variável de ambiente inexistente. D mascara o sintoma: o processo vai travar em todas as tentativas, porque nunca recebe input.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="3.5" data-dom="3">
+  <div class="qnum">Questão 2 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">You asked Claude Code to normalize legacy customer records, describing the desired formatting in a detailed paragraph. Across runs, the output is inconsistent: sometimes names are title-cased, sometimes not; null phone numbers are handled three different ways. What is the most effective fix?</div>
+  <div class="pt-block pt">Você pediu ao Claude Code para normalizar registros legados de clientes, descrevendo a formatação desejada num parágrafo detalhado. Entre execuções, o output é inconsistente: às vezes nomes vêm capitalizados, às vezes não; telefones nulos são tratados de três formas diferentes. Qual é a correção mais eficaz?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q2" value="a">A. Expand the prose description with more detail about each field until every case is covered in words.<div class="pt">Expandir a descrição em prosa com mais detalhes sobre cada campo até cobrir todos os casos em palavras.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="b">B. Provide 2-3 concrete input/output example pairs, including records that have null fields.<div class="pt">Fornecer 2-3 pares concretos de exemplo input/output, incluindo registros com campos nulos.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="c">C. Run the transformation three times and keep the majority-vote result for each record to smooth out variance.<div class="pt">Rodar a transformação três vezes e manter o resultado majoritário de cada registro para suavizar a variação.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="d">D. Switch to a larger model, since bigger models interpret detailed formatting instructions more reliably.<div class="pt">Trocar para um modelo maior, já que modelos maiores interpretam instruções detalhadas de formatação com mais confiabilidade.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Prosa é ambígua por natureza — o Exam Guide é direto: exemplos concretos de input/output são a forma mais eficaz de comunicar transformações quando a descrição em prosa é interpretada de forma inconsistente. A dobra a aposta na técnica que já falhou; cada palavra nova cria novas ambiguidades. C é over-engineering estatístico que triplica o custo sem garantir o formato certo. D trata como limitação de modelo um problema que é de especificação.<span class="ts">Domínio 3 · TS 3.5 — Refinamento iterativo</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="3.5" data-dom="3">
+  <div class="qnum">Questão 3 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">A developer reports two bugs in the authentication module: token refresh races under concurrent requests, and session timeout firing too early. They fix them one at a time with Claude Code, but each fix for the race changes the timing assumptions the timeout fix relies on, and vice versa. What should they do instead?</div>
+  <div class="pt-block pt">Alguém do time reporta dois bugs no módulo de autenticação: race condition no refresh de token sob requisições concorrentes, e timeout de sessão disparando cedo demais. As correções são feitas uma de cada vez com o Claude Code, mas cada correção da race muda as premissas de timing das quais a correção do timeout depende, e vice-versa. O que fazer em vez disso?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q3" value="a">A. Fix the race condition first and freeze the session timeout behavior permanently so it stops interfering.<div class="pt">Corrigir a race condition primeiro e congelar o comportamento do timeout de sessão permanentemente para parar a interferência.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="b">B. Keep alternating between the two fixes, re-running the tests after each one until both pass together.<div class="pt">Continuar alternando entre as duas correções, rodando os testes depois de cada uma, até as duas passarem juntas.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="c">C. Open two separate Claude Code sessions, one per bug, so that neither fix can influence the other.<div class="pt">Abrir duas sessões separadas do Claude Code, uma por bug, para que nenhuma correção influencie a outra.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="d">D. Describe both issues together in one detailed message so Claude can reason about how the fixes interact.<div class="pt">Descrever os dois problemas juntos numa única mensagem detalhada, para o Claude raciocinar sobre como as correções interagem.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> Quando os fixes interagem, a iteração sequencial gera o ciclo "consertei A, quebrei B" — a solução é dar ao modelo o problema inteiro de uma vez. A não é uma correção, é abandonar um dos requisitos. B é a mesma iteração sequencial que já está falhando — rodar os testes a cada troca só confirma o vaivém. C piora o problema: sessões isoladas garantem que nenhum dos lados veja a interação — o oposto do necessário (sessões separadas seriam adequadas se os bugs fossem independentes).<span class="ts">Domínio 3 · TS 3.5 — Refinamento iterativo</span></div>
+</div>
+
+<div class="q" data-correct="c,e" data-ts="3.6" data-dom="3">
+  <div class="qnum">Questão 4 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">Your CI pipeline re-runs an automated Claude Code review on every push to a pull request, and also generates suggested test cases. Developers complain that fixed findings get re-posted as duplicate comments and that suggested tests duplicate scenarios the suite already covers. Which TWO changes fix these problems?</div>
+  <div class="pt-block pt">Seu pipeline de CI re-roda um review automatizado do Claude Code a cada push no pull request, e também gera casos de teste sugeridos. Os desenvolvedores reclamam que findings já corrigidos são repostados como comentários duplicados e que os testes sugeridos duplicam cenários que a suíte já cobre. Quais DUAS mudanças resolvem esses problemas?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q4" value="a">A. Post-process the output with a script that deletes any comment whose text resembles an earlier one.<div class="pt">Pós-processar a saída com um script que apaga qualquer comentário cujo texto lembre um anterior.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="b">B. Tell Claude to be conservative and report only issues it is highly confident about, to cut the noise.<div class="pt">Dizer ao Claude para ser conservador e reportar só issues sobre os quais tem alta confiança, para cortar o ruído.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="c">C. Include prior review findings in context and ask Claude to report only new or still-open issues.<div class="pt">Incluir os findings da review anterior no contexto e pedir ao Claude que reporte só issues novos ou ainda em aberto.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="d">D. Drop generated tests whose names match a test already in the suite before posting the suggestions.<div class="pt">Descartar os testes gerados cujo nome coincida com o de um teste já existente na suíte antes de postar as sugestões.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="e">E. Give test generation the existing test files as context, so covered scenarios are not suggested again.<div class="pt">Dar à geração de testes os arquivos de teste existentes como contexto, para cenários já cobertos não serem sugeridos de novo.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C e E.</strong> Ambas são técnicas do Exam Guide: findings anteriores no contexto + instrução explícita de reportar só o novo ou ainda não resolvido elimina os comentários duplicados na re-review; os arquivos de teste existentes no contexto evitam sugestões que a suíte já cobre. A é remendo frágil: similaridade de texto não reconhece "mesmo issue, outra redação" e apaga reports legítimos reformulados. B é o distrator clássico de instrução vaga — "seja conservador" não define critério nenhum e tende a suprimir bugs reais sem resolver duplicatas. D é o remendo do A aplicado aos testes: nome igual não detecta o mesmo cenário escrito com outro nome.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="3.6" data-dom="3">
+  <div class="qnum">Questão 5 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">Your team generates feature code with Claude Code in an interactive session, then asks that same session to review its own diff before opening the PR. The reviews are consistently shallow: the session approves its own design choices and misses bugs that an external reviewer catches immediately. What is the best fix?</div>
+  <div class="pt-block pt">Seu time gera código de features com Claude Code numa sessão interativa, e depois pede à mesma sessão que revise o próprio diff antes de abrir o PR. As reviews são consistentemente rasas: a sessão aprova as próprias escolhas de design e deixa passar bugs que um revisor externo pega na hora. Qual é a melhor correção?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q5" value="a">A. Review in an independent instance that sees the diff and criteria, without the generation history.<div class="pt">Revisar numa instância independente que vê o diff e os critérios, sem o histórico da geração.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. Prompt the same session to review its code "as if it were written by someone else, with maximum skepticism."<div class="pt">Pedir à mesma sessão que revise o código "como se tivesse sido escrito por outra pessoa, com ceticismo máximo".</div></label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. Have the same session review the diff twice and report only the issues that both passes agree on.<div class="pt">Fazer a mesma sessão revisar o diff duas vezes e reportar só os issues em que as duas passadas concordam.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. Upgrade to a more capable model, so that the review done inside the same session catches more bugs.<div class="pt">Trocar para um modelo mais capaz, para que a review feita dentro da mesma sessão pegue mais bugs.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> A sessão geradora está contaminada pelo raciocínio que produziu o código — ela já "decidiu" que a abordagem era certa; a correção arquitetural é a revisão por instância independente (em CI, uma invocação nova de <code>claude -p</code> vendo só o diff). B é remendo via prompt tentando simular com palavras o que o isolamento de contexto garante estruturalmente. C só reduz recall — bugs detectados intermitentemente são suprimidos pela exigência de consenso. D troca o modelo mas mantém a causa raiz: o contexto viciado.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="3.5" data-dom="3">
+  <div class="qnum">Questão 6 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">You need Claude Code to add rate limiting to your public API, but nobody on the team has built one before. A previous attempt silently picked defaults that blocked a partner's batch integration. What should happen before any code is written?</div>
+  <div class="pt-block pt">Você precisa que o Claude Code adicione rate limiting à sua API pública, mas ninguém do time construiu um antes. Uma tentativa anterior escolheu defaults em silêncio e bloqueou a integração em lote de um parceiro. O que deve acontecer antes de qualquer código ser escrito?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q6" value="a">A. Write a longer specification covering every rate-limiting detail you can think of, partner traffic included, then ask for the code.<div class="pt">Escrever uma especificação mais longa cobrindo todo detalhe de rate limiting que você conseguir imaginar, inclusive o tráfego de parceiros, e então pedir o código.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="b">B. Have Claude ship the most common algorithm first and refine the limits based on the incidents that follow.<div class="pt">Fazer o Claude entregar primeiro o algoritmo mais comum e refinar os limites com base nos incidentes que vierem.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="c">C. Give Claude two input/output examples of throttled requests so it can infer the rest of the expected behavior.<div class="pt">Dar ao Claude dois exemplos de input/output de requisições limitadas para ele inferir o resto do comportamento esperado.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. Ask Claude to interview you first, raising questions about limits, partner exemptions and failure modes.<div class="pt">Pedir ao Claude que entreviste você primeiro, levantando perguntas sobre limites, exceções para parceiros e modos de falha.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> Em domínio desconhecido, o risco está no que você não sabe que precisa decidir. O interview pattern inverte a direção: o Claude faz as perguntas — limites por cliente, exceções para parceiros, comportamento sob falha — e essas decisões aparecem antes do código, não depois do incidente. A tenta especificar o que você não conhece: a spec mais longa herda as mesmas lacunas. B empurra a descoberta para incidentes em produção, o retrabalho caro que o pattern existe para evitar. C é técnica certa no contexto errado: exemplos de input/output esclarecem uma transformação já conhecida; não revelam decisões de design que ninguém levantou.<span class="ts">Domínio 3 · TS 3.5 — Refinamento iterativo</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="3.5" data-dom="3">
+  <div class="qnum">Questão 7 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">Claude Code is writing a script that migrates customer records to a new schema. Each time you describe a problem in prose ("handle missing values better"), the next version fixes one case and breaks another, and records with a null birth date are still converted inconsistently. What is the most effective way to drive the next iterations?</div>
+  <div class="pt-block pt">O Claude Code está escrevendo um script que migra registros de clientes para um schema novo. Toda vez que você descreve um problema em prosa ("trate melhor os valores ausentes"), a versão seguinte corrige um caso e quebra outro, e registros com data de nascimento nula continuam sendo convertidos de forma inconsistente. Qual é a forma mais eficaz de conduzir as próximas iterações?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q7" value="a">A. Write tests first, including a null-birth-date record with its expected output, and share each failing result.<div class="pt">Escrever os testes antes, incluindo um registro com data de nascimento nula e sua saída esperada, e compartilhar cada falha.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="b">B. Restate the requirement more emphatically each round, listing the cases that broke in the previous version.<div class="pt">Reescrever o requisito com mais ênfase a cada rodada, listando os casos que quebraram na versão anterior.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="c">C. Ask Claude to walk through the script and explain how it treats nulls before it changes anything else.<div class="pt">Pedir ao Claude que percorra o script e explique como ele trata nulos antes de mudar qualquer outra coisa.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="d">D. Move the logic onto a generic migration library so null handling stops depending on the generated code.<div class="pt">Passar a lógica para uma biblioteca genérica de migração, para o tratamento de nulos deixar de depender do código gerado.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> É a test-driven iteration do guia: a suíte vem antes, cobrindo o comportamento esperado e os edge cases — aqui, o registro com data de nascimento nula e a saída esperada — e cada rodada é guiada pela falha concreta do teste, uma especificação sem ambiguidade (input, esperado, obtido). B continua em prosa, a fonte da ambiguidade, só que mais enfática. C produz explicação, não verificação: o Claude pode descrever um tratamento de nulos que o código não implementa. D troca de problema em vez de resolvê-lo — a regra de negócio para nulos continua precisando ser especificada e testada.<span class="ts">Domínio 3 · TS 3.5 — Refinamento iterativo</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="3.6" data-dom="3">
+  <div class="qnum">Questão 8 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">Your CI job already runs claude -p with --output-format json and feeds the findings to the team's review dashboard, which rejects any finding whose fields don't match exactly. The JSON always parses, but the keys drift between runs ("file" vs "path", "line" vs "location"), so findings get dropped. What makes the structure reliable on every run?</div>
+  <div class="pt-block pt">Seu job de CI já roda claude -p com --output-format json e envia os findings ao dashboard de review do time, que rejeita qualquer finding cujos campos não batam exatamente. O JSON sempre é parseável, mas as chaves variam entre execuções ("file" vs "path", "line" vs "location"), e findings são descartados. O que torna a estrutura confiável em toda execução?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q8" value="a">A. List the dashboard's key names in the prompt and tell Claude to use exactly those names in every run.<div class="pt">Listar no prompt os nomes de chave do dashboard e mandar o Claude usar exatamente esses nomes em toda execução.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="b">B. Keep --output-format json and add --json-schema with the required fields, which fixes the output structure.<div class="pt">Manter --output-format json e adicionar --json-schema com os campos obrigatórios, o que fixa a estrutura da saída.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="c">C. Add a jq step that maps every key variant seen so far onto the dashboard's fields before the upload.<div class="pt">Adicionar uma etapa de jq que mapeia toda variação de chave vista até agora para os campos do dashboard antes do upload.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="d">D. Switch to plain-text output and have the dashboard script extract the findings with regular expressions.<div class="pt">Trocar para saída em texto puro e fazer o script do dashboard extrair os findings com expressões regulares.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> <code>--output-format json</code> garante saída JSON parseável — não que ela traga sempre as mesmas chaves. Quem fixa a estrutura (campos, tipos, obrigatórios) é o <code>--json-schema</code>: é a combinação que o guia indica para findings consumidos por automação, como comentários inline no PR. A é instrução em prosa: reduz a variação, mas segue probabilística — e o dashboard rejeita qualquer desvio. C é remendo reativo: mapeia as variações já vistas e quebra na próxima. D anda para trás: troca saída estruturada por texto livre e regex, a fonte clássica de parse frágil.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
+</div>
+
+<div class="q" data-correct="b,d" data-ts="3.6" data-dom="3">
+  <div class="qnum">Questão 9 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">Three CI jobs call Claude Code: PR review, test generation and a nightly audit. Each job's prompt carries its own copy of the team conventions, the copies have drifted apart, and generated tests keep asserting trivial behavior and recreating fixtures the repo already has. Which TWO changes address these problems?</div>
+  <div class="pt-block pt">Três jobs de CI chamam o Claude Code: review de PR, geração de testes e uma auditoria noturna. O prompt de cada job carrega sua própria cópia das convenções do time, as cópias divergiram, e os testes gerados continuam verificando comportamento trivial e recriando fixtures que o repo já tem. Quais DUAS mudanças resolvem esses problemas?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q9" value="a">A. Run the three jobs as steps of one long session, so they all share the same conventions and context.<div class="pt">Rodar os três jobs como etapas de uma única sessão longa, para todos compartilharem as mesmas convenções e o mesmo contexto.</div></label>
+    <label class="opt"><input type="checkbox" name="q9" value="b">B. Move the conventions from the job prompts into the project CLAUDE.md, which every invocation in the repo loads.<div class="pt">Tirar as convenções dos prompts dos jobs e levá-las para o CLAUDE.md do projeto, que toda invocação no repo carrega.</div></label>
+    <label class="opt"><input type="checkbox" name="q9" value="c">C. Have the test-generation job produce twice as many tests and filter out the trivial ones in a later step.<div class="pt">Fazer o job de geração de testes produzir o dobro de testes e filtrar os triviais numa etapa posterior.</div></label>
+    <label class="opt"><input type="checkbox" name="q9" value="d">D. Document in CLAUDE.md the fixtures that already exist and what makes a test valuable in this codebase.<div class="pt">Documentar no CLAUDE.md as fixtures que já existem e o que torna um teste valioso neste codebase.</div></label>
+    <label class="opt"><input type="checkbox" name="q9" value="e">E. Shorten the conventions in each job prompt to a few key bullets, so the copies are easier to keep in sync.<div class="pt">Encurtar as convenções no prompt de cada job para poucos tópicos-chave, para as cópias ficarem mais fáceis de sincronizar.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B e D.</strong> O CLAUDE.md é o mecanismo que o guia indica para dar contexto de projeto ao Claude Code invocado no CI: toda invocação no repositório o carrega, então as convenções deixam de existir em três cópias que divergem. E é lá que se documentam as fixtures disponíveis, os padrões de teste e o que torna um teste valioso — o que corta testes triviais e fixtures recriadas. A mistura os jobs numa sessão só: o contexto de uma etapa vaza para a outra, e a review passa a avaliar código gerado na mesma sessão. C gera mais ruído para filtrar depois, sem dar à geração o critério que falta. E mantém a causa: cópias no prompt de cada job continuam divergindo, agora com menos detalhe.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
+</div>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir aula 08</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="aula-07.html">← Aula 07</a></span>
+  <span><a href="aula-09.html">Aula 09 →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  var total = 0, score = 0;
+  document.querySelectorAll('.q').forEach(function (q) {
+    total++;
+    document.getElementById('total').textContent = total;
+    var btn = q.querySelector('button.answer');
+    var correct = q.dataset.correct.split(',').map(function (s) { return s.trim(); });
+    btn.addEventListener('click', function () {
+      var checked = Array.prototype.slice.call(q.querySelectorAll('input:checked')).map(function (i) { return i.value; });
+      if (checked.length === 0) return;
+      var ok = checked.length === correct.length && checked.every(function (v) { return correct.indexOf(v) !== -1; });
+      q.querySelectorAll('label.opt').forEach(function (l) {
+        var v = l.querySelector('input').value;
+        if (correct.indexOf(v) !== -1) l.classList.add('correct');
+        else if (l.querySelector('input').checked) l.classList.add('wrong');
+        l.querySelector('input').disabled = true;
+      });
+      var fb = q.querySelector('.feedback');
+      fb.classList.add(ok ? 'ok' : 'ko');
+      fb.innerHTML = (ok ? '✅ Correto. ' : '❌ Incorreto. ') + fb.innerHTML;
+      btn.disabled = true;
+      if (ok) score++;
+      document.getElementById('score').textContent = score;
+    });
+  });
+  var KEY = 'ccarf-aula-08';
+  var btn = document.getElementById('finish');
+  if (localStorage.getItem(KEY)) {
+    document.getElementById('donemsg').textContent = 'Aula já concluída — ' + localStorage.getItem(KEY);
+  }
+  btn.addEventListener('click', function () {
+    var rec = new Date().toLocaleDateString('pt-BR') + ' · ' + score + '/' + total + ' acertos';
+    localStorage.setItem(KEY, rec);
+    document.getElementById('donemsg').textContent = 'Concluída: ' + rec;
+  });
+})();
+</script>
+</body>
+</html>

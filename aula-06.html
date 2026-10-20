@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 06 — CLAUDE.md: hierarquia, @import e rules com glob · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.uso { color: var(--pt); font-size: 13px; font-style: italic; }
+  .pt { color: var(--pt); font-size: 13.5px; }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 4px 0 10px; }
+  body.hide-pt .pt, body.hide-pt .pt-block { display: none; }
+  .toggle-pt { position: sticky; top: 12px; float: right; z-index: 5; background: var(--card2);
+    border: 1px solid var(--border); color: var(--muted); border-radius: 999px;
+    padding: 6px 14px; font-size: 12.5px; cursor: pointer; }
+  .toggle-pt:hover { color: var(--text); border-color: var(--accent); }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q .cenario { float: right; text-transform: none; letter-spacing: 0; font-size: 11.5px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
+  .q .feedback .ts { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<button class="toggle-pt" onclick="document.body.classList.toggle('hide-pt'); this.textContent = document.body.classList.contains('hide-pt') ? '🇧🇷 mostrar traduções' : '🇧🇷 ocultar traduções';">🇧🇷 ocultar traduções</button>
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Aula 06</div>
+  <h1>Aula 06 — CLAUDE.md: hierarquia, @import e rules com glob</h1>
+  <div class="meta">
+    <span class="tag">Domínio 3 · Claude Code Configuration &amp; Workflows (20%)</span>
+    <span class="tag">~60 min</span>
+  </div>
+</header>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo do dia.</strong> Dominar a <strong>hierarquia de CLAUDE.md</strong> (user / project /
+  directory), saber modularizar com <code>@import</code> e <code>.claude/rules/</code>, e escolher
+  <strong>rules com glob no frontmatter</strong> quando uma convenção precisa seguir o <em>tipo do arquivo</em>
+  e não o diretório — o caso clássico dos arquivos de teste espalhados pelo codebase.
+</div>
+
+<h2>1. A hierarquia de CLAUDE.md (Task Statement 3.1)</h2>
+<p>O Claude Code carrega instruções de <strong>três níveis</strong>, que se somam no contexto da sessão:</p>
+<ul>
+  <li><strong>User-level</strong> — <code>~/.claude/CLAUDE.md</code>. Suas preferências pessoais, válidas em
+      <em>todos os seus projetos</em>, só para você. <strong>Ponto crítico da prova:</strong> este arquivo
+      fica no seu home, <em>fora do repositório</em> — portanto <strong>não é compartilhado com o time via
+      version control</strong>.</li>
+  <li><strong>Project-level</strong> — <code>CLAUDE.md</code> na raiz do repo (ou <code>.claude/CLAUDE.md</code>).
+      É commitado no VCS: padrões do projeto, convenções de teste, comandos de build — tudo que o
+      <strong>time inteiro</strong> precisa receber igual.</li>
+  <li><strong>Directory-level</strong> — <code>CLAUDE.md</code> em subdiretórios. Convenções específicas daquela
+      parte da árvore (ex.: <code>packages/billing/CLAUDE.md</code>). Carrega quando o Claude trabalha
+      em arquivos daquele diretório.</li>
+</ul>
+<pre><code>~/.claude/CLAUDE.md              # pessoal, NÃO vai pro git, só vale pra você
+meu-repo/
+├── CLAUDE.md                    # project-level: commitado, time inteiro recebe
+├── .claude/
+│   └── rules/                   # rules modulares (ver seções 3 e 4)
+├── packages/
+│   ├── billing/
+│   │   └── CLAUDE.md            # directory-level: só ao mexer em billing/
+│   └── api/
+│       └── CLAUDE.md</code></pre>
+
+<h3>O diagnóstico que a prova cobra</h3>
+<p>O Task Statement 3.1 cita explicitamente: <em>"a new team member not receiving instructions because
+they're in user-level rather than project-level configuration"</em>. Tradução do cenário: você escreveu
+as convenções do time, funciona na sua máquina, mas o colega novo clona o repo e o Claude dele ignora
+tudo. Causa raiz: as instruções estão em <code>~/.claude/CLAUDE.md</code> (seu home), que não viaja pelo git.
+Correção: mover para o <strong>project-level</strong> (<code>CLAUDE.md</code> na raiz ou <code>.claude/CLAUDE.md</code>),
+que é versionado.</p>
+
+<h3>/memory: o diagnóstico de primeira linha</h3>
+<p>Quando o comportamento do Claude está inconsistente entre sessões ou entre máquinas, o primeiro passo
+não é reescrever nada — é <strong>inspecionar o que está carregado</strong>. O comando <code>/memory</code> mostra
+quais arquivos de memória (CLAUDE.md de cada nível, rules) estão ativos na sessão. É o equivalente a
+"verificar as variáveis de ambiente" antes de culpar o código.</p>
+
+<h2>2. Modularizando: @import e .claude/rules/ (Task Statement 3.1)</h2>
+<p>Um CLAUDE.md monolítico de 2.000 linhas é impossível de manter e pesa em toda sessão.
+O Exam Guide dá duas saídas de organização, complementares. Atenção: modularizar não corta contexto por si só —
+arquivos importados e rules sem <code>paths</code> continuam carregando em toda sessão; quem economiza tokens é o escopo
+por glob (seção 3, TS 3.3).</p>
+
+<h3>@import — referenciar arquivos externos</h3>
+<p>A sintaxe <code>@caminho/do/arquivo</code> dentro de um CLAUDE.md importa outro arquivo naquele ponto.
+Serve para manter o CLAUDE.md enxuto e <strong>importar só os standards relevantes</strong> para cada pacote
+— o guide dá o exemplo de cada package de um monorepo importar os standards do seu domínio:</p>
+<pre><code># packages/payments/CLAUDE.md
+# Convenções do pacote de pagamentos
+
+@../../docs/standards/api-conventions.md
+@../../docs/standards/testing.md</code></pre>
+
+<h3>.claude/rules/ — arquivos por tópico</h3>
+<p>A alternativa estrutural: quebrar o CLAUDE.md gigante em arquivos focados dentro de
+<code>.claude/rules/</code> — ex.: <code>testing.md</code>, <code>api-conventions.md</code>, <code>deployment.md</code>.
+Em vez de um documento único que mistura tudo, cada regra vive no seu próprio arquivo versionado.
+E, como veremos na próxima seção, esses arquivos podem ganhar <strong>escopo por glob</strong>.</p>
+
+<h2>3. Rules com glob: carregamento condicional por path (Task Statement 3.3)</h2>
+<p>Arquivos em <code>.claude/rules/</code> aceitam <strong>YAML frontmatter</strong> com o campo <code>paths</code>,
+uma lista de <strong>glob patterns</strong>. Quando presente, a regra <strong>só entra no contexto quando o Claude
+está editando arquivos que dão match</strong> no glob — em vez de ficar carregada o tempo todo.</p>
+<pre><code># .claude/rules/testing.md
+---
+paths: ["**/*.test.tsx", "**/*.spec.tsx"]
+---
+
+- Use React Testing Library, nunca enzyme
+- Todo teste de hook usa renderHook
+- Fixtures ficam em __fixtures__ ao lado do teste</code></pre>
+<pre><code># .claude/rules/infra.md
+---
+paths: ["terraform/**/*"]
+---
+
+- Toda variável tem description e type
+- Nada de recursos sem tags obrigatórias</code></pre>
+
+<h3>Por que isso vence o CLAUDE.md de diretório</h3>
+<p>Dois ganhos, e os dois são o coração do Task Statement 3.3:</p>
+<ol>
+  <li><strong>Economia de contexto:</strong> a regra de testes só ocupa tokens quando você está de fato
+      editando um <code>*.test.tsx</code>. Regra sempre carregada = contexto irrelevante na maioria dos turnos.</li>
+  <li><strong>Convenção por TIPO de arquivo, não por lugar:</strong> o CLAUDE.md de subdiretório é
+      <em>directory-bound</em> — só cobre aquela árvore. Mas arquivos de teste costumam ficar
+      <strong>espalhados ao lado do código que testam</strong> (<code>Button.test.tsx</code> junto de
+      <code>Button.tsx</code>). Para cobrir todos, você teria que replicar um CLAUDE.md em dezenas de pastas.
+      O glob <code>**/*.test.tsx</code> resolve em <strong>um único arquivo</strong>, não importa o diretório.</li>
+</ol>
+<p>Essa é exatamente a lógica da Questão 6 oficial do guide: áreas com convenções diferentes + arquivos
+de teste espalhados pelo codebase → a resposta é <code>.claude/rules/</code> com frontmatter de globs,
+porque é o único mecanismo que aplica a convenção <em>deterministamente pelo path do arquivo</em>.</p>
+
+<h2>4. Mapa de decisão rápido</h2>
+<table class="gloss">
+  <tr><th>Situação</th><th>Mecanismo certo</th></tr>
+  <tr><td>Preferência pessoal sua, todos os projetos</td><td><code>~/.claude/CLAUDE.md</code> (não versionado — nunca para regras do time)</td></tr>
+  <tr><td>Padrão universal do projeto, time inteiro</td><td><code>CLAUDE.md</code> na raiz ou <code>.claude/CLAUDE.md</code> (commitado)</td></tr>
+  <tr><td>Convenção de um subdiretório específico</td><td><code>CLAUDE.md</code> naquele subdiretório</td></tr>
+  <tr><td>CLAUDE.md gigante demais</td><td>Quebrar em <code>.claude/rules/*.md</code> e/ou <code>@import</code> (organização); para cortar contexto, <code>paths:</code> com glob nas rules específicas</td></tr>
+  <tr><td>Convenção por tipo de arquivo, espalhado pelo repo</td><td><code>.claude/rules/</code> com <code>paths:</code> glob no frontmatter</td></tr>
+  <tr><td>Comportamento inconsistente entre sessões</td><td><code>/memory</code> para ver o que está carregado</td></tr>
+</table>
+
+<h2>5. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
+  <tr><td class="en">user-level CLAUDE.md</td><td>~/.claude/CLAUDE.md, pessoal e não versionado</td><td class="uso">"instructions in ~/.claude/CLAUDE.md are not shared with teammates via version control"</td></tr>
+  <tr><td class="en">project-level CLAUDE.md</td><td>CLAUDE.md na raiz ou .claude/, commitado</td><td class="uso">"move the instructions to the project-level CLAUDE.md so the whole team receives them"</td></tr>
+  <tr><td class="en">directory-level CLAUDE.md</td><td>CLAUDE.md em subdiretório</td><td class="uso">"subdirectory CLAUDE.md files are directory-bound"</td></tr>
+  <tr><td class="en">@import</td><td>sintaxe para importar arquivo externo no CLAUDE.md</td><td class="uso">"use @import to keep CLAUDE.md modular"</td></tr>
+  <tr><td class="en">.claude/rules/</td><td>diretório de regras por tópico, alternativa ao monolítico</td><td class="uso">"split the monolithic CLAUDE.md into focused files in .claude/rules/"</td></tr>
+  <tr><td class="en">YAML frontmatter</td><td>bloco de metadados --- no topo do arquivo</td><td class="uso">"rule files with YAML frontmatter specifying glob patterns"</td></tr>
+  <tr><td class="en">paths field</td><td>campo do frontmatter com globs de ativação</td><td class="uso">“paths: ["**/*.test.tsx"] loads the rule conditionally”</td></tr>
+  <tr><td class="en">glob pattern</td><td>padrão de correspondência de caminhos (**, *)</td><td class="uso">"glob patterns apply conventions to files by type regardless of directory location"</td></tr>
+  <tr><td class="en">conditional loading</td><td>carregamento só ao editar arquivo que dá match</td><td class="uso">"path-scoped rules load only when editing matching files"</td></tr>
+  <tr><td class="en">/memory</td><td>comando que lista os arquivos de memória carregados</td><td class="uso">"use /memory to verify which memory files are loaded"</td></tr>
+  <tr><td class="en">directory-bound</td><td>preso ao diretório (limitação do CLAUDE.md de subpasta)</td><td class="uso">"CLAUDE.md files are directory-bound and can't handle files spread across many directories"</td></tr>
+  <tr><td class="en">version control (VCS)</td><td>controle de versão (git)</td><td class="uso">"shared via version control"</td></tr>
+</table>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha do dia</h3>
+  <p>Questões de configuração adoram o distrator "consolide tudo no CLAUDE.md raiz e deixe o Claude
+  inferir qual seção se aplica". Inferência não é garantia: é o remendo probabilístico onde se pede
+  aplicação <strong>determinística</strong> por path. Também aparece muito o distrator "instruções no
+  <code>~/.claude/CLAUDE.md</code>" para regras de time — arquivo de usuário não viaja pelo git.
+  Regra de bolso: <em>convenção de time vai no que é versionado; convenção por tipo de arquivo vai em
+  .claude/rules/ com glob; e antes de reescrever configuração, rode /memory para ver o que está carregado.</em></p>
+</div>
+
+<h2>6. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
+<div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
+
+<div class="q" data-correct="c" data-ts="3.1" data-dom="3">
+  <div class="qnum">Questão 1 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">A new engineer clones the repository and reports that Claude ignores all the team conventions you documented — mandatory code review steps, commit message format, and the test command. On your own machine everything works. You realize all those instructions live in ~/.claude/CLAUDE.md. What is the root cause and the fix?</div>
+  <div class="pt-block pt">Um engenheiro novo clona o repositório e relata que o Claude ignora todas as convenções do time que você documentou — etapas obrigatórias de code review, formato de commit e o comando de teste. Na sua máquina tudo funciona. Você percebe que todas essas instruções estão em ~/.claude/CLAUDE.md. Qual é a causa raiz e a correção?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q1" value="a">A. The new engineer's Claude Code version is outdated; upgrading it makes user-level memory files sync across the team.<div class="pt">A versão do Claude Code do engenheiro novo está desatualizada; atualizá-la faz os arquivos de memória do usuário sincronizarem pelo time.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="b">B. The instructions are worded too softly for the model; rewrite them as strict imperatives in the same file.<div class="pt">As instruções estão escritas de forma branda demais para o modelo; reescrevê-las como imperativos rígidos no mesmo arquivo.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. ~/.claude/CLAUDE.md is personal and not shared via version control; move the team's rules to the project CLAUDE.md.<div class="pt">~/.claude/CLAUDE.md é pessoal e não é compartilhado pelo controle de versão; mover as regras do time para o CLAUDE.md do projeto.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="d">D. Send the file to every new hire and have them copy it into their home directory as part of onboarding.<div class="pt">Enviar o arquivo a cada novo contratado e pedir que o copie para o diretório home como parte do onboarding.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Arquivo em <code>~/.claude/</code> fica fora do repositório: não é compartilhado via VCS, por isso só funciona na sua máquina. A correção estrutural é mover as regras do time para o project-level versionado (<code>CLAUDE.md</code> na raiz ou <code>.claude/CLAUDE.md</code>) e commitar. A inventa um mecanismo de sincronização que não existe. B trata como problema de redação algo que é problema de escopo/localização. D é um processo manual frágil que o VCS já resolve.<span class="ts">Domínio 3 · TS 3.1 — Hierarquia e organização do CLAUDE.md</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="3.1" data-dom="3">
+  <div class="qnum">Questão 2 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">Your repository's root CLAUDE.md has grown past 1,500 lines covering testing, API design, deployment, and security. Edits keep breaking unrelated sections, and nobody dares to touch the file anymore. Which approach is the proportional fix?</div>
+  <div class="pt-block pt">O CLAUDE.md raiz do seu repositório passou de 1.500 linhas cobrindo testes, design de API, deploy e segurança. As edições vivem quebrando seções não relacionadas, e ninguém mais se atreve a mexer no arquivo. Qual abordagem é a correção proporcional?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q2" value="a">A. Delete the file and move the conventions into a custom skill that developers invoke whenever they need them.<div class="pt">Apagar o arquivo e mover as convenções para uma skill customizada que os devs invocam quando precisarem.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="b">B. Split it into focused topic files under .claude/rules/, such as testing.md and api-conventions.md, with a short root file.<div class="pt">Dividi-lo em arquivos focados por tópico em .claude/rules/, como testing.md e api-conventions.md, com um arquivo raiz curto.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="c">C. Compress the file with a summarization prompt and paste the shorter version back in place of the original.<div class="pt">Comprimir o arquivo com um prompt de sumarização e colar a versão mais curta no lugar da original.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="d">D. Move the file to ~/.claude/CLAUDE.md so that it stops weighing on the repository and loads only once for each user.<div class="pt">Mover o arquivo para ~/.claude/CLAUDE.md para que ele deixe de pesar no repositório e carregue só uma vez para cada usuário.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> O Exam Guide prescreve exatamente isso: quebrar o CLAUDE.md monolítico em arquivos focados por tópico em <code>.claude/rules/</code> — organização mantível, e ainda prepara o terreno para escopo por glob. Sem <code>paths</code> no frontmatter, as rules continuam carregando em toda sessão; o corte de contexto vem quando os arquivos específicos ganham <code>paths</code> (TS 3.3). A remove a aplicação automática: skill é invocação sob demanda, não padrão sempre carregado. C perde detalhes normativos na compressão e mantém o monólito. D torna as regras invisíveis para o time (user-level não é versionado).<span class="ts">Domínio 3 · TS 3.1 — Hierarquia e organização do CLAUDE.md</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="3.1" data-dom="3">
+  <div class="qnum">Questão 3 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">In your monorepo, every package must follow the company's shared API standards plus its own domain-specific standards maintained by different teams. Each package already has its own CLAUDE.md. How do you keep each package's CLAUDE.md small while ensuring it includes exactly the standards relevant to that package?</div>
+  <div class="pt-block pt">No seu monorepo, cada pacote deve seguir os padrões de API compartilhados da empresa mais seus próprios padrões de domínio, mantidos por times diferentes. Cada pacote já tem seu próprio CLAUDE.md. Como manter o CLAUDE.md de cada pacote pequeno garantindo que ele inclua exatamente os padrões relevantes para aquele pacote?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q3" value="a">A. Keep each package's CLAUDE.md short and @import the shared API standards plus that package's own domain standards.<div class="pt">Manter o CLAUDE.md de cada pacote curto e usar @import para os padrões de API compartilhados mais os padrões de domínio daquele pacote.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="b">B. Copy the full text of every standards document into each package's CLAUDE.md so that nothing can be missed.<div class="pt">Copiar o texto completo de cada documento de padrões no CLAUDE.md de cada pacote, para que nada fique de fora.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="c">C. Put the standards of every package in the root CLAUDE.md and rely on Claude to apply the ones that fit each package.<div class="pt">Colocar os padrões de todos os pacotes no CLAUDE.md raiz e confiar no Claude para aplicar os que servem a cada pacote.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="d">D. Create one skill per standards document and require developers to invoke the right ones before each code change.<div class="pt">Criar uma skill por documento de padrões e exigir que os devs invoquem as certas antes de cada alteração de código.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> É o caso de uso que o guide cita para <code>@import</code>: incluir seletivamente os standards relevantes em cada CLAUDE.md de pacote, sem duplicar conteúdo e deixando cada time manter seu arquivo-fonte. B duplica texto (diverge na primeira atualização). C volta ao monólito e depende de inferência. D troca carregamento automático por disciplina manual — convenção obrigatória não pode depender de lembrar de invocar.<span class="ts">Domínio 3 · TS 3.1 — Hierarquia e organização do CLAUDE.md</span></div>
+</div>
+
+<div class="q" data-correct="b,d" data-ts="3.3" data-dom="3">
+  <div class="qnum">Questão 4 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">Your team's test files live next to the code they test, scattered across dozens of directories (e.g., parser.test.ts beside parser.ts, checkout.test.ts beside checkout.ts). You want Claude to apply the team's testing conventions whenever it touches a test file, without paying the context cost on unrelated work. Which TWO properties make .claude/rules/ with a YAML frontmatter paths glob (e.g., paths: ["**/*.test.ts"]) the right mechanism?</div>
+  <div class="pt-block pt">Os arquivos de teste do seu time ficam ao lado do código que testam, espalhados por dezenas de diretórios (ex.: parser.test.ts junto de parser.ts, checkout.test.ts junto de checkout.ts). Você quer que o Claude aplique as convenções de teste do time sempre que tocar num arquivo de teste, sem pagar o custo de contexto em trabalho não relacionado. Quais DUAS propriedades fazem de .claude/rules/ com glob paths no frontmatter YAML (ex.: paths: ["**/*.test.ts"]) o mecanismo certo?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q4" value="a">A. The rule overrides any conflicting instruction in CLAUDE.md, so the testing conventions always take precedence.<div class="pt">A regra sobrescreve qualquer instrução conflitante do CLAUDE.md, então as convenções de teste sempre têm prioridade.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="b">B. The glob matches by file path, so the convention follows the file type in whichever directory the test lives.<div class="pt">O glob casa pelo caminho do arquivo, então a convenção segue o tipo de arquivo em qualquer diretório em que o teste esteja.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="c">C. The rule runs as a pre-commit check, so test files that break the conventions cannot be committed at all.<div class="pt">A regra roda como checagem de pre-commit, então arquivos de teste que quebram as convenções nem podem ser commitados.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="d">D. The rule loads only when Claude edits a matching file, which keeps it out of context during unrelated work.<div class="pt">A regra só carrega quando o Claude edita um arquivo que dá match, o que a mantém fora do contexto no trabalho não relacionado.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="e">E. Each developer can switch the rule on or off locally without touching the version-controlled configuration.<div class="pt">Cada dev pode ligar ou desligar a regra localmente sem mexer na configuração versionada.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B e D.</strong> São os dois pilares do Task Statement 3.3: o glob casa pelo caminho e cobre arquivos espalhados — onde o CLAUDE.md de diretório falha por ser directory-bound (B) — e o carregamento condicional economiza contexto (D). A inventa uma regra de precedência que o guide não descreve: o ganho da rule é escopo, não prioridade. C descreve enforcement por execução — rules são contexto/instrução, não código que bloqueia commit (isso seria território de hooks ou CI, outro mecanismo). E também não é propriedade das rules: elas são versionadas justamente para valerem igual para o time inteiro.<span class="ts">Domínio 3 · TS 3.3 — Rules por caminho (glob)</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="3.1" data-dom="3">
+  <div class="qnum">Questão 5 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">A colleague complains that Claude behaves inconsistently between sessions: sometimes it follows the API conventions, sometimes it ignores them. Before rewriting any configuration, what is the correct first diagnostic step?</div>
+  <div class="pt-block pt">Um colega reclama que o Claude se comporta de forma inconsistente entre sessões: às vezes segue as convenções de API, às vezes ignora. Antes de reescrever qualquer configuração, qual é o primeiro passo de diagnóstico correto?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q5" value="a">A. Search the repository for the word "convention" to find where the instructions might be duplicated or contradicted.<div class="pt">Buscar no repositório a palavra "convention" para achar onde as instruções podem estar duplicadas ou contraditórias.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. Reinstall Claude Code to clear any corrupted configuration cache that might be dropping the conventions.<div class="pt">Reinstalar o Claude Code para limpar algum cache de configuração corrompido que possa estar descartando as convenções.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. Ask Claude at the start of each session which rules it remembers, and treat its answer as the loaded configuration.<div class="pt">Perguntar ao Claude, no início de cada sessão, quais regras ele lembra, e tratar a resposta como a configuração carregada.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. Run /memory to see which memory files are actually loaded in the session and compare them with what you expect.<div class="pt">Rodar /memory para ver quais arquivos de memória estão de fato carregados na sessão e comparar com o que você espera.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> O guide lista <code>/memory</code> como a ferramenta para verificar quais arquivos estão carregados e diagnosticar comportamento inconsistente entre sessões — diagnóstico antes de reescrita. A busca texto solto sem mostrar o que a sessão carregou. B é superstição: não existe "cache corrompido" de CLAUDE.md nesse modelo. C confia em auto-relato do modelo em vez da fonte estrutural de verdade.<span class="ts">Domínio 3 · TS 3.1 — Hierarquia e organização do CLAUDE.md</span></div>
+</div>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir aula 06</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="aula-05.html">← Aula 05</a></span>
+  <span><a href="aula-07.html">Aula 07 →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  var total = 0, score = 0;
+  document.querySelectorAll('.q').forEach(function (q) {
+    total++;
+    document.getElementById('total').textContent = total;
+    var btn = q.querySelector('button.answer');
+    var correct = q.dataset.correct.split(',').map(function (s) { return s.trim(); });
+    btn.addEventListener('click', function () {
+      var checked = Array.prototype.slice.call(q.querySelectorAll('input:checked')).map(function (i) { return i.value; });
+      if (checked.length === 0) return;
+      var ok = checked.length === correct.length && checked.every(function (v) { return correct.indexOf(v) !== -1; });
+      q.querySelectorAll('label.opt').forEach(function (l) {
+        var v = l.querySelector('input').value;
+        if (correct.indexOf(v) !== -1) l.classList.add('correct');
+        else if (l.querySelector('input').checked) l.classList.add('wrong');
+        l.querySelector('input').disabled = true;
+      });
+      var fb = q.querySelector('.feedback');
+      fb.classList.add(ok ? 'ok' : 'ko');
+      fb.innerHTML = (ok ? '✅ Correto. ' : '❌ Incorreto. ') + fb.innerHTML;
+      btn.disabled = true;
+      if (ok) score++;
+      document.getElementById('score').textContent = score;
+    });
+  });
+  var KEY = 'ccarf-aula-06';
+  var btn = document.getElementById('finish');
+  if (localStorage.getItem(KEY)) {
+    document.getElementById('donemsg').textContent = 'Aula já concluída — ' + localStorage.getItem(KEY);
+  }
+  btn.addEventListener('click', function () {
+    var rec = new Date().toLocaleDateString('pt-BR') + ' · ' + score + '/' + total + ' acertos';
+    localStorage.setItem(KEY, rec);
+    document.getElementById('donemsg').textContent = 'Concluída: ' + rec;
+  });
+})();
+</script>
+</body>
+</html>
