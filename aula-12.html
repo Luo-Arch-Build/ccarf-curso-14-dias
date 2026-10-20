@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 12 — Gestão de contexto e escalonamento · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.uso { color: var(--pt); font-size: 13px; font-style: italic; }
+  .pt { color: var(--pt); font-size: 13.5px; }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 4px 0 10px; }
+  body.hide-pt .pt, body.hide-pt .pt-block { display: none; }
+  .toggle-pt { position: sticky; top: 12px; float: right; z-index: 5; background: var(--card2);
+    border: 1px solid var(--border); color: var(--muted); border-radius: 999px;
+    padding: 6px 14px; font-size: 12.5px; cursor: pointer; }
+  .toggle-pt:hover { color: var(--text); border-color: var(--accent); }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q .cenario { float: right; text-transform: none; letter-spacing: 0; font-size: 11.5px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
+  .q .feedback .ts { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body class="hide-pt">
+<div class="wrap">
+
+<button class="toggle-pt" onclick="document.body.classList.toggle('hide-pt'); this.textContent = document.body.classList.contains('hide-pt') ? '🇧🇷 mostrar traduções' : '🇧🇷 ocultar traduções';">🇧🇷 mostrar traduções</button>
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Aula 12</div>
+  <h1>Aula 12 — Gestão de contexto e escalonamento</h1>
+  <div class="meta">
+    <span class="tag">Domínio 5 · Context Management &amp; Reliability (15%)</span>
+    <span class="tag">~60 min</span>
+  </div>
+</header>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo do dia.</strong> Dominar as duas falhas mais cobradas do Domínio 5: (1) <strong>perda de
+  informação crítica em contextos longos</strong> — sumarização progressiva que destrói valores e datas,
+  "lost in the middle", tool results inflados — e suas correções arquiteturais; (2) <strong>calibração de
+  escalonamento</strong> — quando escalar para humano, quando resolver, e por que sentimento e confidence
+  self-reportada NÃO são critérios confiáveis.
+</div>
+
+<h2>1. Sumarização progressiva e o bloco de "case facts" (Task Statement 5.1)</h2>
+<p><strong>Ponto de partida:</strong> a API não guarda estado. Cada request leva o <strong>histórico completo</strong> da
+conversa (mensagens do usuário, respostas e tool results) — é isso que mantém a coerência entre turnos. Mandar só a
+última mensagem para economizar tokens faz o agente "esquecer" o que foi dito. Resumir é o recurso para quando o
+contexto enche — e aí os fatos transacionais vão para o bloco de case facts, abaixo.</p>
+<p>Sessões longas de suporte eventualmente estouram o contexto, e a solução usual é resumir o histórico.
+O problema: <strong>sumarização progressiva destrói exatamente os dados que importam</strong>. Um resumo de
+um resumo de um resumo transforma "o pedido #4821 de R$ 1.247,90, prometido para 12/03, cliente aceitou
+crédito de 10% se entregar até sexta" em "cliente tinha um problema com um pedido, chegou-se a um acordo".
+Valores, percentuais, datas e <em>expectativas declaradas pelo cliente</em> viram texto vago — e o agente
+passa a violar acordos que ele mesmo fez.</p>
+<p>A correção arquitetural que a prova espera: <strong>extrair fatos transacionais para um bloco persistente
+de "case facts" que vai em TODA chamada à API, fora do histórico resumido</strong>. O histórico pode ser
+resumido; o bloco de fatos, nunca.</p>
+<pre><code>def build_prompt(case_id, summarized_history):
+    case_facts = db.get_case_facts(case_id)  # camada separada, nunca resumida
+    system = f"""You are a support agent. Authoritative case facts (do not contradict):
+    - Order: {case_facts.order_id} | Amount: R$ {case_facts.amount}
+    - Promised delivery: {case_facts.promised_date}
+    - Agreed resolution: {case_facts.agreed_terms}
+    Conversation so far (summarized): {summarized_history}"""</code></pre>
+<p>Em sessões com múltiplos problemas (cliente trata de 3 pedidos na mesma conversa), essa camada estruturada
+separada — IDs, valores, status por pedido — é o que impede o agente de misturar os casos.</p>
+
+<h3>Lost in the middle</h3>
+<p>Modelos processam com confiabilidade o <strong>início e o fim</strong> de inputs longos, mas tendem a
+<em>omitir findings do miolo</em>. Mitigações diretas:</p>
+<ul>
+  <li>Colocar o <strong>resumo dos findings-chave no início</strong> do input agregado</li>
+  <li>Organizar resultados detalhados com <strong>headers de seção explícitos</strong>
+      (<code>## Refund policy</code>, <code>## Order history</code>), não num bloco corrido</li>
+</ul>
+<p>Não confunda: metadados e dado estruturado vindos dos subagents ajudam a síntese e o orçamento de contexto
+(próxima subseção); a mitigação de efeito posicional que o guia cita é resumo no início + headers.</p>
+
+<h3>Upstream enxuto quando o downstream tem pouco contexto</h3>
+<p>Quando o agente de síntese tem <strong>orçamento de contexto curto</strong>, cada token que os agentes upstream
+mandam compete com os findings. A correção é <strong>no upstream</strong>: em vez de narrativa verbosa com a cadeia de
+raciocínio, cada agente devolve <strong>dado estruturado</strong> — fatos-chave, citações, score de relevância — com
+<strong>metadados</strong> (data de publicação, localização na fonte, contexto metodológico) para a síntese interpretar
+cada número sem adivinhar.</p>
+<pre><code>{
+  "fact": "Custo médio de integração caiu 18% em 2025",
+  "citation": {"source": "relatorio-setorial.pdf", "location": "p. 14", "published": "2026-02-10"},
+  "method": "survey, n=1.200 empresas",
+  "relevance": 0.86
+}</code></pre>
+<p><strong>Regra de bolso:</strong> <em>o downstream recebe o resultado, não o raciocínio — e cada número viaja com data
+e origem.</em></p>
+
+<h3>Tool results acumulam tokens desproporcionalmente</h3>
+<p>Cada <code>tool_result</code> fica no histórico para sempre. Um <code>lookup_order</code> que retorna
+<strong>40+ campos</strong> quando só 5 são relevantes para devolução incha o contexto a cada iteração do loop.
+A correção acontece <strong>na tool / na camada de integração, antes de o resultado entrar no contexto</strong> —
+não é trabalho do prompt:</p>
+<pre><code>def lookup_order(order_id):
+    raw = orders_api.get(order_id)           # 40+ campos
+    return {                                 # trim: só o relevante p/ suporte
+        "order_id": raw["id"], "status": raw["status"],
+        "total": raw["total"], "items": raw["item_names"],
+        "delivered_at": raw["delivered_at"],
+    }</code></pre>
+
+<h2>2. Escalonamento e resolução de ambiguidade (Task Statement 5.2)</h2>
+<p>A prova cobra a <strong>calibração</strong>: escalar demais derruba o first-contact resolution; escalar
+de menos gera violação de política. Os gatilhos legítimos de escalonamento são três:</p>
+<ol>
+  <li><strong>Pedido explícito de humano pelo cliente</strong></li>
+  <li><strong>Exceção ou lacuna de política</strong> (policy gap) — não "caso complexo" em geral</li>
+  <li><strong>Incapacidade de progredir</strong> de forma significativa no caso</li>
+</ol>
+
+<h3>A distinção fina que a prova adora</h3>
+<ul>
+  <li>Cliente diz <strong>"quero falar com um humano"</strong> → escale <strong>imediatamente</strong>,
+      sem tentar investigar antes. Honrar o pedido explícito não é opcional.</li>
+  <li>Cliente <strong>frustrado</strong>, mas com caso <strong>simples e dentro da capacidade do agente</strong>
+      → <strong>reconheça a frustração e ofereça resolver</strong>; escale só se o cliente <em>reiterar</em>
+      a preferência por humano. Frustração ≠ complexidade.</li>
+  <li><strong>Política ambígua ou silenciosa</strong> sobre o pedido (ex.: cliente pede price matching com
+      concorrente, mas a política só cobre ajustes no próprio site) → <strong>escale</strong>. O agente não
+      deve inventar política.</li>
+</ul>
+
+<h3>Proxies não-confiáveis (distratores clássicos)</h3>
+<ul>
+  <li>❌ <strong>Análise de sentimento</strong> como gatilho de escalonamento — sentimento não se correlaciona
+      com complexidade do caso, que é o problema real</li>
+  <li>❌ <strong>Confidence score self-reportado</strong> ("de 1 a 10, qual sua confiança?") com threshold de
+      roteamento — a confidence self-reportada de LLMs é mal calibrada; o agente já está confiante demais
+      exatamente nos casos difíceis</li>
+</ul>
+<p>A correção proporcional para descalibração de escalonamento: <strong>critérios explícitos de escalonamento
+no system prompt + few-shot examples</strong> mostrando quando escalar vs. resolver autonomamente. É a
+resposta da Questão 3 oficial do guide: ataca a causa raiz (fronteiras de decisão não especificadas) antes
+de qualquer infraestrutura nova (classificador ML separado é over-engineering nesse estágio).</p>
+
+<h3>Ambiguidade de identidade</h3>
+<p>Quando uma tool retorna <strong>múltiplos matches</strong> para um cliente (dois "João Silva" na base),
+a ação correta é <strong>pedir um identificador adicional</strong> (e-mail, CPF, número do pedido) —
+nunca selecionar por heurística ("o mais recente", "o do mesmo estado"). Escolher o cliente errado vaza
+dados de uma pessoa para outra.</p>
+
+<h2>3. Contexto em exploração de codebases grandes (Task Statement 5.4)</h2>
+<p>O sintoma assinatura: em sessões longas de exploração, o modelo começa a dar respostas inconsistentes e
+a falar de <em>"typical patterns"</em> ("esse tipo de sistema geralmente...") em vez das classes e arquivos
+específicos que ele mesmo descobriu há uma hora. Isso é <strong>degradação de contexto</strong> — o detalhe
+real foi espremido para fora ou perdido no miolo. O arsenal de defesa:</p>
+<ul>
+  <li><strong>Scratchpad files</strong>: agentes gravam findings-chave em arquivos (ex.: <code>findings.md</code>)
+      e os relêem para perguntas subsequentes — o arquivo sobrevive a qualquer compactação do contexto</li>
+  <li><strong>Subagents para exploração verbosa</strong>: o agente principal delega perguntas específicas
+      ("ache todos os arquivos de teste", "trace as dependências do fluxo de refund") a subagents, que
+      absorvem a saída verbosa de grep/leitura e devolvem só o resultado — o principal preserva contexto
+      para coordenação de alto nível</li>
+  <li><strong>Sumários entre fases</strong>: resumir os findings da fase N e injetar o sumário no contexto
+      inicial dos subagents da fase N+1</li>
+  <li><strong><code>/compact</code></strong>: no Claude Code, reduz o uso de contexto em sessões longas quando
+      ele enche de output de descoberta</li>
+</ul>
+
+<h3>Passagem de fase: resumo injetado, não transcript</h3>
+<p>Exploração em fases (mapear → investigar) tem uma costura crítica: os subagents da fase N+1 <strong>não herdam</strong>
+nada da fase N. Antes de spawná-los, o coordinator <strong>resume os achados-chave da fase N</strong> (pontos de entrada,
+abstrações compartilhadas, nomes) e <strong>injeta esse resumo no prompt inicial</strong> de cada subagent. Sem isso, cada
+um redescobre o mapa, gasta contexto e inventa nomes próprios; com o transcript bruto no lugar do resumo, o contexto
+estoura do mesmo jeito.</p>
+<p><strong>Regra de bolso:</strong> <em>entre fases passa o mapa resumido, não o diário de bordo.</em></p>
+
+<h3>Crash recovery com manifest</h3>
+<p>Para pipelines multi-agent que podem cair no meio: cada agente <strong>exporta seu estado para uma
+localização conhecida</strong> (JSON estruturado); na retomada, o coordinator <strong>carrega um
+manifest</strong> e injeta o estado nos prompts dos agentes, continuando de onde parou — em vez de
+reexecutar toda a exploração.</p>
+<pre><code>{
+  "run_id": "explore-2026-10-06",
+  "phase": 2,
+  "completed": ["find_test_files", "trace_refund_flow"],
+  "pending": ["map_api_handlers"],
+  "agent_state": {
+    "refund_flow": {"entry": "src/payments/refund.ts", "findings_ref": "scratch/phase1.md"}
+  }
+}</code></pre>
+<p>Repare nos distratores: <code>/compact</code> reduz contexto, mas <strong>não grava progresso</strong> fora da sessão;
+retomar o histórico da conversa traz de volta tool results velhos e verbosos e não reconstrói o estado de cada agente; e
+um "resumo de progresso" em prosa na última mensagem não é estado que o coordinator consiga carregar.
+<strong>Regra de bolso:</strong> <em>progresso que precisa sobreviver a um crash mora fora da conversa.</em></p>
+
+<h2>4. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
+  <tr><td class="en">progressive summarization</td><td>sumarização progressiva (resumo de resumo)</td><td class="uso">"progressive summarization risks condensing amounts and dates into vague summaries"</td></tr>
+  <tr><td class="en">case facts block</td><td>bloco persistente de fatos do caso</td><td class="uso">"extract transactional facts into a persistent case facts block outside the summarized history"</td></tr>
+  <tr><td class="en">lost in the middle</td><td>efeito "perdido no meio"</td><td class="uso">"models reliably process the beginning and end but may omit middle sections"</td></tr>
+  <tr><td class="en">tool result trimming</td><td>corte de campos irrelevantes do tool result</td><td class="uso">"trim verbose tool outputs to only relevant fields before they accumulate in context"</td></tr>
+  <tr><td class="en">escalation trigger</td><td>gatilho de escalonamento</td><td class="uso">"appropriate escalation triggers: human requests, policy gaps, inability to progress"</td></tr>
+  <tr><td class="en">policy gap</td><td>lacuna/silêncio de política</td><td class="uso">"escalate when policy is ambiguous or silent on the customer's request"</td></tr>
+  <tr><td class="en">self-reported confidence</td><td>confiança autorreportada pelo modelo</td><td class="uso">"self-reported confidence scores are unreliable proxies for case complexity"</td></tr>
+  <tr><td class="en">sentiment-based escalation</td><td>escalonamento por análise de sentimento</td><td class="uso">"sentiment does not correlate with case complexity"</td></tr>
+  <tr><td class="en">additional identifier</td><td>identificador adicional (desambiguação)</td><td class="uso">"request an additional identifier when tool results return multiple matches"</td></tr>
+  <tr><td class="en">context degradation</td><td>degradação de contexto em sessões longas</td><td class="uso">"the model references typical patterns rather than classes it discovered earlier"</td></tr>
+  <tr><td class="en">scratchpad file</td><td>arquivo de anotações persistente</td><td class="uso">"maintain scratchpad files recording key findings across context boundaries"</td></tr>
+  <tr><td class="en">/compact</td><td>comando de compactação de contexto do Claude Code</td><td class="uso">"use /compact when context fills with verbose discovery output"</td></tr>
+  <tr><td class="en">state manifest</td><td>manifesto de estado para crash recovery</td><td class="uso">"the coordinator loads a manifest on resume and injects state into agent prompts"</td></tr>
+  <tr><td class="en">few-shot examples</td><td>exemplos few-shot no system prompt</td><td class="uso">"explicit escalation criteria with few-shot examples demonstrating when to escalate"</td></tr>
+  <tr><td class="en">context budget</td><td>orçamento de contexto do agente downstream</td><td class="uso">"downstream agents have limited context budgets"</td></tr>
+  <tr><td class="en">relevance score</td><td>score de relevância de cada fato</td><td class="uso">"return key facts, citations and relevance scores instead of verbose content"</td></tr>
+  <tr><td class="en">phase summary</td><td>resumo da fase anterior injetado no prompt</td><td class="uso">"summarize key findings before spawning sub-agents for the next phase"</td></tr>
+</table>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha do dia</h3>
+  <p>Questões de escalonamento quase sempre trazem 3 distratores no mesmo molde: <strong>análise de
+  sentimento</strong>, <strong>confidence self-reportada com threshold</strong> e <strong>um classificador
+  ML separado treinado em tickets históricos</strong>. Os dois primeiros são proxies não-confiáveis de
+  complexidade; o terceiro é over-engineering antes de tentar o fix barato. A resposta certa quase sempre é
+  <strong>critérios explícitos de escalonamento + few-shot examples no system prompt</strong>.
+  Regra de bolso: <em>descalibração de decisão do agente se corrige primeiro especificando a fronteira da
+  decisão no prompt — infraestrutura nova é último recurso, não primeiro. Exceção: se o escalonamento vem de regra
+  de negócio determinística (valor acima de um limite, identidade antes de operação financeira), prompt não basta — a
+  resposta é hook ou pré-requisito programático (TS 1.4/1.5, aula 03). Critérios + few-shot calibram julgamento; não
+  garantem compliance.</em></p>
+</div>
+
+<h2>5. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
+<div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
+
+<div class="q" data-correct="c" data-ts="5.1" data-dom="5">
+  <div class="qnum">Questão 1 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">A support agent's sessions are summarized whenever the conversation gets long. After a few summarization rounds, customers complain that the agent "forgets" negotiated terms: it stops honoring a promised delivery date and quotes a wrong refund amount, even though both were stated clearly early in the session. What is the best fix?</div>
+  <div class="pt-block pt">As sessões de um agente de suporte são resumidas quando a conversa fica longa. Após algumas rodadas de sumarização, clientes reclamam que o agente "esquece" os termos negociados: ele deixa de honrar uma data de entrega prometida e cita um valor de reembolso errado, embora ambos tenham sido declarados claramente no início da sessão. Qual é a melhor correção?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q1" value="a">A. Instruct the model in the system prompt to pay special attention to numbers and dates when writing summaries.<div class="pt">Instruir o modelo no system prompt a prestar atenção especial a números e datas ao escrever resumos.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="b">B. Increase the summarization interval so summaries happen less often and each one keeps more of the details.<div class="pt">Aumentar o intervalo de sumarização para os resumos acontecerem com menos frequência e cada um guardar mais detalhes.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. Move amounts, dates, order IDs and agreed terms into a persistent case-facts block sent outside the summary.<div class="pt">Mover valores, datas, IDs de pedido e termos acordados para um bloco persistente de case facts enviado fora do resumo.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="d">D. Ask the customer to restate the key numbers after each summary, and store their latest answer as the reference.<div class="pt">Pedir ao cliente que repita os números-chave após cada resumo, e guardar a última resposta dele como referência.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> A causa raiz é que sumarização progressiva condensa valores, datas e expectativas do cliente em texto vago; a correção arquitetural é separar os fatos transacionais numa camada persistente que nunca é resumida. A é remendo de prompt sobre um processo (resumo) que precisa de garantia estrutural — cada novo resumo pode degradar de novo. B só adia o problema: quando o resumo acontecer, os dados se perdem igual. D terceiriza a falha da arquitetura para o cliente, que já declarou os dados uma vez. <span class="ts">Domínio 5 · TS 5.1 — Contexto em interações longas</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="5.1" data-dom="5">
+  <div class="qnum">Questão 2 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">A research pipeline aggregates results from five search agents into one long input for a synthesis agent. The final reports consistently ignore findings returned by the third and fourth agents, even though those findings are present verbatim in the aggregated input. What is the most effective mitigation?</div>
+  <div class="pt-block pt">Um pipeline de pesquisa agrega resultados de cinco agentes de busca num único input longo para um agente de síntese. Os relatórios finais consistentemente ignoram os findings do terceiro e quarto agentes, embora estejam presentes verbatim no input agregado. Qual é a mitigação mais eficaz?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q2" value="a">A. Add an instruction telling the synthesis agent to read the entire input carefully, including the middle.<div class="pt">Adicionar uma instrução dizendo ao agente de síntese para ler o input inteiro com atenção, incluindo o meio.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="b">B. Put a key-findings summary at the start of the input and organize the details under explicit section headers.<div class="pt">Colocar um resumo dos findings-chave no início do input e organizar os detalhes sob headers de seção explícitos.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="c">C. Randomize the order of the agents' results on every run so that no single agent is always stuck in the middle.<div class="pt">Randomizar a ordem dos resultados dos agentes a cada execução para nenhum agente ficar sempre preso no meio.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="d">D. Cut the search agents from five to three so that the aggregated input is shorter and easier to read in full.<div class="pt">Reduzir os agentes de busca de cinco para três para o input agregado ficar mais curto e mais fácil de ler inteiro.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> É o "lost in the middle": o modelo processa bem início e fim, mas omite o miolo — e os agentes 3 e 4 caem sempre no miolo. Resumo de findings-chave no início + headers explícitos são as mitigações que o guide prescreve. A é remendo de prompt contra um efeito posicional conhecido do modelo — instrução não muda onde a atenção é mais confiável. C apenas redistribui aleatoriamente qual finding será perdido, sem reduzir a perda. D sacrifica cobertura de pesquisa para contornar um problema que se resolve com estrutura do input. <span class="ts">Domínio 5 · TS 5.1 — Contexto em interações longas</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="5.2" data-dom="5">
+  <div class="qnum">Questão 3 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">Your support agent resolves only 55% of cases on first contact, far from the 80% target. Transcript analysis shows it hands off routine cases it could have solved (e.g., a standard damaged-item replacement with photo evidence attached) while trying to autonomously handle requests that fall outside written policy. What is the most effective first step to recalibrate its escalation behavior?</div>
+  <div class="pt-block pt">Seu agente de suporte resolve apenas 55% dos casos no primeiro contato, longe da meta de 80%. A análise das transcrições mostra que ele transfere casos rotineiros que poderia ter resolvido (ex.: troca padrão de item danificado com foto anexada) enquanto tenta tratar autonomamente pedidos fora da política escrita. Qual é o primeiro passo mais eficaz para recalibrar o comportamento de escalonamento?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q3" value="a">A. Write explicit escalation criteria into the system prompt, with few-shot examples of resolve versus escalate.<div class="pt">Escrever critérios explícitos de escalonamento no system prompt, com exemplos few-shot de resolver versus escalar.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="b">B. Have the agent output a 1–10 confidence score for each case and auto-escalate anything that scores below 6.<div class="pt">Fazer o agente emitir um score de confiança de 1 a 10 por caso e escalar automaticamente o que ficar abaixo de 6.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="c">C. Train a dedicated ticket classifier on historical data to decide on escalation before the agent ever runs.<div class="pt">Treinar um classificador de tickets dedicado em dados históricos para decidir o escalonamento antes de o agente rodar.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="d">D. Add sentiment analysis so that emotionally negative conversations are routed to a human right away.<div class="pt">Adicionar análise de sentimento para conversas emocionalmente negativas irem para um humano na hora.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> (Adaptação da Questão 3 oficial.) A causa raiz é a fronteira de decisão não especificada — o agente não sabe o que é "rotineiro" vs. "exceção de política". Critérios explícitos + few-shot atacam isso diretamente, com custo mínimo, antes de qualquer infraestrutura. B falha porque confidence self-reportada de LLM é mal calibrada — o agente já está erradamente confiante nos casos de exceção. C é over-engineering: exige dados rotulados e pipeline de ML quando a otimização de prompt ainda nem foi tentada. D resolve outro problema: sentimento não se correlaciona com complexidade do caso. <span class="ts">Domínio 5 · TS 5.2 — Escalonamento e ambiguidade</span></div>
+</div>
+
+<div class="q" data-correct="a,e" data-ts="5.2" data-dom="5">
+  <div class="qnum">Questão 4 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">Which TWO escalation decisions match recommended practice for a customer-support agent?</div>
+  <div class="pt-block pt">Quais DUAS decisões de escalonamento correspondem à prática recomendada para um agente de suporte?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q4" value="a">A. A customer explicitly says "I want to speak to a human" — transfer right away, without investigating the issue first.<div class="pt">Um cliente diz explicitamente "quero falar com um humano" — transferir na hora, sem investigar o problema antes.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="b">B. A frustrated customer describes a simple password reset — escalate at once, since frustration signals a complex case.<div class="pt">Um cliente frustrado descreve um reset de senha simples — escalar na hora, já que frustração sinaliza caso complexo.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="c">C. The lookup tool returns two customers with the same name — pick the one with the most recent order and continue.<div class="pt">A tool de busca retorna dois clientes com o mesmo nome — escolher o que tem o pedido mais recente e seguir.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="d">D. The agent reports 4/10 confidence on a routine refund — escalate, since low self-reported confidence marks a hard case.<div class="pt">O agente reporta confiança 4/10 num reembolso rotineiro — escalar, já que confiança autorreportada baixa indica caso difícil.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="e">E. A customer asks for a competitor price match, but policy only covers your own site's prices — escalate, as policy is silent.<div class="pt">Um cliente pede price matching com concorrente, mas a política só cobre preços do próprio site — escalar, pois a política é omissa.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A e E.</strong> A: pedido explícito de humano é honrado imediatamente — investigar antes desrespeita a escolha do cliente. E: política silenciosa sobre o pedido é gatilho clássico de escalonamento; o agente não deve inventar política. B está errada: frustração não é proxy de complexidade — o correto é reconhecer a frustração, oferecer resolver o caso simples e escalar só se o cliente reiterar a preferência. C está errada: múltiplos matches exigem pedir um identificador adicional ao cliente; seleção por heurística pode vazar dados da pessoa errada. D está errada: confiança autorreportada é mal calibrada — o agente costuma estar confiante justamente nos casos difíceis, e um reembolso rotineiro não é gatilho de escalonamento. <span class="ts">Domínio 5 · TS 5.2 — Escalonamento e ambiguidade</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="5.4" data-dom="5">
+  <div class="qnum">Questão 5 · múltipla escolha <span class="cenario">Developer Productivity with Claude</span></div>
+  <div class="stem">During a multi-hour codebase exploration, the main agent's answers degrade: it starts describing "typical patterns" for this kind of system instead of referencing the specific classes and files it discovered earlier, and verbose grep and file-read outputs have filled most of its context. Which approach best addresses the root cause?</div>
+  <div class="pt-block pt">Durante uma exploração de codebase de várias horas, as respostas do agente principal degradam: ele começa a descrever "padrões típicos" desse tipo de sistema em vez de referenciar as classes e arquivos específicos que descobriu antes, e saídas verbosas de grep e leitura de arquivos preencheram a maior parte do contexto. Qual abordagem ataca melhor a causa raiz?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q5" value="a">A. Restart the session from scratch whenever answers degrade, repeating the exploration with a more detailed initial prompt.<div class="pt">Reiniciar a sessão do zero sempre que as respostas degradarem, repetindo a exploração com um prompt inicial mais detalhado.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. Add a system-prompt instruction reminding the model to cite only files and classes it has actually opened.<div class="pt">Adicionar uma instrução no system prompt lembrando o modelo de citar só arquivos e classes que ele realmente abriu.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. Lower the model temperature so that its answers stay consistent with each other across the long session.<div class="pt">Baixar a temperatura do modelo para as respostas ficarem consistentes entre si ao longo da sessão longa.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. Delegate verbose exploration to subagents, persist key findings in scratchpad files, and /compact when context fills.<div class="pt">Delegar a exploração verbosa a subagents, persistir findings-chave em scratchpad files e usar /compact quando o contexto encher.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> A causa raiz é degradação de contexto: o detalhe real foi espremido para fora por output verboso acumulado. O combo correto do guide: subagents isolam a exploração verbosa (o principal fica com a coordenação de alto nível), scratchpad files persistem findings através das fronteiras de contexto, e <code>/compact</code> reduz o contexto quando ele enche. A joga fora todo o trabalho e não impede que o novo contexto degrade da mesma forma. B é remendo de prompt: o problema não é o modelo "esquecer a regra", é a informação não estar mais acessível no contexto. C trata variância de amostragem, não perda de contexto — temperatura não recupera a classe que saiu do histórico. <span class="ts">Domínio 5 · TS 5.4 — Contexto na exploração de codebases grandes</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="5.4" data-dom="5">
+  <div class="qnum">Questão 6 · múltipla escolha <span class="cenario">Developer Productivity with Claude</span></div>
+  <div class="stem">A coordinator splits a dependency audit of 30 services among three subagents, and a full run takes about six hours. When the host was rebooted for patching at service 19, the restart began again from service 1, because all progress existed only inside the agents' conversations. Which design lets the next run resume where it stopped?</div>
+  <div class="pt-block pt">Um coordinator divide a auditoria de dependências de 30 serviços entre três subagents, e uma execução completa leva cerca de seis horas. Quando o host foi reiniciado para patch no serviço 19, a retomada começou de novo do serviço 1, porque todo o progresso existia só dentro das conversas dos agentes. Qual design permite que a próxima execução retome de onde parou?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q6" value="a">A. Resume the coordinator's saved conversation with --resume, so it continues from the last message it produced.<div class="pt">Retomar a conversa salva do coordinator com --resume, para ele continuar da última mensagem que produziu.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="b">B. Have each agent export structured state to a known location; on restart, load a manifest and inject it into prompts.<div class="pt">Fazer cada agente exportar estado estruturado para um local conhecido; na retomada, carregar um manifest e injetá-lo nos prompts.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="c">C. Run /compact every few services so the coordinator's conversation stays small enough to be resumed after a crash.<div class="pt">Rodar /compact a cada poucos serviços para a conversa do coordinator ficar pequena o bastante para ser retomada após um crash.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. Have the coordinator end each turn with a progress summary that an operator pastes into a fresh session after a crash.<div class="pt">Fazer o coordinator encerrar cada turno com um resumo de progresso que um operador cola numa sessão nova após um crash.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Crash recovery exige estado <strong>fora</strong> da conversa: cada agente exporta estado estruturado (o que concluiu, o que achou, o que falta) num local conhecido, e na retomada o coordinator carrega o manifest e injeta esse estado nos prompts — o trabalho continua do serviço 19. A retoma o histórico bruto, cheio de tool results velhos e verbosos, e não reconstrói o estado de cada subagent. C confunde reduzir contexto com persistir progresso: <code>/compact</code> não grava nada fora da sessão. D depende de um texto livre na última mensagem e de alguém copiá-lo à mão — o reboot pode vir antes do resumo, e prosa não é estado que o coordinator consiga carregar. <span class="ts">Domínio 5 · TS 5.4 — Contexto na exploração de codebases grandes</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="5.4" data-dom="5">
+  <div class="qnum">Questão 7 · múltipla escolha <span class="cenario">Developer Productivity with Claude</span></div>
+  <div class="stem">Phase 1 of a codebase study used subagents to map a payments module: entry points, shared abstractions and naming conventions. For phase 2, the coordinator spawns one subagent per payment provider with the prompt "Analyze the integration with provider X." Each one re-explores the module from scratch, invents its own names for the shared classes, and runs short of context. What should change?</div>
+  <div class="pt-block pt">A fase 1 de um estudo de codebase usou subagents para mapear um módulo de pagamentos: pontos de entrada, abstrações compartilhadas e convenções de nomes. Na fase 2, o coordinator spawna um subagent por provedor de pagamento com o prompt "Analise a integração com o provedor X." Cada um re-explora o módulo do zero, inventa nomes próprios para as classes compartilhadas e fica sem contexto. O que deve mudar?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q7" value="a">A. Configure the phase-2 subagents to inherit the coordinator's conversation, so they see everything phase 1 found.<div class="pt">Configurar os subagents da fase 2 para herdar a conversa do coordinator, para verem tudo o que a fase 1 achou.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="b">B. Paste the complete phase-1 transcripts, including every grep result, into each phase-2 subagent's prompt.<div class="pt">Colar os transcripts completos da fase 1, incluindo cada resultado de grep, no prompt de cada subagent da fase 2.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="c">C. Summarize phase 1's key findings and inject that summary into the initial prompt of each phase-2 subagent.<div class="pt">Resumir os achados-chave da fase 1 e injetar esse resumo no prompt inicial de cada subagent da fase 2.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="d">D. Tell each phase-2 subagent to re-map the module before starting, so its view of the code is fully current.<div class="pt">Mandar cada subagent da fase 2 re-mapear o módulo antes de começar, para sua visão do código estar atualizada.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> TS 5.4: resumir os achados-chave de uma fase de exploração antes de spawnar os subagents da fase seguinte e injetar o resumo no contexto inicial deles. Assim cada subagent parte do mapa já feito (pontos de entrada, abstrações, nomes) em vez de redescobri-lo. A pressupõe que o subagent herda a conversa do coordinator. No modelo do guia isso não acontece (TS 1.2/1.3: subagent só recebe o que vai no prompt), e herdar tudo traria junto o output verboso. (O Claude Code atual tem um tipo de subagent, o fork, que herda a conversa — detalhe de produto, fora do guia; na prova vale o guia.) B passa a informação no formato errado: transcripts brutos queimam o orçamento de contexto que o resumo protegeria. D repete o trabalho da fase 1 em cada subagent e não resolve a divergência de nomes. <span class="ts">Domínio 5 · TS 5.4 — Contexto na exploração de codebases grandes</span></div>
+</div>
+
+<div class="q" data-correct="b,d" data-ts="5.1" data-dom="5">
+  <div class="qnum">Questão 8 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">Four analysis subagents each return about 6,000 tokens of narrative, including their full reasoning, to a synthesis subagent with a tight context budget. The synthesis keeps dropping findings and sometimes cannot tell when or where a figure was published. Which TWO changes to the upstream outputs address this?</div>
+  <div class="pt-block pt">Quatro subagents de análise devolvem, cada um, cerca de 6.000 tokens de narrativa, incluindo todo o raciocínio, para um subagent de síntese com orçamento de contexto apertado. A síntese vive perdendo findings e às vezes não sabe dizer quando ou onde um número foi publicado. Quais DUAS mudanças nos outputs upstream resolvem isso?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q8" value="a">A. Truncate each upstream response to its first 1,500 tokens before passing it on to the synthesis subagent.<div class="pt">Truncar cada resposta upstream nos primeiros 1.500 tokens antes de repassá-la ao subagent de síntese.</div></label>
+    <label class="opt"><input type="checkbox" name="q8" value="b">B. Return structured records of key facts, citations and relevance scores instead of narrative and reasoning.<div class="pt">Devolver registros estruturados de fatos-chave, citações e scores de relevância em vez de narrativa e raciocínio.</div></label>
+    <label class="opt"><input type="checkbox" name="q8" value="c">C. Keep the narrative format but ask each upstream agent to "be concise" and to avoid repeating itself.<div class="pt">Manter o formato narrativo, mas pedir a cada agente upstream que "seja conciso" e evite se repetir.</div></label>
+    <label class="opt"><input type="checkbox" name="q8" value="d">D. Require metadata in each record: publication date, source location and methodological context.<div class="pt">Exigir metadados em cada registro: data de publicação, localização na fonte e contexto metodológico.</div></label>
+    <label class="opt"><input type="checkbox" name="q8" value="e">E. Include each agent's full reasoning chain so the synthesis subagent can check how every figure was derived.<div class="pt">Incluir a cadeia de raciocínio completa de cada agente para a síntese conferir como cada número foi obtido.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B e D.</strong> TS 5.1: quando o downstream tem orçamento de contexto curto, os agentes upstream devolvem dado estruturado — fatos-chave, citações, score de relevância — em vez de conteúdo verboso e cadeia de raciocínio (B), e incluem metadados — data, localização na fonte, contexto metodológico — para a síntese interpretar cada número corretamente (D). A corta às cegas: o finding importante pode estar depois do token 1.500. C pede concisão em prosa: instrução vaga, sem estrutura nem garantia. E faz o oposto do necessário: a cadeia de raciocínio é justamente o volume que estoura o orçamento. <span class="ts">Domínio 5 · TS 5.1 — Contexto em interações longas</span></div>
+</div>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir aula 12</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="aula-11.html">← Aula 11 — Message Batches API e review multi-pass</a></span>
+  <span><a href="aula-13.html">Aula 13 — Propagação de erros, human review e proveniência →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  var total = 0, score = 0;
+  document.querySelectorAll('.q').forEach(function (q) {
+    total++;
+    document.getElementById('total').textContent = total;
+    var btn = q.querySelector('button.answer');
+    var correct = q.dataset.correct.split(',').map(function (s) { return s.trim(); });
+    btn.addEventListener('click', function () {
+      var checked = Array.prototype.slice.call(q.querySelectorAll('input:checked')).map(function (i) { return i.value; });
+      if (checked.length === 0) return;
+      var ok = checked.length === correct.length && checked.every(function (v) { return correct.indexOf(v) !== -1; });
+      q.querySelectorAll('label.opt').forEach(function (l) {
+        var v = l.querySelector('input').value;
+        if (correct.indexOf(v) !== -1) l.classList.add('correct');
+        else if (l.querySelector('input').checked) l.classList.add('wrong');
+        l.querySelector('input').disabled = true;
+      });
+      var fb = q.querySelector('.feedback');
+      fb.classList.add(ok ? 'ok' : 'ko');
+      fb.innerHTML = (ok ? '✅ Correto. ' : '❌ Incorreto. ') + fb.innerHTML;
+      btn.disabled = true;
+      if (ok) score++;
+      document.getElementById('score').textContent = score;
+    });
+  });
+  var KEY = 'ccarf-aula-12';
+  var btn = document.getElementById('finish');
+  if (localStorage.getItem(KEY)) {
+    document.getElementById('donemsg').textContent = 'Aula já concluída — ' + localStorage.getItem(KEY);
+  }
+  btn.addEventListener('click', function () {
+    var rec = new Date().toLocaleDateString('pt-BR') + ' · ' + score + '/' + total + ' acertos';
+    localStorage.setItem(KEY, rec);
+    document.getElementById('donemsg').textContent = 'Concluída: ' + rec;
+  });
+})();
+</script>
+</body>
+</html>

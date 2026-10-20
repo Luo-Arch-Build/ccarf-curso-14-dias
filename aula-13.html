@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 13 — Propagação de erros, human review e proveniência · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.uso { color: var(--pt); font-size: 13px; font-style: italic; }
+  .pt { color: var(--pt); font-size: 13.5px; }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 4px 0 10px; }
+  body.hide-pt .pt, body.hide-pt .pt-block { display: none; }
+  .toggle-pt { position: sticky; top: 12px; float: right; z-index: 5; background: var(--card2);
+    border: 1px solid var(--border); color: var(--muted); border-radius: 999px;
+    padding: 6px 14px; font-size: 12.5px; cursor: pointer; }
+  .toggle-pt:hover { color: var(--text); border-color: var(--accent); }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q .cenario { float: right; text-transform: none; letter-spacing: 0; font-size: 11.5px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
+  .q .feedback .ts { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body class="hide-pt">
+<div class="wrap">
+
+<button class="toggle-pt" onclick="document.body.classList.toggle('hide-pt'); this.textContent = document.body.classList.contains('hide-pt') ? '🇧🇷 mostrar traduções' : '🇧🇷 ocultar traduções';">🇧🇷 mostrar traduções</button>
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Aula 13</div>
+  <h1>Aula 13 — Propagação de erros, human review e proveniência</h1>
+  <div class="meta">
+    <span class="tag">Domínio 5 · Context Management &amp; Reliability (15%)</span>
+    <span class="tag">~60 min</span>
+  </div>
+</header>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo do dia.</strong> Dominar três Task Statements de confiabilidade: <strong>5.3</strong>
+  (como erros devem viajar de subagents para o coordinator), <strong>5.5</strong> (revisão humana roteada
+  por confiança calibrada) e <strong>5.6</strong> (preservar a proveniência — quem disse o quê — ao longo
+  da síntese multi-fonte). É a aula que transforma "pipeline que funciona no happy path" em
+  sistema que se comporta bem quando algo falha.
+</div>
+
+<h2>1. Propagação de erros estruturada (Task Statement 5.3)</h2>
+
+<p>Num sistema multi-agent, uma falha num subagent é <strong>informação</strong>, não um desastre.
+A pergunta da prova é sempre a mesma: <em>o que o coordinator recebe quando algo quebra?</em>
+A resposta correta é <strong>contexto de erro estruturado</strong> com quatro campos:</p>
+
+<ul>
+  <li><strong>failure type</strong> — o tipo de falha (timeout, rate limit, permissão negada)</li>
+  <li><strong>attempted query</strong> — o que foi tentado (a query, o documento, os parâmetros)</li>
+  <li><strong>partial results</strong> — o que já foi obtido antes da falha</li>
+  <li><strong>alternative approaches</strong> — alternativas possíveis (outra fonte, query mais estreita)</li>
+</ul>
+
+<pre><code>// O que o web search subagent devolve ao coordinator quando falha:
+{
+  "status": "partial_failure",
+  "failure_type": "timeout",                 // tipo de falha
+  "attempted_query": "site:gov.br PIB setores 2025",
+  "partial_results": [ /* 3 fontes já coletadas */ ],
+  "alternatives": ["retry com query mais curta",
+                   "usar fonte secundária (IBGE press release)"]
+}</code></pre>
+
+<p>Com esse payload, o coordinator consegue decidir <em>de forma inteligente</em>: retentar com
+outra query, tentar uma fonte alternativa, ou <strong>seguir com os resultados parciais</strong>
+e marcar a lacuna na síntese.</p>
+
+<h3>Access failure ≠ empty result válido</h3>
+<p>Uma <strong>falha de acesso</strong> (timeout, serviço fora) exige decisão de retry: a resposta
+<em>existe</em>, só não chegou. Um <strong>resultado vazio válido</strong> é uma query bem-sucedida
+que simplesmente não teve matches — é informação ("não há resultados para X"), não falha.
+Confundir os dois corrompe a decisão do coordinator: ele pode retentar uma query que já
+respondeu "não existe", ou aceitar como vazio um resultado que na verdade falhou.</p>
+
+<h3>Os três anti-padrões (decora isso)</h3>
+<ul>
+  <li>❌ <strong>Suprimir o erro</strong>: capturar a exceção e devolver um resultado vazio marcado como
+      sucesso. O coordinator acha que "não há nada sobre o tema" e produz uma pesquisa
+      silenciosamente incompleta.</li>
+  <li>❌ <strong>Derrubar tudo</strong>: propagar a exceção até um handler de topo que
+      <strong>termina o workflow inteiro</strong> por causa de UMA falha recuperável.</li>
+  <li>❌ <strong>Status genérico</strong>: devolver só <code>"search unavailable"</code> — esconde do
+      coordinator o contexto que permitiria uma recuperação informada. Retry interno com backoff
+      é legítimo, mas o que sobe depois de esgotado precisa ser o contexto estruturado, não uma
+      string vaga.</li>
+</ul>
+
+<h3>Recovery local primeiro; propaga só o irrecuperável</h3>
+<p>A regra de divisão de trabalho: o <strong>subagent resolve localmente</strong> falhas transitórias
+(retry com backoff, query reformulada). Só sobe para o coordinator o que ele <strong>não conseguiu
+resolver</strong> — e sempre acompanhado do que foi tentado e dos resultados parciais. O coordinator
+então decide o destino global (re-delegar, trocar de fonte, ou seguir com lacuna anotada).</p>
+
+<h3>Coverage annotations na síntese</h3>
+<p>Quando o coordinator decide seguir com parciais, a síntese precisa <strong>anotar a cobertura</strong>:
+quais findings estão bem suportados e quais áreas têm <strong>gaps por fontes indisponíveis</strong>.
+O relatório final deve dizer explicitamente "a seção sobre regulação europeia está incompleta
+porque a fonte primária falhou" — nunca deixar a lacuna invisível.</p>
+
+<h2>2. Human review e calibração de confiança (Task Statement 5.5)</h2>
+
+<p>Contexto típico da prova (cenário 6): um pipeline de extração que afirma <strong>97% de acurácia
+agregada</strong>. O número é real — e mesmo assim enganoso. Acurácia agregada <strong>mascara
+segmentos ruins</strong>: pode ser 99,5% em notas fiscais padrão e 71% em contratos manuscritos.
+Antes de automatizar (reduzir revisão humana), meça a acurácia <strong>por tipo de documento e
+por campo</strong>.</p>
+
+<h3>O fluxo correto de revisão humana</h3>
+<ol>
+  <li><strong>Confidence por campo</strong>: o modelo emite um score de confiança <em>por campo extraído</em>,
+      não um número global por documento.</li>
+  <li><strong>Calibração com validation set rotulado</strong>: os scores brutos do modelo não são
+      probabilidades reais. Use um conjunto de validação rotulado para calibrar os thresholds de
+      roteamento (ex.: "abaixo de 0,82 no campo <code>valor_total</code> → fila humana").</li>
+  <li><strong>Roteamento</strong>: extrações <strong>low-confidence</strong> e documentos
+      <strong>ambíguos ou contraditórios</strong> vão para revisão humana — priorizando a capacidade
+      limitada dos revisores onde o modelo é fraco.</li>
+  <li><strong>Stratified random sampling</strong>: mesmo as extrações <em>high-confidence</em> (que vão
+      direto, sem revisão) precisam de amostragem aleatória estratificada contínua — por tipo de
+      documento e campo — para medir a taxa de erro real e <strong>detectar padrões de erro novos</strong>
+      que o threshold não captura.</li>
+</ol>
+
+<pre><code>{
+  "document_type": "contrato_manuscrito",
+  "fields": {
+    "partes":       { "value": ["...", "..."], "confidence": 0.94 },
+    "valor_total":  { "value": 185000,          "confidence": 0.61 },  // → fila humana
+    "data_vigencia":{ "value": null,            "confidence": 0.30 }   // → fila humana
+  }
+}</code></pre>
+
+<p>Ponto sutil que a prova cobra: <strong>confidence autorreportada sem calibração é mal calibrada</strong>
+(o modelo costuma estar confiante justamente nos casos difíceis). Por isso o threshold nasce do
+validation set rotulado, não da intuição. E o sampling dos high-confidence não é redundância —
+é o mecanismo que revela erros que a própria confiança não percebe.</p>
+
+<h3>Calibração é por campo</h3>
+<p>Um threshold único para todos os campos é intuição disfarçada de regra: cada campo erra num nível de confiança
+diferente (o <code>cnpj</code> a 0,80 quase sempre certo; o <code>valor_total</code> a 0,92 ainda errando). Calibre o
+threshold <strong>de cada campo</strong> com o validation set rotulado e, como a capacidade dos revisores é limitada,
+<strong>priorize</strong> a fila: primeiro as extrações de baixa confiança e os documentos ambíguos ou contraditórios.</p>
+<p><strong>Regra de bolso:</strong> <em>o threshold vem dos dados rotulados, campo a campo — nunca do chute nem de uma
+instrução pedindo ao modelo para "ser mais humilde".</em></p>
+
+<h2>3. Proveniência e incerteza na síntese multi-fonte (Task Statement 5.6)</h2>
+
+<p>Quando findings passam por etapas de sumarização, a atribuição de fonte <strong>se perde</strong>:
+três fontes viram "estudos indicam que...". A defesa arquitetural é exigir dos subagents
+<strong>claim-source mappings estruturados</strong> — cada claim com URL/nome do documento, trecho
+relevante e data — e exigir que a síntese <strong>preserve e mescle</strong> esses mappings ao
+combinar findings.</p>
+
+<pre><code>{
+  "claim": "Adoção de IA generativa em agências de publicidade chega a 62%",
+  "evidence_excerpt": "62% das agências entrevistadas relatam uso regular...",
+  "source_url": "https://exemplo.com/pesquisa-2026",
+  "publication_date": "2026-03-14"
+}</code></pre>
+
+<h3>Estatísticas conflitantes de fontes críveis</h3>
+<p>Duas fontes respeitáveis dizem "62%" e "41%"? A tentação (e o distrator clássico) é <strong>escolher
+um valor</strong> — o mais recente, o mais conservador, a média. Errado. A resposta certa:
+<strong>anotar os dois valores, cada um com sua fonte</strong> e seu contexto metodológico, e deixar
+a divergência visível. O document analysis agent completa a análise <em>com os valores conflitantes
+incluídos e anotados</em>; quem decide como reconciliar é o coordinator, antes da síntese. Abortar a análise com "dados inconsistentes" é
+o anti-padrão simétrico: joga fora evidência legítima e o tema some do relatório.</p>
+<p><strong>Regra de bolso:</strong> <em>conflito se anota e sobe; quem reconcilia é o coordinator, nunca uma heurística
+do subagent.</em></p>
+
+<h3>Datas de publicação: diferença temporal não é contradição</h3>
+<p>"41%" de 2023 e "62%" de 2026 podem não ser conflito nenhum — pode ser <strong>crescimento real</strong>.
+Sem a data de publicação/coleta no output estruturado, a síntese interpreta diferença temporal
+como contradição. Por isso <code>publication_date</code> entra em todo mapping: o subagent é obrigado a reportá-la. Se a fonte
+não traz data, o valor é <code>null</code> (de preferência com o motivo), nunca uma data inventada — campo required sem null
+induz fabricação (aula 10, TS 4.3).</p>
+
+<h3>Estrutura do relatório final</h3>
+<p>A síntese deve separar explicitamente <strong>findings estabelecidos</strong> (múltiplas fontes
+convergem) de <strong>findings contestados</strong> (fontes divergem — com as caracterizações
+originais preservadas). Um aviso genérico no topo ou um "pode ser" aplicado a tudo <em>não</em> resolve:
+o leitor continua sem saber qual achado é sólido e qual é disputado.</p>
+<p>E cada tipo de conteúdo vai no formato que lhe serve — não achatar tudo num formato uniforme:</p>
+<ul>
+  <li><strong>dados financeiros</strong> → tabela (comparação lado a lado)</li>
+  <li><strong>notícias e sequência de eventos</strong> → prosa (contexto e encadeamento)</li>
+  <li><strong>achados técnicos</strong> → lista estruturada (itens verificáveis um a um)</li>
+</ul>
+<p><strong>Regra de bolso:</strong> <em>o leitor precisa ver o grau de certeza de cada achado e ler cada tipo de conteúdo no
+formato natural dele — uniformidade de formato não é virtude.</em></p>
+
+<h2>4. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
+  <tr><td class="en">structured error context</td><td>contexto de erro estruturado</td><td class="uso">"return structured error context including failure type and partial results"</td></tr>
+  <tr><td class="en">failure type</td><td>tipo de falha</td><td class="uso">"the failure type tells the coordinator whether a retry makes sense"</td></tr>
+  <tr><td class="en">partial results</td><td>resultados parciais</td><td class="uso">"proceed with partial results and annotate coverage gaps"</td></tr>
+  <tr><td class="en">access failure</td><td>falha de acesso (timeout, indisponibilidade)</td><td class="uso">"distinguish access failures from valid empty results"</td></tr>
+  <tr><td class="en">valid empty result</td><td>resultado vazio válido (query ok, sem matches)</td><td class="uso">"an empty result is a successful query with no matches"</td></tr>
+  <tr><td class="en">local recovery</td><td>recuperação local no subagent</td><td class="uso">"implement local recovery for transient failures and propagate only unresolvable errors"</td></tr>
+  <tr><td class="en">coverage annotation / gap</td><td>anotação / lacuna de cobertura</td><td class="uso">"annotate which topic areas have gaps due to unavailable sources"</td></tr>
+  <tr><td class="en">stratified random sampling</td><td>amostragem aleatória estratificada</td><td class="uso">"stratified sampling of high-confidence extractions detects novel error patterns"</td></tr>
+  <tr><td class="en">field-level confidence</td><td>confiança por campo</td><td class="uso">"field-level confidence scores calibrated using labeled validation sets"</td></tr>
+  <tr><td class="en">labeled validation set</td><td>conjunto de validação rotulado</td><td class="uso">"calibrate review thresholds with a labeled validation set"</td></tr>
+  <tr><td class="en">aggregate accuracy</td><td>acurácia agregada (mascara segmentos)</td><td class="uso">"97% aggregate accuracy may mask poor performance on specific document types"</td></tr>
+  <tr><td class="en">claim-source mapping</td><td>mapeamento claim → fonte</td><td class="uso">"structured claim-source mappings that synthesis must preserve"</td></tr>
+  <tr><td class="en">provenance</td><td>proveniência (origem rastreável de cada claim)</td><td class="uso">"preserve source attribution through summarization steps"</td></tr>
+  <tr><td class="en">publication date</td><td>data de publicação/coleta</td><td class="uso">"require publication dates so temporal differences are not read as contradictions"</td></tr>
+  <tr><td class="en">well-established vs contested findings</td><td>achados estabelecidos vs contestados</td><td class="uso">"explicit sections distinguishing well-established findings from contested ones"</td></tr>
+  <tr><td class="en">content-type rendering</td><td>renderização por tipo de conteúdo</td><td class="uso">"financial data as tables, news as prose, technical findings as structured lists"</td></tr>
+  <tr><td class="en">review threshold</td><td>corte de roteamento para revisão humana</td><td class="uso">"calibrate review thresholds using labeled validation sets"</td></tr>
+</table>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha do dia</h3>
+  <p>Questões de erro em multi-agent vêm com dois distratores simétricos e sedutores:
+  <strong>"catch e retornar vazio como sucesso"</strong> (parece robusto, mas suprime informação e gera
+  pesquisa silenciosamente incompleta) e <strong>"propagar a exceção e encerrar o workflow"</strong>
+  (parece seguro, mas mata o trabalho todo por uma falha recuperável). O terceiro distrator é o
+  status genérico tipo <code>"search unavailable"</code>, que esconde o contexto do coordinator.
+  Regra de bolso: <em>erro sobe como dado estruturado (tipo + tentativa + parciais + alternativas),
+  nunca como silêncio, nunca como exceção fatal, nunca como string vaga.</em> E em questões de
+  acurácia: <em>número agregado bonito (97%) nunca é prova suficiente — segmente por tipo de
+  documento e campo antes de tirar o humano do loop.</em></p>
+</div>
+
+<h2>5. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
+<div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
+
+<div class="q" data-correct="b" data-ts="5.3" data-dom="5">
+  <div class="qnum">Questão 1 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">In your multi-agent research pipeline, the document-analysis subagent hits a rate limit on its primary data source mid-task. You must decide what it returns to the coordinator. Which design best supports intelligent recovery?</div>
+  <div class="pt-block pt">No seu pipeline de pesquisa multi-agent, o subagent de análise de documentos atinge um rate limit na fonte primária no meio da tarefa. Você precisa decidir o que ele devolve ao coordinator. Qual design melhor suporta recuperação inteligente?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q1" value="a">A. Catch the rate-limit error inside the subagent and return an empty findings list marked as successfully completed.<div class="pt">Capturar o erro de rate limit dentro do subagent e devolver uma lista de findings vazia marcada como concluída com sucesso.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="b">B. Return a structured error with the failure type, the attempted query, partial findings and possible alternatives.<div class="pt">Devolver um erro estruturado com o tipo de falha, a query tentada, os findings parciais e as alternativas possíveis.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. Let the exception bubble up to a global handler that aborts the research run so no incomplete report is ever produced.<div class="pt">Deixar a exceção subir até um handler global que aborta a execução da pesquisa, para que nenhum relatório incompleto seja produzido.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="d">D. Retry internally with backoff and, if retries are exhausted, report only the status string "data source unavailable" to the coordinator.<div class="pt">Retentar internamente com backoff e, se as tentativas se esgotarem, reportar apenas a string de status "data source unavailable" ao coordinator.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> (Adaptação da questão oficial 8.) Contexto de erro estruturado (tipo + tentativa + parciais + alternativas) é o que permite ao coordinator decidir: retentar com query modificada, trocar de fonte ou seguir com os parciais anotando o gap. A é o anti-padrão de supressão: falha vira sucesso vazio e a pesquisa sai silenciosamente incompleta. C é o anti-padrão oposto: mata o workflow inteiro por uma falha recuperável. D faz certo no retry local, mas o status genérico final esconde do coordinator tudo que ele precisaria para recuperar — era pra subir o payload estruturado. <span class="ts">Domínio 5 · TS 5.3 — Propagação de erros em multiagente</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="5.3" data-dom="5">
+  <div class="qnum">Questão 2 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">Your web search subagent queries a source and receives zero matching documents. A teammate wants to treat this the same way as a timeout: retry three times, then escalate to the coordinator as a failure. What is wrong with this design?</div>
+  <div class="pt-block pt">Seu subagent de busca web consulta uma fonte e recebe zero documentos correspondentes. Um colega quer tratar isso da mesma forma que um timeout: retentar três vezes e escalar ao coordinator como falha. O que há de errado nesse design?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q2" value="a">A. Nothing: zero results from a source that normally has data point to an access problem, so retrying is correct.<div class="pt">Nada: zero resultados numa fonte que normalmente tem dados indicam problema de acesso, então retentar é o correto.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="b">B. Empty results should be silently converted into a synthetic placeholder finding so synthesis is never blocked.<div class="pt">Resultados vazios deveriam ser convertidos silenciosamente num finding placeholder sintético para a síntese nunca travar.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="c">C. A valid empty result is a successful query with no matches; only access failures call for retry decisions.<div class="pt">Um resultado vazio válido é uma query bem-sucedida sem matches; só falhas de acesso pedem decisão de retry.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="d">D. The subagent should terminate the workflow immediately because a topic with zero sources cannot be researched.<div class="pt">O subagent deveria terminar o workflow imediatamente porque um tópico com zero fontes não pode ser pesquisado.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Access failure (timeout) e resultado vazio válido são categorias diferentes: o primeiro exige decisão de retry, o segundo é uma resposta legítima ("não existe nada sobre isso nessa fonte") que o coordinator deve usar como dado. A confunde ausência de dado com falha — zero resultados muitas vezes é a resposta correta da query, mesmo numa fonte que costuma ter dados. B fabrica informação inexistente (alucinação institucionalizada). D repete o anti-padrão de derrubar o workflow inteiro. <span class="ts">Domínio 5 · TS 5.3 — Propagação de erros em multiagente</span></div>
+</div>
+
+<div class="q" data-correct="c,e" data-ts="5.5" data-dom="5">
+  <div class="qnum">Questão 3 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Structured Data Extraction</span></div>
+  <div class="stem">Your extraction pipeline reports 97% aggregate accuracy, and leadership proposes eliminating human review for high-confidence extractions entirely. Before agreeing, which TWO practices should you insist on?</div>
+  <div class="pt-block pt">Seu pipeline de extração reporta 97% de acurácia agregada e a liderança propõe eliminar totalmente a revisão humana das extrações high-confidence. Antes de concordar, em quais DUAS práticas você deve insistir?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q3" value="a">A. Raise the confidence threshold from 0.80 to 0.95 on intuition, since a higher threshold catches more of the errors.<div class="pt">Subir o threshold de confiança de 0,80 para 0,95 por intuição, já que um threshold maior pega mais erros.</div></label>
+    <label class="opt"><input type="checkbox" name="q3" value="b">B. Rely on JSON schema validation to catch whatever errors remain once review of high-confidence items stops.<div class="pt">Confiar na validação do JSON schema para pegar os erros restantes quando a revisão dos itens high-confidence parar.</div></label>
+    <label class="opt"><input type="checkbox" name="q3" value="c">C. Break accuracy down by document type and field, since the aggregate can hide segments that perform poorly.<div class="pt">Quebrar a acurácia por tipo de documento e por campo, já que o agregado pode esconder segmentos com desempenho ruim.</div></label>
+    <label class="opt"><input type="checkbox" name="q3" value="d">D. Replace field-level confidence with one document-level score so the routing logic becomes simpler to audit.<div class="pt">Trocar a confiança por campo por um score único por documento para a lógica de roteamento ficar mais fácil de auditar.</div></label>
+    <label class="opt"><input type="checkbox" name="q3" value="e">E. Keep stratified random sampling of high-confidence extractions to measure the real error rate and catch new patterns.<div class="pt">Manter amostragem aleatória estratificada das extrações high-confidence para medir a taxa de erro real e pegar padrões novos.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C e E.</strong> C: acurácia agregada de 97% pode esconder um tipo de documento a 70% — segmentar por tipo e campo é pré-requisito para reduzir revisão. E: a amostragem estratificada contínua mede o erro real dos auto-aprovados e detecta padrões novos que a confiança não pega. A inventa threshold por intuição — thresholds se calibram com validation set rotulado, e "mais alto" sem calibração só move o erro de lugar. B confunde sintaxe com semântica: schema não pega valor errado bem-formado. D é regressão: score único por documento destrói a granularidade que permite rotear só o campo problemático para revisão. <span class="ts">Domínio 5 · TS 5.5 — Revisão humana e calibração de confiança</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="5.6" data-dom="5">
+  <div class="qnum">Questão 4 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">During synthesis, two credible sources give conflicting adoption statistics: 41% and 62%. Reviewing the structured outputs, you notice neither subagent included publication dates. The synthesis agent picked 62% because it "seemed more recent." What is the best fix?</div>
+  <div class="pt-block pt">Durante a síntese, duas fontes críveis trazem estatísticas de adoção conflitantes: 41% e 62%. Revisando os outputs estruturados, você nota que nenhum subagent incluiu datas de publicação. O agente de síntese escolheu 62% porque "parecia mais recente". Qual é a melhor correção?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q4" value="a">A. Instruct the synthesis agent to average conflicting statistics and cite the result as the consensus value.<div class="pt">Instruir o agente de síntese a tirar a média de estatísticas conflitantes e citar o resultado como valor de consenso.</div></label>
+    <label class="opt"><input type="radio" name="q4" value="b">B. Instruct the synthesis agent to prefer the higher figure, since optimistic estimates are more useful to stakeholders.<div class="pt">Instruir o agente de síntese a preferir o número maior, já que estimativas otimistas são mais úteis aos stakeholders.</div></label>
+    <label class="opt"><input type="radio" name="q4" value="c">C. Drop both statistics from the report, since presenting uncertain numbers could mislead the stakeholders.<div class="pt">Tirar as duas estatísticas do relatório, já que apresentar números incertos pode enganar os stakeholders.</div></label>
+    <label class="opt"><input type="radio" name="q4" value="d">D. Require publication dates in claim-source mappings, and report both values with their sources instead of picking one.<div class="pt">Exigir datas de publicação nos claim-source mappings e reportar os dois valores com suas fontes, em vez de escolher um.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> Com datas nos mappings, "41% em 2023 → 62% em 2026" se revela como crescimento, não contradição; e quando é contradição de verdade, o relatório anota ambos os valores COM fontes, em seção de findings contestados — nunca escolhe arbitrariamente. A fabrica um número que nenhuma fonte afirmou. B é viés institucionalizado (e o "seemed more recent" do enunciado já mostra o problema de adivinhar sem data). C joga fora evidência legítima em vez de reportar a incerteza com proveniência. <span class="ts">Domínio 5 · TS 5.6 — Proveniência e incerteza na síntese</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="5.6" data-dom="5">
+  <div class="qnum">Questão 5 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">Users complain that your research reports read as "studies show..." with no way to check where any claim came from. Tracing the pipeline, you find the web and document subagents return rich findings with URLs, but the synthesis step compresses everything into narrative prose and the attribution disappears. What is the root-cause fix?</div>
+  <div class="pt-block pt">Usuários reclamam que seus relatórios de pesquisa dizem "estudos mostram..." sem como verificar de onde veio cada afirmação. Rastreando o pipeline, você descobre que os subagents de web e documentos retornam findings ricos com URLs, mas a etapa de síntese comprime tudo em prosa narrativa e a atribuição desaparece. Qual é a correção de causa raiz?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q5" value="a">A. Add a final proofreading pass where the synthesis agent is asked to "try to remember" which source supported each claim.<div class="pt">Adicionar uma passada final de revisão em que se pede ao agente de síntese para "tentar lembrar" qual fonte sustentava cada claim.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. Require subagents to emit claim-source mappings, and the synthesis agent to preserve and merge them to the end.<div class="pt">Exigir que os subagents emitam claim-source mappings e que o agente de síntese os preserve e mescle até o fim.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. Have the coordinator re-run all web searches after synthesis to reconstruct the sources for the claims that made it into the report.<div class="pt">Fazer o coordinator re-executar todas as buscas web depois da síntese para reconstruir as fontes dos claims que entraram no relatório.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. Attach a flat bibliography of every source consulted at the end of the report, without linking specific claims to specific sources.<div class="pt">Anexar uma bibliografia plana de todas as fontes consultadas no fim do relatório, sem ligar claims específicos a fontes específicas.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> A proveniência se perde na sumarização quando os mappings não são preservados — a correção é estrutural: claim-source mappings obrigatórios na entrada (claim, trecho, URL, data) e preservação/merge deles na síntese, com seções separando findings estabelecidos de contestados. A pede ao modelo para re-derivar atribuição de memória: receita de alucinação. C é retrabalho caro e não garante casar claim com fonte. D dá a ilusão de rastreabilidade, mas sem mapping claim→fonte ninguém consegue verificar nada. <span class="ts">Domínio 5 · TS 5.6 — Proveniência e incerteza na síntese</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="5.5" data-dom="5">
+  <div class="qnum">Questão 6 · múltipla escolha <span class="cenario">Structured Data Extraction</span></div>
+  <div class="stem">An insurance-claims extraction pipeline emits a confidence score for every field, and any field below 0.90 goes to a team of three reviewers. The 0.90 cut-off was chosen by intuition and is the same for every field. Reviewers spend most of their time confirming policy numbers that are almost always right, while wrong incident dates scored 0.93 and slip through. What should the team do?</div>
+  <div class="pt-block pt">Um pipeline de extração de sinistros de seguro emite um score de confiança para cada campo, e todo campo abaixo de 0,90 vai para um time de três revisores. O corte de 0,90 foi escolhido por intuição e é o mesmo para todos os campos. Os revisores passam a maior parte do tempo confirmando números de apólice que quase sempre estão certos, enquanto datas de sinistro erradas receberam 0,93 e passam direto. O que o time deve fazer?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q6" value="a">A. Calibrate per-field thresholds on a labeled validation set and route low-confidence or contradictory claims first.<div class="pt">Calibrar thresholds por campo num conjunto de validação rotulado e mandar primeiro os sinistros de baixa confiança ou contraditórios.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="b">B. Raise the cut-off to 0.97 for every field, so that incident dates like the ones scored at 0.93 also reach reviewers.<div class="pt">Subir o corte para 0,97 em todos os campos, para datas de sinistro como as de 0,93 também chegarem aos revisores.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="c">C. Add a prompt instruction telling the model to report lower confidence on dates whenever it is not fully certain.<div class="pt">Adicionar uma instrução no prompt para o modelo reportar confiança menor em datas sempre que não tiver certeza total.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. Replace the field scores with one score per claim, so reviewers judge whole documents instead of isolated fields.<div class="pt">Trocar os scores por campo por um score por sinistro, para os revisores julgarem documentos inteiros e não campos isolados.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> TS 5.5: confiança por campo só vira critério de roteamento depois de calibrada com um conjunto de validação rotulado — e a calibração é <em>por campo</em>, porque cada campo erra num nível de confiança diferente. Com a capacidade limitada dos revisores, vão primeiro as extrações de baixa confiança e os documentos ambíguos ou contraditórios. B sobe o corte no chute: inunda a fila com ainda mais campos certos e continua sem saber onde o modelo erra. C tenta recalibrar por instrução — confiança autorreportada não fica calibrada porque o prompt pediu. D joga fora a granularidade que permite mandar só o campo problemático para revisão. <span class="ts">Domínio 5 · TS 5.5 — Revisão humana e calibração de confiança</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="5.6" data-dom="5">
+  <div class="qnum">Questão 7 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">To make reports look uniform, a synthesis subagent's prompt says "Present every finding as a row in one markdown table." Quarterly revenue figures read well, but regulatory news and the analysis of a new chip architecture end up as fragments squeezed into table cells, and readers lose the thread. How should the output instruction change?</div>
+  <div class="pt-block pt">Para os relatórios ficarem uniformes, o prompt de um subagent de síntese diz "Apresente cada finding como uma linha de uma tabela markdown." Os números de receita trimestral ficam bons, mas notícias regulatórias e a análise de uma nova arquitetura de chip viram fragmentos espremidos nas células, e o leitor perde o fio. Como a instrução de saída deve mudar?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q7" value="a">A. Keep the single table but allow multi-paragraph cells, so long narrative findings fit without being cut short.<div class="pt">Manter a tabela única, mas permitir células com vários parágrafos, para findings narrativos longos caberem sem cortes.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="b">B. Switch the whole report to prose paragraphs, since narrative text is the easiest format to read end to end.<div class="pt">Passar o relatório inteiro para parágrafos em prosa, já que texto narrativo é o formato mais fácil de ler do início ao fim.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="c">C. Emit every finding as JSON and let each consumer of the report decide how the content should be presented.<div class="pt">Emitir cada finding como JSON e deixar cada consumidor do relatório decidir como o conteúdo deve ser apresentado.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="d">D. Render each type in a fitting format: figures as tables, news as prose, technical findings as structured lists.<div class="pt">Renderizar cada tipo no formato que lhe serve: números em tabela, notícias em prosa, achados técnicos em listas estruturadas.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> TS 5.6: na síntese, cada tipo de conteúdo vai no formato que lhe serve — dado financeiro em tabela (comparável lado a lado), notícia em prosa (sequência de eventos com contexto), achado técnico em lista estruturada — em vez de forçar tudo num formato único. A mantém o erro de origem (um formato para tudo) e só alarga a célula. B troca uma uniformidade por outra: os números perdem a comparação lado a lado. C terceiriza a decisão de apresentação, e o relatório deixa de ser legível para quem o lê direto. <span class="ts">Domínio 5 · TS 5.6 — Proveniência e incerteza na síntese</span></div>
+</div>
+
+<div class="q" data-correct="a,d" data-ts="5.6" data-dom="5">
+  <div class="qnum">Questão 8 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">A research system studies the health effects of intermittent fasting. When the document-analysis subagent finds two credible trials reporting different effect sizes, it aborts with "inconsistent data", so the topic is often missing from the report. When reports are produced, every finding is written in the same confident tone, whether five trials agree or a single trial is disputed. Which TWO changes fix both problems?</div>
+  <div class="pt-block pt">Um sistema de pesquisa estuda os efeitos do jejum intermitente na saúde. Quando o subagent de análise de documentos encontra dois ensaios críveis com tamanhos de efeito diferentes, ele aborta com "dados inconsistentes", e o tema muitas vezes some do relatório. Quando o relatório sai, todo finding é escrito no mesmo tom confiante, sejam cinco ensaios concordando ou um único ensaio contestado. Quais DUAS mudanças resolvem os dois problemas?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q8" value="a">A. Let the analysis subagent finish with both values and their sources annotated; the coordinator reconciles them.<div class="pt">Deixar o subagent de análise terminar com os dois valores e suas fontes anotados; o coordinator faz a reconciliação.</div></label>
+    <label class="opt"><input type="checkbox" name="q8" value="b">B. Have the analysis subagent keep only the trial with the larger sample, since it is statistically the stronger source.<div class="pt">Fazer o subagent de análise manter só o ensaio com a amostra maior, já que estatisticamente é a fonte mais forte.</div></label>
+    <label class="opt"><input type="checkbox" name="q8" value="c">C. Add one general disclaimer at the top of the report saying some findings rest on weaker evidence than others.<div class="pt">Adicionar um aviso geral no topo do relatório dizendo que alguns findings se apoiam em evidência mais fraca que outros.</div></label>
+    <label class="opt"><input type="checkbox" name="q8" value="d">D. Split the report into explicit sections for established and contested findings, keeping each source's own framing.<div class="pt">Dividir o relatório em seções explícitas de achados estabelecidos e contestados, mantendo a caracterização de cada fonte.</div></label>
+    <label class="opt"><input type="checkbox" name="q8" value="e">E. Ask the synthesis subagent to soften every statement with words like "may" and "suggests", for a consistent tone.<div class="pt">Pedir ao subagent de síntese que suavize toda afirmação com palavras como "pode" e "sugere", para um tom consistente.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A e D.</strong> TS 5.6: a análise termina com os valores conflitantes incluídos e anotados com suas fontes, e quem decide a reconciliação é o coordinator, antes da síntese (A) — abortar por "dados inconsistentes" joga fora evidência legítima. E o relatório separa em seções explícitas o que está estabelecido do que é contestado, preservando como cada fonte caracterizou o achado (D). B escolhe um valor por heurística e apaga a divergência que o leitor precisava ver. C e E aplicam o mesmo tratamento a tudo: um aviso genérico ou um "pode" uniforme continuam sem dizer ao leitor qual achado é sólido e qual é disputado. <span class="ts">Domínio 5 · TS 5.6 — Proveniência e incerteza na síntese</span></div>
+</div>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir aula 13</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="aula-12.html">← Aula 12 — Gestão de contexto e escalonamento</a></span>
+  <span><a href="aula-14.html">Aula 14 — Simulado final e estratégia de prova →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  var total = 0, score = 0;
+  document.querySelectorAll('.q').forEach(function (q) {
+    total++;
+    document.getElementById('total').textContent = total;
+    var btn = q.querySelector('button.answer');
+    var correct = q.dataset.correct.split(',').map(function (s) { return s.trim(); });
+    btn.addEventListener('click', function () {
+      var checked = Array.prototype.slice.call(q.querySelectorAll('input:checked')).map(function (i) { return i.value; });
+      if (checked.length === 0) return;
+      var ok = checked.length === correct.length && checked.every(function (v) { return correct.indexOf(v) !== -1; });
+      q.querySelectorAll('label.opt').forEach(function (l) {
+        var v = l.querySelector('input').value;
+        if (correct.indexOf(v) !== -1) l.classList.add('correct');
+        else if (l.querySelector('input').checked) l.classList.add('wrong');
+        l.querySelector('input').disabled = true;
+      });
+      var fb = q.querySelector('.feedback');
+      fb.classList.add(ok ? 'ok' : 'ko');
+      fb.innerHTML = (ok ? '✅ Correto. ' : '❌ Incorreto. ') + fb.innerHTML;
+      btn.disabled = true;
+      if (ok) score++;
+      document.getElementById('score').textContent = score;
+    });
+  });
+  var KEY = 'ccarf-aula-13';
+  var btn = document.getElementById('finish');
+  if (localStorage.getItem(KEY)) {
+    document.getElementById('donemsg').textContent = 'Aula já concluída — ' + localStorage.getItem(KEY);
+  }
+  btn.addEventListener('click', function () {
+    var rec = new Date().toLocaleDateString('pt-BR') + ' · ' + score + '/' + total + ' acertos';
+    localStorage.setItem(KEY, rec);
+    document.getElementById('donemsg').textContent = 'Concluída: ' + rec;
+  });
+})();
+</script>
+</body>
+</html>

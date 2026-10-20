@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 07 — Slash commands, skills e plan mode · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.uso { color: var(--pt); font-size: 13px; font-style: italic; }
+  .pt { color: var(--pt); font-size: 13.5px; }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 4px 0 10px; }
+  body.hide-pt .pt, body.hide-pt .pt-block { display: none; }
+  .toggle-pt { position: sticky; top: 12px; float: right; z-index: 5; background: var(--card2);
+    border: 1px solid var(--border); color: var(--muted); border-radius: 999px;
+    padding: 6px 14px; font-size: 12.5px; cursor: pointer; }
+  .toggle-pt:hover { color: var(--text); border-color: var(--accent); }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q .cenario { float: right; text-transform: none; letter-spacing: 0; font-size: 11.5px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
+  .q .feedback .ts { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<button class="toggle-pt" onclick="document.body.classList.toggle('hide-pt'); this.textContent = document.body.classList.contains('hide-pt') ? '🇧🇷 mostrar traduções' : '🇧🇷 ocultar traduções';">🇧🇷 ocultar traduções</button>
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Aula 07</div>
+  <h1>Aula 07 — Slash commands, skills e plan mode</h1>
+  <div class="meta">
+    <span class="tag">Domínio 3 · Claude Code Configuration &amp; Workflows (20%)</span>
+    <span class="tag">Task Statements 3.2 e 3.4</span>
+    <span class="tag">~60 min</span>
+  </div>
+</header>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo do dia.</strong> Saber <em>onde</em> criar comandos e skills (projeto vs pessoal) e
+  <em>quando</em> usar cada mecanismo: slash command versionado, skill com frontmatter
+  (<code>context: fork</code>, <code>allowed-tools</code>, <code>argument-hint</code>) ou CLAUDE.md.
+  E dominar a decisão <strong>plan mode vs execução direta</strong> — incluindo o papel do Explore subagent
+  para proteger o contexto da conversa principal.
+</div>
+
+<h2>1. Slash commands: escopo de projeto vs escopo de usuário (TS 3.2)</h2>
+<p>Um <strong>custom slash command</strong> é um arquivo Markdown cujo conteúdo vira o prompt quando você
+digita <code>/nome-do-comando</code>. A única decisão arquitetural que a prova cobra aqui é
+<strong>onde o arquivo mora</strong> — e a resposta depende de <em>quem deve recebê-lo</em>:</p>
+<ul>
+  <li><code>.claude/commands/</code> <strong>dentro do repositório</strong> → escopo de <strong>projeto</strong>.
+      Vai pro version control (git), então <strong>todo dev que clona ou dá pull recebe o comando automaticamente</strong>.
+      É o lugar de qualquer workflow padronizado do time: <code>/review</code>, <code>/deploy-check</code>, <code>/novo-endpoint</code>.</li>
+  <li><code>~/.claude/commands/</code> <strong>no home do usuário</strong> → escopo <strong>pessoal</strong>.
+      Não entra no repo, não é compartilhado. É o lugar dos seus atalhos individuais.</li>
+</ul>
+<pre><code>meu-repo/
+└── .claude/
+    └── commands/
+        └── review.md        ← /review disponível pra todo mundo que clonar
+
+~/                      (fora do repo)
+└── .claude/
+    └── commands/
+        └── meu-resumo.md    ← comando pessoal, só existe na sua máquina</code></pre>
+<p>Regra de bolso da prova: o stem disser <strong>"available to every developer when they clone"</strong> ou
+<strong>"shared with the team"</strong> → a resposta é <code>.claude/commands/</code> no repositório. Qualquer opção com
+<code>~/</code> está errada nesse cenário porque não passa pelo version control.</p>
+
+<h2>2. Skills: SKILL.md com frontmatter (TS 3.2)</h2>
+<p>Uma <strong>skill</strong> é um pacote de instruções especializadas que o Claude carrega <strong>sob demanda</strong>
+(quando a tarefa pede), em vez de ocupar contexto o tempo todo. Vive em <code>.claude/skills/&lt;nome&gt;/SKILL.md</code>
+(projeto) ou <code>~/.claude/skills/&lt;nome&gt;/SKILL.md</code> (pessoal). O SKILL.md tem <strong>frontmatter YAML</strong>
+com três campos que a prova cobra nominalmente:</p>
+<pre><code>---
+name: analise-codebase
+description: Analisa a estrutura do repositório e gera relatório de dependências
+context: fork
+allowed-tools: Read, Grep, Glob, Write
+argument-hint: "caminho-do-diretorio (ex.: src/api)"
+---
+
+# Instruções da skill em Markdown...</code></pre>
+<ul>
+  <li><code>context: fork</code> → a skill roda num <strong>sub-agent isolado</strong>. O output verboso
+      (ex.: análise de codebase inteira, brainstorming de alternativas) <strong>não polui a conversa principal</strong> —
+      só o resultado/resumo volta. É o equivalente em skill do Explore subagent.</li>
+  <li><code>allowed-tools</code> → <strong>restringe quais tools a skill pode usar</strong> durante a execução.
+      Caso clássico da prova: limitar a operações de escrita/leitura para impedir ações destrutivas
+      (uma skill de refatoração sem acesso a <code>Bash</code> não roda <code>rm -rf</code>).</li>
+  <li><code>argument-hint</code> → texto exibido quando o dev invoca a skill <strong>sem os parâmetros obrigatórios</strong>,
+      lembrando o que passar (ex.: qual diretório analisar).</li>
+</ul>
+
+<div class="card" style="border-left: 3px solid var(--accent2);">
+  <strong>🧭 Prova × produto atual</strong> <span style="color:var(--muted);font-size:12.5px">(documentação do Claude Code conferida em 20/10/2026)</span>
+  <ul>
+    <li><strong><code>allowed-tools</code>:</strong> o guia (TS 3.2) diz que o campo <em>restringe</em> as tools durante a skill — e é assim que a prova cobra. No produto atual ele faz outra coisa: <strong>só pré-aprova</strong> as tools listadas, que rodam sem pedir permissão no turno que invoca a skill, e não tira nenhuma tool do alcance. Para remover tools enquanto a skill está ativa existe outro campo, <code>disallowed-tools</code>.</li>
+    <li><strong><code>context: fork</code>:</strong> a skill roda num subagent que <strong>não vê o histórico</strong> da sua conversa e devolve um resumo ao terminar — o isolamento que o guia descreve.</li>
+  </ul>
+  <em>Na prova, responda como o guia: allowed-tools restringe as tools da skill.</em>
+</div>
+
+<h3>Variante pessoal sem afetar o time</h3>
+<p>Quer customizar uma skill do projeto só pra você? Crie uma <strong>variante em
+<code>~/.claude/skills/</code> com um nome diferente</strong> (ex.: <code>analise-codebase-luo</code>). Nome diferente =
+não colide com a do time e não altera o comportamento dos colegas. Editar a skill do repo mudaria o workflow
+de todo mundo — e commitar sua preferência pessoal é exatamente o anti-padrão que a prova testa.</p>
+
+<h3>Skill vs CLAUDE.md: a decisão que cai na prova</h3>
+<table class="gloss">
+  <tr><th></th><th>Skill (<code>.claude/skills/</code>)</th><th>CLAUDE.md</th></tr>
+  <tr><td class="en">Carregamento</td><td><strong>On-demand</strong>: invocada quando a tarefa pede</td><td><strong>Sempre carregado</strong> em toda sessão</td></tr>
+  <tr><td class="en">Uso ideal</td><td>Workflows específicos de uma tarefa (análise, migração, release)</td><td>Padrões universais do projeto (estilo, convenções, "nunca faça X")</td></tr>
+  <tr><td class="en">Custo de contexto</td><td>Só quando usada</td><td>Permanente — crescer demais polui tudo</td></tr>
+</table>
+<p>Se o stem diz "padrão que vale pra <strong>todo</strong> código do projeto" → CLAUDE.md. Se diz
+"workflow que roda <strong>às vezes</strong>, com parâmetros e output grande" → skill (provavelmente com
+<code>context: fork</code>).</p>
+
+<h3>Mapa rápido: qual mecanismo para cada necessidade</h3>
+<p>A prova gosta de listar várias necessidades e pedir o mecanismo de cada uma. O critério é sempre <strong>quando</strong> a orientação se aplica e <strong>quem</strong> deve recebê-la:</p>
+<table class="gloss">
+  <tr><th>Necessidade</th><th>Mecanismo</th></tr>
+  <tr><td>Padrão que vale para todo dev, em toda sessão</td><td>CLAUDE.md do projeto (sempre carregado, versionado)</td></tr>
+  <tr><td>Convenção de um tipo de arquivo espalhado pelo repo</td><td><code>.claude/rules/</code> com <code>paths</code> glob (aula 06)</td></tr>
+  <tr><td>Workflow que roda às vezes, com parâmetros ou saída grande</td><td>Skill em <code>.claude/skills/</code> (com <code>context: fork</code> se for verboso)</td></tr>
+  <tr><td>Prompt padronizado que o time dispara pelo nome</td><td>Slash command em <code>.claude/commands/</code></td></tr>
+  <tr><td>Atalho só seu</td><td><code>~/.claude/commands/</code> ou <code>~/.claude/skills/</code> (com nome próprio)</td></tr>
+  <tr><td>Algo que precisa acontecer sempre, sem exceção</td><td>Enforcement programático (hook), não instrução — a lógica do TS 1.5 (aula 03)</td></tr>
+</table>
+<p>Regra de bolso: <em>sempre carregado → CLAUDE.md; depende do arquivo → rule com glob; sob demanda → skill ou comando; garantia → código, nunca texto.</em></p>
+
+<h2>3. Plan mode vs execução direta (TS 3.4)</h2>
+<p><strong>Plan mode</strong> é o modo em que o Claude <strong>explora e planeja sem modificar nada</strong>: lê o
+código, mapeia dependências, propõe uma abordagem — e só executa depois da sua aprovação. A prova cobra a
+fronteira da decisão:</p>
+<ul>
+  <li>✅ <strong>Plan mode</strong> quando a tarefa tem: mudanças em larga escala, <strong>múltiplas abordagens válidas</strong>,
+      <strong>decisões arquiteturais</strong> (fronteiras de serviço, dependências entre módulos), modificação de
+      <strong>muitos arquivos</strong> (ex.: migração de biblioteca em 45+ arquivos, monólito → microservices,
+      escolha entre abordagens de integração com requisitos de infra diferentes).</li>
+  <li>✅ <strong>Execução direta</strong> quando a mudança é <strong>simples e bem-escopada</strong>: um bug de um arquivo com
+      stack trace claro, adicionar uma validação de data numa função, renomear uma variável.</li>
+</ul>
+<p>O raciocínio econômico: plan mode <strong>previne retrabalho caro</strong>. Descobrir tarde demais que dois módulos
+são acoplados custa muito mais do que os minutos gastos explorando antes. Mas planejar uma mudança de 3 linhas
+é over-engineering de processo — o exame penaliza os dois extremos.</p>
+
+<h3>Explore subagent: protegendo o contexto</h3>
+<p>Fases de <strong>discovery</strong> ("onde essa função é usada?", "mapeie todos os callers") geram output enorme:
+dezenas de arquivos lidos, greps, listagens. Se isso entra na conversa principal, a janela de contexto
+acaba antes da fase de implementação. O <strong>Explore subagent</strong> resolve: faz a busca verbosa num contexto
+isolado e <strong>devolve só o resumo</strong>. Mesma lógica do <code>context: fork</code> das skills.</p>
+<p>Onde isso cai na prova: <strong>tarefas multifase</strong>. Para uma mudança grande num código que você não conhece, o fluxo proporcional é: <strong>discovery no Explore subagent</strong> (buscas e leituras ficam isoladas; volta um resumo) → <strong>plan mode</strong> para escolher a abordagem a partir desse resumo → <strong>execução direta</strong> do plano aprovado. Sem o Explore, a saída do discovery enche a janela e a implementação começa com o contexto esgotado: decisões tomadas no meio do caminho se perdem.</p>
+<p>Regra de bolso: <em>discovery verboso não mora na conversa principal — roda isolado e entrega só o resumo.</em></p>
+
+<h3>Combinando os dois (o padrão "certo" da prova)</h3>
+<p>Para tarefas grandes, o fluxo proporcional é: <strong>plan mode para investigação e desenho → execução direta
+para implementar o plano aprovado</strong>. Não é "plan mode pra sempre" nem "execução direta desde o início" —
+é cada modo na fase em que ele é forte. Distrator clássico: "começar em execução direta e trocar pra plan mode
+se aparecer complexidade" — errado quando a complexidade <em>já está declarada</em> no requisito.</p>
+
+<h2>4. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
+  <tr><td class="en">custom slash command</td><td>comando /personalizado (arquivo .md)</td><td class="uso">"create a custom /review slash command"</td></tr>
+  <tr><td class="en">project-scoped</td><td>escopo de projeto (no repo, versionado)</td><td class="uso">"project-scoped commands in .claude/commands/ are shared via version control"</td></tr>
+  <tr><td class="en">user-scoped</td><td>escopo de usuário (no ~, pessoal)</td><td class="uso">"user-scoped commands in ~/.claude/commands/ are personal"</td></tr>
+  <tr><td class="en">SKILL.md</td><td>arquivo de definição da skill</td><td class="uso">"skills in .claude/skills/ with SKILL.md files"</td></tr>
+  <tr><td class="en">frontmatter</td><td>bloco YAML de configuração no topo do arquivo</td><td class="uso">"frontmatter configuration including context, allowed-tools, and argument-hint"</td></tr>
+  <tr><td class="en">context: fork</td><td>rodar em sub-agent isolado</td><td class="uso">"context: fork prevents skill outputs from polluting the main conversation"</td></tr>
+  <tr><td class="en">allowed-tools</td><td>tools permitidas durante a skill</td><td class="uso">"restrict tool access with allowed-tools to prevent destructive actions"</td></tr>
+  <tr><td class="en">argument-hint</td><td>dica de parâmetros ao invocar</td><td class="uso">"argument-hint prompts developers for required parameters"</td></tr>
+  <tr><td class="en">on-demand invocation</td><td>invocação sob demanda</td><td class="uso">"skills: on-demand invocation vs CLAUDE.md: always-loaded"</td></tr>
+  <tr><td class="en">plan mode</td><td>modo de planejamento (explora sem modificar)</td><td class="uso">"plan mode enables safe codebase exploration before committing to changes"</td></tr>
+  <tr><td class="en">direct execution</td><td>execução direta</td><td class="uso">"direct execution is appropriate for simple, well-scoped changes"</td></tr>
+  <tr><td class="en">Explore subagent</td><td>sub-agente de exploração/discovery</td><td class="uso">"the Explore subagent returns summaries to preserve main conversation context"</td></tr>
+  <tr><td class="en">costly rework</td><td>retrabalho caro</td><td class="uso">"planning prevents costly rework when dependencies are discovered late"</td></tr>
+  <tr><td class="en">multi-phase task</td><td>tarefa multifase (discovery → plano → implementação)</td><td class="uso">"use the Explore subagent for verbose discovery phases in multi-phase tasks"</td></tr>
+  <tr><td class="en">verbose discovery output</td><td>saída verbosa da fase de descoberta</td><td class="uso">"isolate verbose discovery output and return summaries"</td></tr>
+  <tr><td class="en">context window exhaustion</td><td>estouro da janela de contexto</td><td class="uso">"prevent context window exhaustion during multi-phase tasks"</td></tr>
+  <tr><td class="en">always-loaded</td><td>sempre carregado (em toda sessão)</td><td class="uso">"CLAUDE.md for always-loaded universal standards"</td></tr>
+</table>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha do dia</h3>
+  <p>Dois padrões de distrator dominam este tema. (1) <strong>Escopo errado</strong>: a questão pede algo
+  "disponível pra todo o time" e oferece <code>~/.claude/...</code> como opção — pessoal nunca é compartilhado,
+  e "mandar cada dev copiar o arquivo" ignora o version control. (2) <strong>Plan mode como reflexo ou como
+  fallback</strong>: "usar plan mode para toda tarefa" (over-engineering de processo) e "começar direto e trocar
+  se complicar" (a complexidade já está no enunciado) são os dois errados simétricos.
+  Regra de bolso: <em>compartilhado = dentro do repo e versionado; planeje quando há mudança em
+  larga escala, várias abordagens válidas, decisão arquitetural ou muitos arquivos (ex.: migração em 45+ arquivos,
+  monólito → serviços); execute direto quando a mudança é simples, bem entendida e de escopo claro (ex.: bug de um
+  arquivo com stack trace claro).</em></p>
+</div>
+
+<h2>5. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
+<div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
+
+<div class="q" data-correct="c" data-ts="3.2" data-dom="3">
+  <div class="qnum">Questão 1 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">Your team follows a standardized pull-request checklist, and you want a /pr-check slash command that every engineer gets automatically as soon as they clone or pull the repository. Where should the command file live?</div>
+  <div class="pt-block pt">Seu time segue um checklist padronizado de pull request, e você quer um comando /pr-check que todo engenheiro receba automaticamente ao clonar ou dar pull no repositório. Onde o arquivo do comando deve ficar?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q1" value="a">A. In ~/.claude/commands/, with onboarding docs telling each engineer to copy it into their home directory.<div class="pt">Em ~/.claude/commands/, com docs de onboarding mandando cada engenheiro copiá-lo para seu home.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="b">B. Appended to the root CLAUDE.md as a section that walks through the checklist step by step.<div class="pt">Anexado ao CLAUDE.md da raiz como uma seção que percorre o checklist passo a passo.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. In the repository's .claude/commands/ directory, so it is version-controlled with the code.<div class="pt">No diretório .claude/commands/ do repositório, para ser versionado junto com o código.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="d">D. In a .claude/settings.json key that registers custom commands for everyone on the team.<div class="pt">Numa chave do .claude/settings.json que registra comandos customizados para todo o time.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Comandos com escopo de projeto moram em <code>.claude/commands/</code> dentro do repo: como entram no git, todo dev que clona/dá pull recebe o <code>/pr-check</code> sem passo manual. A erra porque <code>~/.claude/commands/</code> é pessoal e "copiar manualmente" não é automático nem versionado. B confunde instrução de contexto (CLAUDE.md) com definição de comando — checklist no CLAUDE.md não cria slash command. D descreve um mecanismo de configuração que não existe no Claude Code.<span class="ts">Domínio 3 · TS 3.2 — Slash commands e skills</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="3.4" data-dom="3">
+  <div class="qnum">Questão 2 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">You've been asked to split a legacy monolith into independently deployable services. The work touches dozens of files and forces decisions about service boundaries and cross-module dependencies before any code changes. What is the best way to use Claude Code?</div>
+  <div class="pt-block pt">Pediram para você dividir um monólito legado em serviços implantáveis de forma independente. O trabalho toca dezenas de arquivos e exige decisões sobre fronteiras de serviço e dependências entre módulos antes de qualquer mudança de código. Qual é a melhor forma de usar o Claude Code?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q2" value="a">A. Start in direct execution and refactor incrementally, letting service boundaries emerge as the code moves.<div class="pt">Começar em execução direta e refatorar incrementalmente, deixando as fronteiras de serviço emergirem conforme o código se move.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="b">B. Enter plan mode: explore the codebase, map dependencies, and agree on a design before modifying files.<div class="pt">Entrar em plan mode: explorar o codebase, mapear dependências e alinhar um desenho antes de modificar arquivos.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="c">C. Use direct execution with a very detailed prompt specifying the final structure of every service upfront.<div class="pt">Usar execução direta com um prompt bem detalhado especificando a estrutura final de cada serviço antecipadamente.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="d">D. Begin in direct execution and switch to plan mode only if unexpected complexity shows up.<div class="pt">Começar em execução direta e trocar para plan mode apenas se complexidade inesperada aparecer.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Monólito → microservices é o exemplo canônico de tarefa para plan mode: mudança em larga escala, múltiplas abordagens válidas e decisões arquiteturais — explorar e desenhar antes de commitar mudanças previne retrabalho caro. A arrisca descobrir acoplamentos tarde demais, quando o custo de reverter já é alto. C presume que você já conhece a estrutura certa sem explorar o código — exatamente o que a fase de discovery existe para responder. D falha porque a complexidade não é "inesperada": ela já está declarada no requisito.<span class="ts">Domínio 3 · TS 3.4 — Plan mode vs execução direta</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="3.2" data-dom="3">
+  <div class="qnum">Questão 3 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">A teammate built a skill that scans the entire repository to produce a dependency report. Whenever it runs, hundreds of lines of intermediate analysis flood the main conversation, and the follow-up work loses earlier context. Which change fixes this at the root?</div>
+  <div class="pt-block pt">Um colega criou uma skill que varre o repositório inteiro para gerar um relatório de dependências. Sempre que ela roda, centenas de linhas de análise intermediária inundam a conversa principal, e o trabalho seguinte perde contexto anterior. Qual mudança corrige isso na raiz?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q3" value="a">A. Add context: fork so the skill runs in an isolated sub-agent and returns only its final report.<div class="pt">Adicionar context: fork para a skill rodar num sub-agent isolado e devolver só o relatório final.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="b">B. Add argument-hint so users are prompted to pass a narrower directory and the scan produces less output.<div class="pt">Adicionar argument-hint para os usuários serem lembrados de passar um diretório menor e a varredura gerar menos saída.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="c">C. Rewrite the skill instructions to tell Claude to keep its intermediate analysis brief and summarize as it goes.<div class="pt">Reescrever as instruções da skill para o Claude manter a análise intermediária breve e ir resumindo ao longo do caminho.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="d">D. Move the skill to ~/.claude/skills/ so it runs in each developer's personal context instead of the shared one.<div class="pt">Mover a skill para ~/.claude/skills/ para ela rodar no contexto pessoal de cada desenvolvedor em vez do compartilhado.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> <code>context: fork</code> existe exatamente para isso: a skill executa num sub-agent isolado, o output verboso de exploração/análise fica lá, e só o resultado final volta — a causa raiz (poluição do contexto principal) é removida estruturalmente. B confunde o campo: <code>argument-hint</code> só lembra parâmetros na invocação; um diretório menor reduz a saída, mas ela continua caindo na conversa principal. C é remendo cosmético via prompt — "seja breve" não dá garantia nenhuma sobre o que entra na janela de contexto. D muda quem vê a skill, não onde o output dela aterrissa.<span class="ts">Domínio 3 · TS 3.2 — Slash commands e skills</span></div>
+</div>
+
+<div class="q" data-correct="b,e" data-ts="3.2" data-dom="3">
+  <div class="qnum">Questão 4 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">You are designing a /release-notes skill for your team. Which TWO choices are appropriate when setting it up?</div>
+  <div class="pt-block pt">Você está desenhando uma skill /release-notes para o seu time. Quais DUAS escolhas são apropriadas ao configurá-la?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q4" value="a">A. Setting context: fork so the skill is loaded at the start of every session, just like CLAUDE.md.<div class="pt">Configurar context: fork para a skill ser carregada no início de toda sessão, igual ao CLAUDE.md.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="b">B. Setting allowed-tools to restrict the skill to file read and write operations during generation.<div class="pt">Configurar allowed-tools para restringir a skill a operações de leitura e escrita de arquivos durante a geração.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="c">C. Creating a personal variant in ~/.claude/skills/ under the same name so it replaces the team version for everyone.<div class="pt">Criar uma variante pessoal em ~/.claude/skills/ com o mesmo nome para ela substituir a versão do time para todo mundo.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="d">D. Registering the skill in the project's .mcp.json so every teammate's session discovers it at connection time.<div class="pt">Registrar a skill no .mcp.json do projeto para a sessão de cada colega descobri-la no momento da conexão.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="e">E. Setting argument-hint so developers who invoke the skill without arguments are prompted for the version range.<div class="pt">Configurar argument-hint para que devs que invoquem a skill sem argumentos sejam lembrados do intervalo de versões.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B e E.</strong> <code>allowed-tools</code> restringe o acesso a tools durante a execução da skill — o uso que o guia descreve (ex.: limitar a operações de arquivo para impedir ações destrutivas) — e <code>argument-hint</code> pede os parâmetros obrigatórios quando a invocação vem vazia; os dois são usos literais dos campos que a prova lista. A inverte o conceito: <code>context: fork</code> isola a skill num sub-agent quando ela é invocada; quem carrega sempre é o CLAUDE.md. C erra duas vezes: variante pessoal deve ter <strong>nome diferente</strong> (para não colidir), e algo em <code>~/</code> nunca afeta "todo mundo" — só a sua máquina. D confunde mecanismos: <code>.mcp.json</code> configura MCP servers; skill de projeto mora em <code>.claude/skills/</code> e chega ao time pelo version control. <em>(No produto atual, <code>allowed-tools</code> só pré-aprova as tools e não restringe nada — ver o card “Prova × produto atual” na seção 2. Na prova, vale o guia.)</em><span class="ts">Domínio 3 · TS 3.2 — Slash commands e skills</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="3.4" data-dom="3">
+  <div class="qnum">Questão 5 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">Two tasks land on your plate: (1) add a date-format validation check to a single function, with a clear stack trace pointing at the line; (2) migrate a logging library used by 45+ files, where two candidate libraries have different infrastructure requirements. Which plan correctly matches execution mode to task?</div>
+  <div class="pt-block pt">Duas tarefas chegam pra você: (1) adicionar uma validação de formato de data numa única função, com um stack trace claro apontando a linha; (2) migrar uma biblioteca de logging usada em mais de 45 arquivos, onde duas bibliotecas candidatas têm requisitos de infraestrutura diferentes. Qual plano combina corretamente o modo de execução com cada tarefa?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q5" value="a">A. Plan mode for both tasks, since any code change benefits from exploring the codebase before editing.<div class="pt">Plan mode para as duas tarefas, já que qualquer mudança de código se beneficia de explorar o codebase antes de editar.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. Direct execution for both tasks, since plan mode is meant for greenfield projects rather than migrations.<div class="pt">Execução direta para as duas tarefas, já que plan mode é para projetos greenfield, não para migrações.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. Plan mode for task 1, since validation logic is subtle, and direct execution for task 2, since migrations are mechanical.<div class="pt">Plan mode para a tarefa 1, porque lógica de validação é sutil, e execução direta para a tarefa 2, porque migrações são mecânicas.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. Direct execution for task 1; plan mode for task 2 to choose the library, then direct execution of the approved plan.<div class="pt">Execução direta para a tarefa 1; plan mode para a tarefa 2 para escolher a biblioteca, depois execução direta do plano aprovado.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> É a fronteira exata do TS 3.4: validação pontual com stack trace claro = escopo bem definido → execução direta; migração em 45+ arquivos com escolha entre bibliotecas de requisitos de infraestrutura diferentes = decisão arquitetural → plan mode para investigar e desenhar, seguido de execução direta para implementar o plano aprovado (a combinação que o exam guide cita). A é over-engineering de processo para a tarefa 1. B é o erro simétrico: ignora o custo de retrabalho da migração — e plan mode não tem nada a ver com greenfield. C inverte os dois critérios: complexidade arquitetural mora na tarefa 2, não na 1.<span class="ts">Domínio 3 · TS 3.4 — Plan mode vs execução direta</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="3.4" data-dom="3">
+  <div class="qnum">Questão 6 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">You are adding tenant isolation to an unfamiliar service. Before any design work, Claude has to find every place that reads the tenant ID, which takes dozens of searches and file reads. In a previous attempt, that output filled the session, and by implementation time Claude had lost track of the agreed design. How should you run the next attempt?</div>
+  <div class="pt-block pt">Você está adicionando isolamento por tenant a um serviço que não conhece. Antes de qualquer desenho, o Claude precisa achar todos os pontos que leem o tenant ID, o que exige dezenas de buscas e leituras de arquivo. Numa tentativa anterior, essa saída lotou a sessão e, na hora de implementar, o Claude já tinha perdido o fio do desenho combinado. Como conduzir a próxima tentativa?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q6" value="a">A. Skip the discovery phase and implement directly, so the context budget goes to the edits instead of the searches.<div class="pt">Pular a fase de discovery e implementar direto, para o orçamento de contexto ir para as edições e não para as buscas.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="b">B. Paste the discovery results into the project CLAUDE.md so they are reloaded at the start of every later session.<div class="pt">Colar os resultados do discovery no CLAUDE.md do projeto para eles serem recarregados no início de toda sessão seguinte.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="c">C. Run discovery in the Explore subagent so only a summary of the findings returns, then plan and implement from that summary.<div class="pt">Rodar o discovery no Explore subagent para só um resumo dos achados voltar, e então planejar e implementar a partir desse resumo.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. Keep discovery in the main session but tell Claude to print only file paths, leaving out the code it reads.<div class="pt">Manter o discovery na sessão principal, mas mandar o Claude imprimir só os caminhos dos arquivos, sem o código que ele lê.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> O Explore subagent existe para fases de discovery verbosas: as buscas e leituras rodam num contexto isolado e só o resumo volta, preservando a conversa principal para o desenho (plan mode) e a implementação — o fluxo multifase que o guia descreve. A troca um problema de contexto por um de qualidade: num serviço desconhecido, pular o discovery é contratar retrabalho. B espalha o problema: o CLAUDE.md é carregado em toda sessão, e despejar resultados de busca ali polui todas as sessões futuras com dado que envelhece. D é remendo via prompt: o que lota a janela são os resultados das buscas e leituras (tool results), que entram inteiros no contexto da sessão principal não importa o que o Claude imprima — pedir só os caminhos encurta a resposta dele, não o que se acumula.<span class="ts">Domínio 3 · TS 3.4 — Plan mode vs execução direta</span></div>
+</div>
+
+<div class="q" data-correct="a,d" data-ts="3.2" data-dom="3">
+  <div class="qnum">Questão 7 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">Your platform team is cleaning up how Claude Code receives guidance in a large monorepo. Which TWO pairings of need and mechanism are correct?</div>
+  <div class="pt-block pt">Seu time de plataforma está organizando como o Claude Code recebe orientação num monorepo grande. Quais DOIS pares de necessidade e mecanismo estão corretos?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q7" value="a">A. A quarterly dependency-audit workflow with long exploratory output → a project skill with context: fork.<div class="pt">Um workflow trimestral de auditoria de dependências, com saída exploratória longa → uma skill de projeto com context: fork.</div></label>
+    <label class="opt"><input type="checkbox" name="q7" value="b">B. Conventions for every *.sql migration file, wherever it sits in the repo → a CLAUDE.md inside the db/ folder.<div class="pt">Convenções para todo arquivo de migração *.sql, onde quer que ele esteja no repo → um CLAUDE.md dentro da pasta db/.</div></label>
+    <label class="opt"><input type="checkbox" name="q7" value="c">C. A personal shortcut that only you use to summarize your daily diffs → a command in the repo's .claude/commands/.<div class="pt">Um atalho pessoal, só seu, para resumir seus diffs do dia → um comando em .claude/commands/ do repo.</div></label>
+    <label class="opt"><input type="checkbox" name="q7" value="d">D. Commit-message rules that every developer must follow in every session → the project-level CLAUDE.md.<div class="pt">Regras de mensagem de commit que todo dev precisa seguir em toda sessão → o CLAUDE.md do projeto.</div></label>
+    <label class="opt"><input type="checkbox" name="q7" value="e">E. A security linter that must run after every file edit, without exception → a mandatory rule in CLAUDE.md.<div class="pt">Um linter de segurança que precisa rodar depois de toda edição de arquivo, sem exceção → uma regra obrigatória no CLAUDE.md.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A e D.</strong> Workflow pontual, com saída exploratória grande, é caso de skill sob demanda — e <code>context: fork</code> mantém essa saída fora da conversa principal. Regra que vale para todo dev em toda sessão é padrão universal: CLAUDE.md do projeto, sempre carregado e versionado (TS 3.2: skill sob demanda × CLAUDE.md sempre carregado). B erra o mecanismo: convenção que acompanha um tipo de arquivo espalhado pelo repo pede <code>.claude/rules/</code> com <code>paths</code> glob (ex.: <code>**/*.sql</code>); o CLAUDE.md de diretório só vale dentro daquela pasta (TS 3.3). C erra o escopo: atalho pessoal vai em <code>~/.claude/commands/</code> — no repo, ele aparece para o time inteiro. E confunde contexto com garantia: instrução no CLAUDE.md é seguida de forma probabilística; o que precisa rodar sempre, sem exceção, pede enforcement programático (um hook) — a mesma lógica do TS 1.5.<span class="ts">Domínio 3 · TS 3.2 — Slash commands e skills</span></div>
+</div>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir aula 07</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="aula-06.html">← Aula 06</a></span>
+  <span><a href="aula-08.html">Aula 08 →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  var total = 0, score = 0;
+  document.querySelectorAll('.q').forEach(function (q) {
+    total++;
+    document.getElementById('total').textContent = total;
+    var btn = q.querySelector('button.answer');
+    var correct = q.dataset.correct.split(',').map(function (s) { return s.trim(); });
+    btn.addEventListener('click', function () {
+      var checked = Array.prototype.slice.call(q.querySelectorAll('input:checked')).map(function (i) { return i.value; });
+      if (checked.length === 0) return;
+      var ok = checked.length === correct.length && checked.every(function (v) { return correct.indexOf(v) !== -1; });
+      q.querySelectorAll('label.opt').forEach(function (l) {
+        var v = l.querySelector('input').value;
+        if (correct.indexOf(v) !== -1) l.classList.add('correct');
+        else if (l.querySelector('input').checked) l.classList.add('wrong');
+        l.querySelector('input').disabled = true;
+      });
+      var fb = q.querySelector('.feedback');
+      fb.classList.add(ok ? 'ok' : 'ko');
+      fb.innerHTML = (ok ? '✅ Correto. ' : '❌ Incorreto. ') + fb.innerHTML;
+      btn.disabled = true;
+      if (ok) score++;
+      document.getElementById('score').textContent = score;
+    });
+  });
+  var KEY = 'ccarf-aula-07';
+  var btn = document.getElementById('finish');
+  if (localStorage.getItem(KEY)) {
+    document.getElementById('donemsg').textContent = 'Aula já concluída — ' + localStorage.getItem(KEY);
+  }
+  btn.addEventListener('click', function () {
+    var rec = new Date().toLocaleDateString('pt-BR') + ' · ' + score + '/' + total + ' acertos';
+    localStorage.setItem(KEY, rec);
+    document.getElementById('donemsg').textContent = 'Concluída: ' + rec;
+  });
+})();
+</script>
+</body>
+</html>

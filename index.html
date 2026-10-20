@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCAR-F · Curso 14 dias — Claude Certified Architect Foundations</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --ok: #34d399;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 14px 0; }
+  .progress-outer { background: var(--card2); border-radius: 999px; height: 12px; overflow: hidden; margin: 8px 0 4px; }
+  .progress-inner { background: var(--ok); height: 100%; width: 0; transition: width .4s; }
+  .stats { font-size: 13px; color: var(--muted); }
+  ol.aulas { list-style: none; padding: 0; margin: 24px 0; }
+  ol.aulas li { margin: 8px 0; }
+  ol.aulas a { display: flex; align-items: baseline; gap: 12px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px;
+    color: var(--text); text-decoration: none; transition: border-color .15s; }
+  ol.aulas a:hover { border-color: var(--accent); }
+  .num { color: var(--accent); font-weight: 700; font-size: 13px; min-width: 52px; }
+  .tit { flex: 1; }
+  .tit small { display: block; color: var(--muted); font-size: 12.5px; }
+  .status { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .status.done { color: var(--ok); }
+  .reset { margin-top: 24px; background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 8px; padding: 8px 16px; font-size: 12.5px; cursor: pointer; }
+  .reset:hover { border-color: #f87171; color: #f87171; }
+  .dica { border-left: 3px solid var(--accent); }
+  .dica strong { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>CCAR-F · Curso 14 dias</h1>
+<div class="sub">Claude Certified Architect – Foundations · uma aula por dia · questões em inglês com tradução PT linha dupla</div>
+
+<div class="card">
+  <strong>Seu progresso</strong>
+  <div class="progress-outer"><div class="progress-inner" id="bar"></div></div>
+  <div class="stats" id="stats">Carregando…</div>
+</div>
+
+<div class="card dica">
+  <strong>Como usar.</strong> Uma aula por dia, ~60 min. Leia o conteúdo, decore o glossário EN→PT e
+  responda as questões <em>antes</em> de conferir o gabarito. Cada questão traz o cenário oficial da prova no
+  canto e, depois de respondida, o Task Statement do guia que ela cobra. Nas aulas 1–10, use a tradução embaixo
+  de cada questão à vontade; das aulas 11 em diante as traduções já abrem <strong>ocultas</strong> — reative só
+  para revisar os erros, porque você fará a prova em inglês (as versões oficiais são inglês e japonês; não há português). Os cards <strong>🧭 Prova × produto atual</strong>
+  mostram onde o produto mudou desde o guia: na prova, responda como o guia. A aula 14 é o simulado em
+  <strong>modo prova</strong>: questões inéditas, 4 cenários sorteados, cronômetro e resultado por domínio.
+</div>
+
+<ol class="aulas" id="lista"></ol>
+
+<button class="reset" id="reset">Zerar progresso</button>
+
+</div>
+
+<script>
+(function () {
+  var aulas = [
+    ['aula-01.html', 'A prova e o loop agêntico', 'Domínio 1 · stop_reason, tool_use vs end_turn, anti-padrões de loop'],
+    ['aula-02.html', 'Orquestração multi-agent: coordinator e subagents', 'Domínio 1 · hub-and-spoke, seleção e particionamento de subagents, Task tool, contexto explícito, objetivo × procedimento, paralelismo'],
+    ['aula-03.html', 'Enforcement, hooks e gerenciamento de sessões', 'Domínio 1 · prerequisite gates, PostToolUse, multi-concern, handoff estruturado, prompt chaining, --resume, fork_session'],
+    ['aula-04.html', 'Design de tools: descrições, distribuição e tool_choice', 'Domínio 2 · descrições, 4-5 tools por agente, tool restrita (load_document), tool_choice auto/any/forced'],
+    ['aula-05.html', 'Erros estruturados, MCP servers e tools nativas', 'Domínio 2 · isError, errorCategory, .mcp.json vs ~/.claude.json, MCP resources, servers da comunidade, Grep × Glob, exploração incremental'],
+    ['aula-06.html', 'CLAUDE.md: hierarquia, @import e rules com glob', 'Domínio 3 · user/project/directory, .claude/rules/ com paths glob, /memory'],
+    ['aula-07.html', 'Slash commands, skills e plan mode', 'Domínio 3 · .claude/commands/, SKILL.md frontmatter, context: fork, plan mode, Explore subagent, mapa necessidade → mecanismo'],
+    ['aula-08.html', 'Refinamento iterativo e Claude Code em CI/CD', 'Domínio 3 · exemplos I/O, test-driven iteration, interview pattern, -p, --output-format json + --json-schema, CLAUDE.md no CI'],
+    ['aula-09.html', 'Critérios explícitos e few-shot prompting', 'Domínio 4 · critérios categóricos, falsos positivos, 2-4 exemplos few-shot'],
+    ['aula-10.html', 'Structured output: tool_use, JSON schemas e validação-retry', 'Domínio 4 · schemas, nullable, enum other+unclear, normalização no prompt, retry-with-error-feedback, detected_pattern'],
+    ['aula-11.html', 'Message Batches API e review multi-pass', 'Domínio 4 · 50% economia/24h sem SLA, custom_id, instância independente de review, confiança calibrada'],
+    ['aula-12.html', 'Gestão de contexto e escalonamento', 'Domínio 5 · case facts, lost-in-the-middle, escalonamento, scratchpads, crash recovery com manifest, resumo de fase'],
+    ['aula-13.html', 'Propagação de erros, human review e proveniência', 'Domínio 5 · erro estruturado, confiança por campo calibrada, stratified sampling, claim-source, estabelecido × contestado'],
+    ['aula-14.html', 'Simulado final e estratégia de prova', 'Modo prova · banco inédito de 30 questões, 4 cenários sorteados, cronômetro, % por domínio + checklist da véspera']
+  ];
+  var lista = document.getElementById('lista');
+  var doneCount = 0;
+  aulas.forEach(function (a, i) {
+    var n = ('0' + (i + 1)).slice(-2);
+    var rec = localStorage.getItem('ccarf-aula-' + n);
+    if (rec) doneCount++;
+    var li = document.createElement('li');
+    li.innerHTML = '<a href="' + a[0] + '">' +
+      '<span class="num">Dia ' + n + '</span>' +
+      '<span class="tit">' + a[1] + '<small>' + a[2] + '</small></span>' +
+      '<span class="status' + (rec ? ' done' : '') + '">' + (rec ? '✓ ' + rec : 'pendente') + '</span>' +
+      '</a>';
+    lista.appendChild(li);
+  });
+  var pct = Math.round(doneCount / aulas.length * 100);
+  document.getElementById('bar').style.width = pct + '%';
+  document.getElementById('stats').textContent = doneCount + ' de ' + aulas.length + ' aulas concluídas (' + pct + '%)';
+  document.getElementById('reset').addEventListener('click', function () {
+    if (!confirm('Zerar o progresso de todas as aulas?')) return;
+    aulas.forEach(function (_, i) { localStorage.removeItem('ccarf-aula-' + ('0' + (i + 1)).slice(-2)); });
+    location.reload();
+  });
+})();
+</script>
+</body>
+</html>

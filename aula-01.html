@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 01 — A prova e o loop agêntico · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.uso { color: var(--pt); font-size: 13px; font-style: italic; }
+  .pt { color: var(--pt); font-size: 13.5px; }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 4px 0 10px; }
+  body.hide-pt .pt, body.hide-pt .pt-block { display: none; }
+  .toggle-pt { position: sticky; top: 12px; float: right; z-index: 5; background: var(--card2);
+    border: 1px solid var(--border); color: var(--muted); border-radius: 999px;
+    padding: 6px 14px; font-size: 12.5px; cursor: pointer; }
+  .toggle-pt:hover { color: var(--text); border-color: var(--accent); }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q .cenario { float: right; text-transform: none; letter-spacing: 0; font-size: 11.5px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
+  .q .feedback .ts { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<button class="toggle-pt" onclick="document.body.classList.toggle('hide-pt'); this.textContent = document.body.classList.contains('hide-pt') ? '🇧🇷 mostrar traduções' : '🇧🇷 ocultar traduções';">🇧🇷 ocultar traduções</button>
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Aula 01</div>
+  <h1>Aula 01 — A prova e o loop agêntico</h1>
+  <div class="meta">
+    <span class="tag">Domínio 1 · Agentic Architecture &amp; Orchestration (27%)</span>
+    <span class="tag">~60 min</span>
+  </div>
+</header>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo do dia.</strong> Entender o formato exato da prova CCAR-F e dominar o
+  <em>agentic loop</em> — o ciclo de vida de um agente que decide sozinho qual tool chamar,
+  guiado pelo <code>stop_reason</code>. É a fundação do domínio mais pesado do exame.
+</div>
+
+<h2>1. A prova em 2 minutos</h2>
+<p>A <strong>Claude Certified Architect – Foundations</strong> (código <strong>CCAR-F</strong>) valida que você toma
+boas decisões de tradeoff ao implementar soluções reais com Claude. Os números:</p>
+<ul>
+  <li><strong>60 questões</strong> de múltipla escolha e múltipla resposta (a questão diz quantas marcar)</li>
+  <li><strong>120 minutos</strong> → 2 min por questão</li>
+  <li><strong>4 cenários</strong> por prova, sorteados de um banco público de 6 (suporte ao cliente, geração de código, pesquisa multi-agent, produtividade dev, CI/CD, extração de dados)</li>
+  <li>Nota de corte <strong>720</strong> numa escala de 100–1000</li>
+  <li>Proctored pela Pearson VUE, em inglês ou japonês (não há português — para nós, inglês), mesa limpa (sem anotações, sem segundo monitor, sem tradutor do navegador)</li>
+</ul>
+<p>O padrão das questões: um <strong>cenário de produção</strong> — quase sempre um sintoma, às vezes um requisito de
+configuração ou desenho — + alternativas plausíveis (4 na múltipla escolha; na múltipla resposta, a questão diz quantas
+marcar). A resposta certa quase sempre é
+a que ataca a <strong>causa raiz</strong> com a solução <strong>proporcional</strong> — nem remendo cosmético, nem
+over-engineering. Guarde isso: ele reaparece em todas as aulas.</p>
+
+<h2>2. O agentic loop (Task Statement 1.1)</h2>
+<p>Um agente não é "uma chamada à API". É um <strong>loop</strong>: o modelo raciocina, pede uma tool,
+recebe o resultado, raciocina de novo — até decidir que terminou. O ciclo de vida:</p>
+<ol>
+  <li>Você envia a conversa + a lista de tools disponíveis</li>
+  <li>Claude responde com um <code>stop_reason</code>:
+    <ul>
+      <li><code>"tool_use"</code> → ele quer executar uma tool. <strong>Continue o loop.</strong></li>
+      <li><code>"end_turn"</code> → ele terminou e deu a resposta final. <strong>Encerre o loop.</strong></li>
+    </ul>
+  </li>
+  <li>Se foi <code>tool_use</code>: execute a tool, <strong>adicione o resultado ao histórico da conversa</strong>
+      (como uma mensagem <code>tool_result</code>) e chame a API de novo</li>
+  <li>Repita até <code>end_turn</code></li>
+</ol>
+<pre><code>while True:
+    response = client.messages.create(model=..., messages=messages, tools=tools)
+    if response.stop_reason == "end_turn":
+        break                      # resposta final ao usuário
+    if response.stop_reason != "tool_use":
+        handle_other(response)     # ex.: "max_tokens" = saída truncada
+        break
+    # stop_reason == "tool_use": executar e devolver resultados
+    results = [execute(block) for block in response.content if block.type == "tool_use"]
+    messages.append({"role": "assistant", "content": response.content})
+    messages.append({"role": "user", "content": results})   # tool_result blocks</code></pre>
+
+<h3>O ponto conceitual que a prova cobra</h3>
+<p>A decisão de <em>qual</em> tool chamar e <em>quando parar</em> é <strong>model-driven</strong>: o próprio Claude
+raciocina sobre o contexto e escolhe o próximo passo. Isso é o oposto de uma <strong>decision tree</strong>
+pré-configurada (fluxo fixo de tools). A arquitetura agêntica delega o roteamento ao modelo — seu trabalho
+como arquiteto é dar a ele boas tools, bom contexto e boas barreiras.</p>
+
+<h3>Anti-padrões (a prova ADORA cobrar isso)</h3>
+<ul>
+  <li>❌ <strong>Parsear linguagem natural</strong> pra decidir quando parar ("se a resposta contém 'pronto', encerre") —
+      frágil; use o <code>stop_reason</code>, que é o sinal estrutural</li>
+  <li>❌ <strong>Cap arbitrário de iterações como mecanismo principal de parada</strong> ("rode no máximo 10 vezes") —
+      cap é cinto de segurança, não estratégia de término</li>
+  <li>❌ <strong>Checar se o assistant gerou texto</strong> como indicador de conclusão — o modelo pode escrever texto
+      intermediário <em>e</em> pedir tool no mesmo turno; quem manda é o <code>stop_reason</code></li>
+  <li>❌ Não devolver o <code>tool_result</code> ao histórico — sem isso o modelo não sabe o que aconteceu
+      e não consegue raciocinar sobre o próximo passo</li>
+</ul>
+
+<h2>3. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
+  <tr><td class="en">agentic loop</td><td>loop agêntico (ciclo raciocinar→tool→resultado)</td><td class="uso">"the agentic loop continues while stop_reason is tool_use"</td></tr>
+  <tr><td class="en">stop_reason</td><td>motivo de parada da resposta</td><td class="uso">"terminate the loop when stop_reason is end_turn"</td></tr>
+  <tr><td class="en">tool_use / end_turn</td><td>pedido de tool / fim de turno</td><td class="uso">"handle both tool_use and end_turn stop reasons"</td></tr>
+  <tr><td class="en">tool result</td><td>resultado da tool (devolvido ao histórico)</td><td class="uso">"append tool results to the conversation history"</td></tr>
+  <tr><td class="en">model-driven decision-making</td><td>decisão guiada pelo modelo (não por fluxo fixo)</td><td class="uso">"model-driven routing vs a pre-configured decision tree"</td></tr>
+  <tr><td class="en">decision tree</td><td>árvore de decisão (sequência fixa de tools)</td><td class="uso">"rather than a pre-configured tool sequence"</td></tr>
+  <tr><td class="en">iteration cap</td><td>limite de iterações</td><td class="uso">"an arbitrary iteration cap as the primary stopping mechanism"</td></tr>
+  <tr><td class="en">conversation history</td><td>histórico da conversa</td><td class="uso">"tool results are appended to conversation history so the model can reason about the next action"</td></tr>
+</table>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha do dia</h3>
+  <p>Questões do tipo "o agente às vezes continua rodando depois de responder / para cedo".
+  Os distratores oferecem heurísticas de texto ("verifique se a resposta contém X") ou caps numéricos.
+  A resposta certa quase sempre envolve <strong>usar o <code>stop_reason</code> como sinal estrutural de controle do loop</strong>.
+  Se o sintoma é "entra em loop chamando a mesma tool", o <code>stop_reason</code> continua <code>"tool_use"</code> e não resolve
+  sozinho: confira primeiro se o resultado da tool está chegando ao histórico com conteúdo útil — sem ele o modelo não vê o
+  que já buscou e repete o pedido. O cap é só rede de segurança.
+  Regra de bolso: <em>controle de fluxo do agente é responsabilidade do seu código, guiado pelo stop_reason — nunca
+  inferido do texto que o modelo escreveu.</em></p>
+</div>
+
+<h2>4. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
+<div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
+
+<div class="q" data-correct="b" data-ts="1.1" data-dom="1">
+  <div class="qnum">Questão 1 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">Your support agent occasionally ends the conversation right after its first response. In every such case, the logged API response contains a short text block (“Let me check that order for you.”) followed by a tool_use block, and the customer receives only that text. What is the root cause?</div>
+  <div class="pt-block pt">Seu agente de suporte às vezes encerra a conversa logo após a primeira resposta. Em todos esses casos, a resposta da API registrada no log contém um bloco de texto curto (“Vou verificar esse pedido para você.”) seguido de um bloco tool_use, e o cliente recebe só esse texto. Qual é a causa raiz?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q1" value="a">A. The model cannot combine text and a tool_use block in one turn, so that turn's tool request was malformed.<div class="pt">O modelo não consegue combinar texto e um bloco tool_use no mesmo turno, então o pedido de tool daquele turno veio malformado.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="b">B. The loop decides it is done from message content instead of checking the structural stop_reason signal.<div class="pt">O loop decide que terminou pelo conteúdo da mensagem, em vez de checar o sinal estrutural stop_reason.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. The tool definitions are too verbose, so the model narrates its plan in text instead of calling the tool.<div class="pt">As definições das tools são verbosas demais, então o modelo narra o plano em texto em vez de chamar a tool.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="d">D. The conversation history sent on each request is too short for the model to decide it should continue.<div class="pt">O histórico enviado em cada requisição é curto demais para o modelo decidir que deve continuar.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> O modelo pode perfeitamente emitir texto <em>e</em> um bloco <code>tool_use</code> no mesmo turno — texto não significa "terminei". O sinal estrutural é o <code>stop_reason</code>: continue em <code>"tool_use"</code>, encerre em <code>"end_turn"</code>. A afirma uma limitação que não existe: texto e tool no mesmo turno é normal. C inventa um efeito das descrições — o enunciado diz que a tool <em>foi</em> pedida. D não explica nada: o padrão do log (texto + tool_use, e o cliente só recebe o texto) aponta para o loop tratando texto como fim, não para falta de histórico.<span class="ts">Domínio 1 · TS 1.1 — Loop agêntico</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="1.1" data-dom="1">
+  <div class="qnum">Questão 2 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">A teammate proposes simplifying the support agent by replacing the agentic loop with a hard-coded pipeline that, in every conversation, calls get_customer, then lookup_order, then process_refund. Why is this architecturally weaker than a model-driven agentic loop?</div>
+  <div class="pt-block pt">Um colega propõe simplificar o agente de suporte trocando o loop agêntico por um pipeline fixo que, em toda conversa, chama get_customer, depois lookup_order, depois process_refund. Por que isso é arquiteturalmente mais fraco que um loop agêntico model-driven?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q2" value="a">A. A fixed sequence can't adapt to each request; the model should decide from context which tool, if any, to call next.<div class="pt">Uma sequência fixa não se adapta a cada pedido; o modelo deve decidir pelo contexto qual tool chamar em seguida, se alguma.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="b">B. Fixed sequences always run slower, because every conversation pays for tool calls it does not actually need.<div class="pt">Sequências fixas são sempre mais lentas, porque toda conversa paga por chamadas de tool de que não precisa.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="c">C. The API throttles conversations that repeat the same tool pattern, so a fixed sequence gets rate-limited at scale.<div class="pt">A API limita conversas que repetem o mesmo padrão de tools, então uma sequência fixa sofre rate limit em escala.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="d">D. Model-driven loops make tool descriptions unnecessary, since the model learns the right order from earlier turns.<div class="pt">Loops model-driven tornam as descrições de tools desnecessárias, já que o modelo aprende a ordem certa com os turnos anteriores.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> O valor do agente é a decisão <em>model-driven</em>: cada pedido real é diferente (pergunta simples não precisa de refund; uma disputa de cobrança pode nem envolver pedido), e uma sequência fixa vira uma decision tree frágil. B é verdade parcial ("sempre" é exagero) e não é o argumento arquitetural central. C descreve uma limitação de API que não existe. D é falso duas vezes: boas descrições continuam sendo o principal mecanismo de seleção, e o modelo não "aprende" entre turnos — ele raciocina sobre o histórico que você envia. Não confunda com o prerequisite gate do TS 1.4 (aula 03): bloquear process_refund até get_customer devolver um ID verificado é uma barreira determinística de ordem, e o modelo continua decidindo o resto. Barreira programática sim, roteiro fixo de tools não.<span class="ts">Domínio 1 · TS 1.1 — Loop agêntico</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="1.1" data-dom="1">
+  <div class="qnum">Questão 3 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">Your research agent sometimes loops forever, calling the same search tool repeatedly. A colleague suggests ending the loop when the assistant writes "I have enough information." What is the best critique of this approach?</div>
+  <div class="pt-block pt">Seu agente de pesquisa às vezes entra em loop infinito, chamando a mesma tool de busca repetidamente. Um colega sugere encerrar o loop quando o assistant escrever "I have enough information." Qual é a melhor crítica a essa abordagem?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q3" value="a">A. The phrase is too narrow; a keyword list such as "done", "finished" and "complete" would end the loop more reliably.<div class="pt">A frase é restrita demais; uma lista de palavras-chave como "done", "finished" e "complete" encerraria o loop com mais confiabilidade.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="b">B. Text matching is acceptable, but a fixed cap of five iterations should be the primary way the loop ends.<div class="pt">Casar texto é aceitável, mas um cap fixo de cinco iterações deveria ser a forma principal de encerrar o loop.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="c">C. Parsing the model's wording is fragile; stop_reason is the structural signal, and a cap is only a safety net.<div class="pt">Parsear a redação do modelo é frágil; stop_reason é o sinal estrutural, e um cap é só rede de segurança.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="d">D. The loop should end as soon as the first tool result arrives, since a single search is usually enough to answer.<div class="pt">O loop deveria terminar assim que chega o primeiro tool result, já que uma busca costuma bastar para responder.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Linguagem natural é ambígua e não garantida — o modelo pode escrever a frase e ainda pedir outra tool, ou nunca escrevê-la. O término correto vem do <code>stop_reason</code> (<code>"end_turn"</code>). A só troca uma frase por várias: continua parseando texto. B põe o cap de iterações como <em>mecanismo principal</em> de parada — anti-padrão; o cap existe só como proteção contra loop infinito. D encerra antes de o modelo raciocinar sobre o resultado, quebrando o próprio loop. Note que o <code>stop_reason</code> não cura o loop do enunciado — ele continua <code>"tool_use"</code>: a causa das buscas repetidas ainda precisa ser investigada (por exemplo, tool_result não devolvido ao histórico), e o cap segura o runaway enquanto isso.<span class="ts">Domínio 1 · TS 1.1 — Loop agêntico</span></div>
+</div>
+
+<div class="q" data-correct="b,e" data-ts="1.1" data-dom="1">
+  <div class="qnum">Questão 4 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Developer Productivity with Claude</span></div>
+  <div class="stem">Your developer-productivity agent, built with the Claude Agent SDK, uses Read, Grep and Glob. The model has just responded with stop_reason "tool_use". Which TWO actions are required in this loop iteration?</div>
+  <div class="pt-block pt">Seu agente de produtividade, construído com o Claude Agent SDK, usa Read, Grep e Glob. O modelo acabou de responder com stop_reason "tool_use". Quais DUAS ações são obrigatórias nesta iteração do loop?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q4" value="a">A. Summarize the conversation so far, so that the next request sends fewer tokens.<div class="pt">Resumir a conversa até aqui, para que a próxima requisição envie menos tokens.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="b">B. Execute the tool calls requested in that response.<div class="pt">Executar as chamadas de tool pedidas naquela resposta.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="c">C. Scan the assistant's text for a completion phrase before running any requested tool.<div class="pt">Procurar no texto do assistant uma frase de conclusão antes de rodar qualquer tool pedida.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="d">D. Show the partial answer to the engineer before running the requested tools.<div class="pt">Mostrar a resposta parcial ao engenheiro antes de rodar as tools pedidas.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="e">E. Append the tool results to the conversation history before the next request.<div class="pt">Adicionar os resultados das tools ao histórico da conversa antes da próxima requisição.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B e E.</strong> O contrato do loop: execute as tools pedidas (B) e devolva os resultados ao histórico como <code>tool_result</code> (E), para o modelo raciocinar sobre o próximo passo. A (resumir) é técnica de gestão de contexto, não parte obrigatória da iteração — e na hora errada destrói informação. C é o anti-padrão de parsear texto: o <code>stop_reason</code> já disse <code>"tool_use"</code>. D expõe estado intermediário ao usuário antes de a tarefa terminar.<span class="ts">Domínio 1 · TS 1.1 — Loop agêntico</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="1.1" data-dom="1">
+  <div class="qnum">Questão 5 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">In your support agent, after executing process_refund, your code sends the tool result back and the model replies with a summary of the refund and no further tool requests. Which stop_reason should you expect, and what should the loop do?</div>
+  <div class="pt-block pt">No seu agente de suporte, após executar process_refund, seu código devolve o tool result e o modelo responde com um resumo do reembolso, sem novos pedidos de tool. Qual stop_reason esperar, e o que o loop deve fazer?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q5" value="a">A. "tool_use" — keep iterating, because a summary can still hide a pending tool request.<div class="pt">"tool_use" — continuar iterando, porque um resumo ainda pode esconder um pedido de tool pendente.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. "max_tokens" — retry with a larger output budget so that the summary is not cut off.<div class="pt">"max_tokens" — tentar de novo com um orçamento de saída maior para o resumo não ser cortado.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. "stop_sequence" — restart the loop so the model confirms the refund once more.<div class="pt">"stop_sequence" — reiniciar o loop para o modelo confirmar o reembolso mais uma vez.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. "end_turn" — exit the loop and deliver the model's final response to the customer.<div class="pt">"end_turn" — sair do loop e entregar a resposta final do modelo ao cliente.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> Resposta final sem pedidos de tool = <code>"end_turn"</code>: o loop termina e a resposta vai ao cliente. A inverte a lógica: se houvesse tool pendente, o <code>stop_reason</code> seria <code>"tool_use"</code> — isso não se infere do texto. B descreve outro sintoma (<code>"max_tokens"</code> = saída truncada pelo limite), que não é o caso. C não tem relação com o cenário: <code>"stop_sequence"</code> só aparece quando você configura sequências de parada, e reiniciar o loop arriscaria repetir o reembolso.<span class="ts">Domínio 1 · TS 1.1 — Loop agêntico</span></div>
+</div>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir aula 01</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="index.html">← Índice</a></span>
+  <span><a href="aula-02.html">Aula 02 — Orquestração multi-agent →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  var total = 0, score = 0;
+  document.querySelectorAll('.q').forEach(function (q) {
+    total++;
+    document.getElementById('total').textContent = total;
+    var btn = q.querySelector('button.answer');
+    var correct = q.dataset.correct.split(',').map(function (s) { return s.trim(); });
+    btn.addEventListener('click', function () {
+      var checked = Array.prototype.slice.call(q.querySelectorAll('input:checked')).map(function (i) { return i.value; });
+      if (checked.length === 0) return;
+      var ok = checked.length === correct.length && checked.every(function (v) { return correct.indexOf(v) !== -1; });
+      q.querySelectorAll('label.opt').forEach(function (l) {
+        var v = l.querySelector('input').value;
+        if (correct.indexOf(v) !== -1) l.classList.add('correct');
+        else if (l.querySelector('input').checked) l.classList.add('wrong');
+        l.querySelector('input').disabled = true;
+      });
+      var fb = q.querySelector('.feedback');
+      fb.classList.add(ok ? 'ok' : 'ko');
+      fb.innerHTML = (ok ? '✅ Correto. ' : '❌ Incorreto. ') + fb.innerHTML;
+      btn.disabled = true;
+      if (ok) score++;
+      document.getElementById('score').textContent = score;
+    });
+  });
+  var KEY = 'ccarf-aula-01';
+  var btn = document.getElementById('finish');
+  if (localStorage.getItem(KEY)) {
+    document.getElementById('donemsg').textContent = 'Aula já concluída — ' + localStorage.getItem(KEY);
+  }
+  btn.addEventListener('click', function () {
+    var rec = new Date().toLocaleDateString('pt-BR') + ' · ' + score + '/' + total + ' acertos';
+    localStorage.setItem(KEY, rec);
+    document.getElementById('donemsg').textContent = 'Concluída: ' + rec;
+  });
+})();
+</script>
+</body>
+</html>

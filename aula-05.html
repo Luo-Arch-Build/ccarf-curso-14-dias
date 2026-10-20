@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 05 — Erros estruturados, MCP servers e tools nativas · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.uso { color: var(--pt); font-size: 13px; font-style: italic; }
+  .pt { color: var(--pt); font-size: 13.5px; }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 4px 0 10px; }
+  body.hide-pt .pt, body.hide-pt .pt-block { display: none; }
+  .toggle-pt { position: sticky; top: 12px; float: right; z-index: 5; background: var(--card2);
+    border: 1px solid var(--border); color: var(--muted); border-radius: 999px;
+    padding: 6px 14px; font-size: 12.5px; cursor: pointer; }
+  .toggle-pt:hover { color: var(--text); border-color: var(--accent); }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q .cenario { float: right; text-transform: none; letter-spacing: 0; font-size: 11.5px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
+  .q .feedback .ts { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<button class="toggle-pt" onclick="document.body.classList.toggle('hide-pt'); this.textContent = document.body.classList.contains('hide-pt') ? '🇧🇷 mostrar traduções' : '🇧🇷 ocultar traduções';">🇧🇷 ocultar traduções</button>
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Aula 05</div>
+  <h1>Aula 05 — Erros estruturados, MCP servers e tools nativas</h1>
+  <div class="meta">
+    <span class="tag">Domínio 2 · Tool Design &amp; MCP Integration (18%)</span>
+    <span class="tag">~60 min</span>
+  </div>
+</header>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo do dia.</strong> Dominar três task statements do Domínio 2: como MCP tools devem
+  devolver <strong>erros estruturados</strong> (2.2) para o agente se recuperar sozinho; como configurar
+  <strong>MCP servers</strong> no Claude Code com escopo e segredos corretos (2.4); e quando usar cada
+  <strong>tool nativa</strong> — Grep, Glob, Read, Write, Edit (2.5). É a aula mais "engenharia de produção"
+  do domínio.
+</div>
+
+<h2>1. Erros estruturados em MCP tools (Task Statement 2.2)</h2>
+
+<h3>1.1 O flag <code>isError</code></h3>
+<p>No MCP, uma tool que falhou <strong>não lança exceção para o modelo</strong> — ela devolve um resultado
+normal com o flag <code>isError: true</code>. É assim que o servidor comunica a falha de volta ao agente,
+que lê o conteúdo do erro e decide o que fazer em seguida. Ou seja: o erro é um <em>dado</em> que entra no
+raciocínio do modelo, não um crash do loop.</p>
+
+<h3>1.2 As quatro categorias de erro</h3>
+<p>A prova cobra a distinção porque cada categoria pede uma reação diferente do agente:</p>
+<ul>
+  <li><strong>transient</strong> (transitório): timeout, serviço indisponível, rate limit →
+      <em>vale tentar de novo</em>, talvez com backoff ou query modificada</li>
+  <li><strong>validation</strong> (validação): input inválido, formato errado →
+      <em>não adianta repetir o mesmo input</em>; o agente precisa corrigir os parâmetros</li>
+  <li><strong>business</strong> (negócio): violação de regra de política (ex.: reembolso acima do teto) →
+      <em>nunca é retryable</em>; o agente deve explicar ao usuário e/ou escalar</li>
+  <li><strong>permission</strong> (permissão): credencial inválida, acesso negado →
+      retry imediato é inútil; precisa de intervenção (novo token, outro escopo)</li>
+</ul>
+
+<h3>1.3 Por que "Operation failed" é um anti-padrão</h3>
+<p>Se toda falha devolve a mesma mensagem genérica, o agente <strong>não consegue tomar a decisão de
+recuperação correta</strong>: ele não sabe se deve tentar de novo, corrigir o input, escalar ou desistir.
+O resultado típico em produção: retry de erro de validação (queimando tokens e latência num caso sem
+chance) e desistência de erro transitório (que se resolveria com uma nova tentativa). A correção é
+devolver <strong>metadata estruturada</strong> junto com o erro:</p>
+<pre><code>{
+  "isError": true,
+  "content": [{
+    "type": "text",
+    "text": "Refund declined: amount $780 exceeds the $500 policy limit. A human agent must approve refunds above this threshold."
+  }],
+  "errorCategory": "business",
+  "isRetryable": false
+}</code></pre>
+<p>O trio que a prova espera: <code>errorCategory</code> (o guide lista transient/validation/permission),
+<code>isRetryable</code> (boolean) e uma <strong>descrição human-readable</strong>. Para violações de regra
+de negócio, inclua <code>retriable: false</code> (ou <code>isRetryable: false</code>) e uma
+<strong>explicação amigável ao cliente</strong>, para o agente comunicar a decisão corretamente em vez de
+tentar de novo.</p>
+
+<h3>1.4 Retryable vs non-retryable</h3>
+<p>A metadata estruturada <strong>evita tentativas de retry desperdiçadas</strong>: sem ela, a única
+estratégia do agente é chutar. Com <code>isRetryable: false</code> ele encerra na hora e explica; com
+<code>isRetryable: true</code> ele tenta de novo com critério. Um erro de validação é non-retryable
+<em>com o mesmo input</em> — mas o agente pode corrigir o parâmetro e chamar de novo, e a descrição do
+erro é o que permite essa correção.</p>
+
+<h3>1.5 Falha de acesso ≠ resultado vazio válido</h3>
+<p>Distinção fina que a prova adora: uma query que <strong>executou com sucesso e não achou nada</strong>
+(empty result válido) é um <em>sucesso</em> — o dado simplesmente não existe. Uma <strong>falha de
+acesso</strong> (timeout, 503) é um <em>erro</em> — o dado pode existir, mas não foi consultado. Se o
+servidor devolve resultado vazio nos dois casos (ou pior: devolve vazio marcado como sucesso num
+timeout), o agente conclui "não há pedidos para esse cliente" quando na verdade o banco estava fora do
+ar. Empty result não carrega <code>isError</code>; falha de acesso carrega <code>isError: true</code> +
+categoria + retryability.</p>
+
+<h3>1.6 Recuperação local no subagent, propagação enxuta</h3>
+<p>Num sistema multi-agent, a regra é: o subagent <strong>resolve localmente o que consegue</strong>
+(erros transitórios: retry com backoff, query alternativa) e <strong>só propaga ao coordinator o que não
+conseguiu resolver</strong> — e quando propaga, manda contexto estruturado: tipo da falha, o que foi
+tentado, resultados parciais obtidos e alternativas possíveis. Três anti-padrões — os dois primeiros, simétricos:</p>
+<ul>
+  <li>❌ <strong>Suprimir o erro</strong> (devolver vazio como sucesso) → o coordinator nem sabe que houve
+      falha e não pode recuperar</li>
+  <li>❌ <strong>Derrubar o workflow inteiro</strong> numa única falha → perde todo o trabalho parcial que
+      poderia sustentar uma resposta</li>
+  <li>❌ Propagar status genérico ("search unavailable") → esconde do coordinator a informação que ele
+      precisaria para decidir (retry? fonte alternativa? seguir com parcial?)</li>
+</ul>
+
+<h2>2. MCP servers no Claude Code (Task Statement 2.4)</h2>
+
+<h3>2.1 Escopo: project-level vs user-level</h3>
+<p>Existem dois lugares para configurar MCP servers, e escolher o errado é o sintoma clássico das
+questões ("o dev novo clonou o repo e o server não aparece"):</p>
+<ul>
+  <li><strong><code>.mcp.json</code> na raiz do projeto</strong> (project-level): commitado no VCS,
+      <strong>compartilhado com o time inteiro</strong> automaticamente no clone/pull. Use para tooling
+      padrão do projeto (GitHub, Jira, banco de staging).</li>
+  <li><strong><code>~/.claude.json</code></strong> (user-level): fica na home do desenvolvedor,
+      <strong>não vai para o VCS</strong>. Use para servers pessoais ou experimentais que ninguém mais
+      precisa ter.</li>
+</ul>
+
+<h3>2.2 Expansão de variável de ambiente (segredos fora do VCS)</h3>
+<p>O <code>.mcp.json</code> vai para o git — então tokens <strong>nunca</strong> podem estar hardcoded
+nele. A solução é a <strong>expansão de variável de ambiente</strong>: o arquivo referencia
+<code>${GITHUB_TOKEN}</code> e cada desenvolvedor define a variável no próprio ambiente. O config é
+compartilhado; o segredo, não.</p>
+<pre><code>// .mcp.json  (commitado no repo — sem segredos!)
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
+    }
+  }
+}</code></pre>
+<p>À esquerda, a variável que o server lê; à direita, a variável do ambiente de cada dev, expandida pelo
+Claude Code ao subir o server.</p>
+
+<h3>2.3 Descoberta de tools no connect</h3>
+<p>Quando o Claude Code conecta nos MCP servers configurados, as tools de <strong>todos</strong> os
+servers são <strong>descobertas no momento da conexão</strong> e ficam <strong>disponíveis
+simultaneamente</strong> para o agente. Não existe "ativar um server por vez": o modelo vê o catálogo
+completo e escolhe — o que reforça a importância de descrições boas (aula 04) para ele não confundir
+tools de servers diferentes.</p>
+
+<div class="card" style="border-left: 3px solid var(--accent2);">
+  <strong>🧭 Prova × produto atual</strong> <span style="color:var(--muted);font-size:12.5px">(documentação do Claude Code conferida em 20/10/2026)</span>
+  <ul>
+    <li>Com o <em>tool search</em>, ligado por padrão, as definições das MCP tools são carregadas <strong>sob demanda</strong>: todas continuam utilizáveis na sessão, sem limite por server, mas não entram todas no contexto de uma vez.</li>
+    <li>MCP resources aparecem nas menções com <code>@</code> (ex.: <code>@server:protocol://resource/path</code>), ao lado dos arquivos.</li>
+  </ul>
+  <em>Na prova vale o texto do guia: tools de todos os servers descobertas na conexão e disponíveis simultaneamente.</em>
+</div>
+
+<h3>2.4 MCP resources: catálogo de conteúdo</h3>
+<p><strong>Tools são ações; resources são conteúdo.</strong> Expor um <strong>catálogo</strong> como MCP
+resource — sumários de issues, hierarquia da documentação, schema do banco — dá ao agente
+<strong>visibilidade do que existe</strong> sem que ele precise fazer dezenas de tool calls exploratórias
+só para descobrir os dados. Sintoma típico de questão: "o agente gasta muitas chamadas explorando a
+estrutura antes de começar o trabalho real" → exponha o catálogo como resource.
+Regra de bolso: <em>se o agente chama tools só para descobrir o que existe, falta catálogo — exponha-o como
+resource. Cache deixa cada descoberta mais rápida, mas não elimina as chamadas.</em></p>
+
+<h3>2.5 Servers da comunidade primeiro</h3>
+<p>Para integrações padrão (Jira, GitHub, Slack, Postgres), <strong>prefira MCP servers prontos da
+comunidade</strong> em vez de escrever um custom do zero. Reserve o esforço de implementação custom para
+workflows <strong>específicos do seu time</strong> que nenhum server existente cobre. Over-engineering
+clássico de distrator: "construir um MCP server próprio para integrar com o Jira".
+Regra de bolso: <em>integração que todo mundo usa → server da comunidade; fluxo que só o seu time tem →
+server custom. E lembre que todos convivem: as tools de todos os servers ficam disponíveis juntas.</em></p>
+
+<h3>2.6 Descrições boas vencem o Grep</h3>
+<p>Se a descrição de um MCP tool é fraca, o agente tende a preferir as <strong>tools nativas que ele já
+conhece bem</strong> — ex.: usar <code>Grep</code> em arquivos exportados em vez de chamar um MCP tool de
+busca semântica muito mais capaz. A correção é <strong>detalhar a descrição do MCP tool</strong>
+(capacidades, formato de saída, quando preferi-lo às alternativas), não restringir o Grep nem adicionar
+regras no prompt. Regra de bolso: <em>quando o agente ignora uma MCP tool melhor, a culpa é da descrição
+dela — conserte a descrição antes de tirar tools do agente ou escrever regra no prompt.</em></p>
+
+<h2>3. Tools nativas: Read, Write, Edit, Grep, Glob (Task Statement 2.5)</h2>
+
+<h3>3.1 Tabela de seleção</h3>
+<table class="gloss">
+  <tr><th>Tool</th><th>Pergunta que ela responde</th><th>Exemplo</th></tr>
+  <tr><td class="en">Grep</td><td>onde está este <strong>conteúdo</strong>?</td><td>todos os callers de <code>process_refund</code>, onde a mensagem de erro X é lançada, imports de um módulo</td></tr>
+  <tr><td class="en">Glob</td><td>onde estão os <strong>arquivos</strong> com este nome/padrão?</td><td><code>**/*.test.tsx</code>, <code>src/**/index.ts</code></td></tr>
+  <tr><td class="en">Read</td><td>o que há <strong>neste arquivo inteiro</strong>?</td><td>carregar um arquivo para entender ou reescrever</td></tr>
+  <tr><td class="en">Write</td><td>gravar conteúdo <strong>completo</strong> em arquivo</td><td>criar arquivo novo ou sobrescrever após Read</td></tr>
+  <tr><td class="en">Edit</td><td>modificação <strong>cirúrgica</strong> via texto âncora <strong>único</strong></td><td>trocar o corpo de uma função cujo trecho aparece uma só vez</td></tr>
+</table>
+<p>Regra de bolso: <strong>Grep busca dentro dos arquivos; Glob busca os arquivos.</strong> Questões trocam
+os dois de propósito ("qual tool para achar todos os arquivos <code>*.test.tsx</code>?" → Glob, não Grep).</p>
+
+<h3>3.2 O fallback Edit → Read + Write</h3>
+<p>O <code>Edit</code> só funciona quando o texto âncora é <strong>único</strong> no arquivo. Se o trecho
+aparece várias vezes (ex.: <code>return null;</code> num arquivo grande), o Edit falha — e a resposta
+certa <strong>não</strong> é insistir no mesmo Edit nem apelar para <code>sed</code> via Bash. O padrão
+confiável é o fallback: <strong>Read do arquivo inteiro → modificar → Write de volta</strong>. Mais
+tokens, mas confiável.</p>
+
+<h3>3.3 Exploração incremental de codebase</h3>
+<p>O anti-padrão é ler tudo de uma vez ("leia os 200 arquivos do repo e me explique"). A exploração
+eficiente é <strong>incremental</strong>:</p>
+<ol>
+  <li><strong>Grep</strong> para achar entry points (ex.: onde a rota é registrada, onde a função pública
+      é exportada)</li>
+  <li><strong>Read</strong> nos arquivos encontrados, <strong>seguindo os imports</strong> para rastrear o
+      fluxo</li>
+  <li>Repita: cada Read revela os próximos arquivos relevantes</li>
+</ol>
+<p>Para rastrear o uso de uma função através de módulos wrapper: primeiro liste todos os
+<strong>nomes exportados</strong> do wrapper, depois faça <strong>Grep de cada nome</strong> no codebase —
+procurar só o nome original da função perde os call sites que importam via re-export.
+Regra de bolso: <em>ponto de entrada → Read → imports, nunca "ler tudo antes"; e, para achar todos os
+chamadores, levante primeiro todos os nomes exportados.</em></p>
+
+<h2>4. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
+  <tr><td class="en">isError flag</td><td>flag MCP que marca o tool result como falha</td><td class="uso">"use the MCP isError flag to communicate tool failures"</td></tr>
+  <tr><td class="en">errorCategory</td><td>categoria do erro (o guide lista transient/validation/permission; violação de negócio sai com retriable: false + explicação)</td><td class="uso">"return structured metadata including errorCategory"</td></tr>
+  <tr><td class="en">isRetryable / retriable</td><td>booleano: vale tentar de novo?</td><td class="uso">"include retriable: false for business rule violations"</td></tr>
+  <tr><td class="en">transient error</td><td>erro transitório (timeout, serviço indisponível)</td><td class="uso">"transient errors such as timeouts warrant retry"</td></tr>
+  <tr><td class="en">validation error</td><td>erro de input inválido</td><td class="uso">"validation errors require corrected input, not blind retry"</td></tr>
+  <tr><td class="en">business error</td><td>violação de regra de negócio/política</td><td class="uso">"a business error needs a customer-friendly explanation"</td></tr>
+  <tr><td class="en">permission error</td><td>erro de permissão/credencial</td><td class="uso">"permission errors need intervention, not immediate retry"</td></tr>
+  <tr><td class="en">valid empty result</td><td>resultado vazio legítimo (query ok, sem matches)</td><td class="uso">"distinguish access failures from valid empty results"</td></tr>
+  <tr><td class="en">.mcp.json</td><td>config de MCP servers no nível do projeto (VCS)</td><td class="uso">"project-level .mcp.json is shared via version control"</td></tr>
+  <tr><td class="en">~/.claude.json</td><td>config de MCP servers no nível do usuário (pessoal)</td><td class="uso">"user-level ~/.claude.json for personal servers"</td></tr>
+  <tr><td class="en">environment variable expansion</td><td>expansão de ${VAR} no .mcp.json</td><td class="uso">"use ${GITHUB_TOKEN} expansion to avoid committing secrets"</td></tr>
+  <tr><td class="en">MCP resources</td><td>catálogo de conteúdo exposto pelo server</td><td class="uso">"expose content catalogs as MCP resources"</td></tr>
+  <tr><td class="en">content catalog</td><td>catálogo do que existe (índice de docs, lista de issues, schemas)</td><td class="uso">"content catalogs (e.g., issue summaries, documentation hierarchies, database schemas)"</td></tr>
+  <tr><td class="en">exploratory tool calls</td><td>chamadas de tool feitas só para descobrir o que existe</td><td class="uso">"visibility into available data without requiring exploratory tool calls"</td></tr>
+  <tr><td class="en">community MCP server</td><td>MCP server pronto, mantido pela comunidade</td><td class="uso">"choose existing community MCP servers over custom implementations for standard integrations"</td></tr>
+  <tr><td class="en">anchor text</td><td>texto âncora único exigido pelo Edit</td><td class="uso">"Edit fails when the anchor text is not unique"</td></tr>
+  <tr><td class="en">Grep / Glob</td><td>busca no conteúdo dos arquivos / busca de arquivos por padrão de caminho</td><td class="uso">"Glob for finding files matching naming patterns (e.g., **/*.test.tsx)"</td></tr>
+  <tr><td class="en">entry point</td><td>ponto de entrada do fluxo no código</td><td class="uso">"start with Grep to find entry points, then use Read to follow imports"</td></tr>
+  <tr><td class="en">wrapper module / re-export</td><td>módulo intermediário que reexporta a função (às vezes com outro nome)</td><td class="uso">"identify all exported names, then search for each name across the codebase"</td></tr>
+</table>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha do dia</h3>
+  <p>Questões de erro quase sempre oferecem dois distratores gêmeos: <strong>"adicione retry automático
+  para qualquer falha"</strong> e <strong>"devolva resultado vazio marcado como sucesso quando a consulta falhou"</strong>. Os
+  dois nascem da mesma confusão: sem categoria de erro, toda falha vira igual. Retry cego queima tokens em erros
+  de validação/negócio que nunca vão se resolver; vazio-como-sucesso numa falha de acesso esconde o problema do
+  coordinator. O inverso também é erro: tratar como falha uma consulta bem-sucedida sem matches vira alarme falso.
+  Regra de bolso: <em>o agente só se recupera bem se o erro disser a categoria e a retryability —
+  "Operation failed" não diz nada; consulta bem-sucedida sem matches não é erro, é resposta; falha de acesso
+  nunca vira vazio.</em></p>
+</div>
+
+<h2>5. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
+<div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
+
+<div class="q" data-correct="c" data-ts="2.2" data-dom="2">
+  <div class="qnum">Questão 1 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">All of your support agent's MCP tools return the same text, "Operation failed", whenever anything goes wrong. In production you observe the agent retrying calls with malformed parameters dozens of times while giving up immediately on temporary database outages. What is the most effective fix?</div>
+  <div class="pt-block pt">Todas as MCP tools do seu agente de suporte devolvem o mesmo texto, "Operation failed", quando algo dá errado. Em produção, o agente repete dezenas de vezes chamadas com parâmetros malformados, enquanto desiste na hora diante de indisponibilidades temporárias do banco. Qual é a correção mais eficaz?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q1" value="a">A. Add a global retry policy that retries every failed tool call up to five times with exponential backoff.<div class="pt">Adicionar uma política global de retry que repete toda chamada de tool que falhar, até cinco vezes, com backoff exponencial.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="b">B. Tell the agent in the system prompt to retry only failures that look temporary and to fix its input otherwise.<div class="pt">Dizer ao agente, no system prompt, para repetir só as falhas que parecem temporárias e corrigir o input nos demais casos.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. Return structured error metadata: an errorCategory, an isRetryable flag, and a human-readable description.<div class="pt">Devolver metadata de erro estruturada: um errorCategory, um flag isRetryable e uma descrição legível para humanos.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="d">D. Log detailed errors on the server and return a correlation ID so engineers can investigate each failure afterwards.<div class="pt">Registrar erros detalhados no servidor e devolver um correlation ID para os engenheiros investigarem cada falha depois.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> A causa raiz é a resposta de erro uniforme: sem categoria (transient/validation/business/permission) nem retryability, o agente não tem como distinguir "corrija o input" de "tente de novo daqui a pouco". A (retry cego) piora o sintoma — retries desperdiçados em erros non-retryable. B é remendo via prompt contra um problema de estrutura de dados: se toda falha diz a mesma coisa, o agente não tem como saber o que "parece temporário". D é boa prática de observabilidade, mas o log fica no servidor — não devolve ao <em>agente</em> a informação de que ele precisa para decidir a recuperação.<span class="ts">Domínio 2 · TS 2.2 — Erros estruturados em MCP tools</span></div>
+</div>
+
+<div class="q" data-correct="b,d" data-ts="2.2" data-dom="2">
+  <div class="qnum">Questão 2 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">A customer asks for a refund that exceeds your company's policy limit, so the process_refund MCP tool must decline it. Which TWO characteristics should the tool's error response include so the agent handles this business rule violation appropriately?</div>
+  <div class="pt-block pt">Um cliente pede um reembolso que excede o limite da política da empresa, então a MCP tool process_refund precisa recusá-lo. Quais DUAS características a resposta de erro da tool deve incluir para que o agente lide adequadamente com essa violação de regra de negócio?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q2" value="a">A. The full stack trace of the policy engine, so the agent can work out exactly why the refund was rejected.<div class="pt">O stack trace completo do motor de políticas, para o agente descobrir exatamente por que o reembolso foi rejeitado.</div></label>
+    <label class="opt"><input type="checkbox" name="q2" value="b">B. A retriable: false (or isRetryable: false) flag, so the agent does not attempt the same call again.<div class="pt">Um flag retriable: false (ou isRetryable: false), para o agente não tentar a mesma chamada de novo.</div></label>
+    <label class="opt"><input type="checkbox" name="q2" value="c">C. An empty result set, signaling that no refund matching the request could be processed.<div class="pt">Um conjunto de resultados vazio, sinalizando que nenhum reembolso correspondente ao pedido pôde ser processado.</div></label>
+    <label class="opt"><input type="checkbox" name="q2" value="d">D. A customer-friendly explanation of the policy violation that the agent can relay to the user.<div class="pt">Uma explicação amigável ao cliente sobre a violação de política, que o agente possa repassar ao usuário.</div></label>
+    <label class="opt"><input type="checkbox" name="q2" value="e">E. A transient errorCategory with a suggested wait time, so the agent can try the refund again a little later.<div class="pt">Um errorCategory transient com um tempo de espera sugerido, para o agente tentar o reembolso de novo um pouco depois.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B e D.</strong> Violação de regra de negócio é non-retryable por definição: o flag (B) impede retries desperdiçados, e a explicação amigável (D) permite ao agente comunicar a recusa ao usuário (ou escalar para um humano) de forma apropriada. A expõe detalhe interno irrelevante — stack trace não ajuda o agente a decidir nem o usuário a entender. C é o anti-padrão clássico: devolver vazio confunde uma <em>recusa de política</em> com um <em>empty result válido</em>, apagando a informação de que a operação foi rejeitada. E classifica errado: recusa por política não é falha transitória — esperar e repetir vai dar o mesmo "não".<span class="ts">Domínio 2 · TS 2.2 — Erros estruturados em MCP tools</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="2.4" data-dom="2">
+  <div class="qnum">Questão 3 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">Your team wants every developer to get the same GitHub MCP server automatically when they clone the repository, but each developer must authenticate with their own token, and no token may ever appear in version control. How should you configure this?</div>
+  <div class="pt-block pt">Seu time quer que todo desenvolvedor receba o mesmo MCP server do GitHub automaticamente ao clonar o repositório, mas cada dev deve autenticar com seu próprio token, e nenhum token pode aparecer no version control. Como configurar isso?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q3" value="a">A. Add the server to each developer's ~/.claude.json and document the setup steps in the onboarding guide.<div class="pt">Adicionar o server no ~/.claude.json de cada desenvolvedor e documentar os passos de setup no guia de onboarding.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="b">B. Commit a project-level .mcp.json that defines the server and reads the token from ${GITHUB_TOKEN}.<div class="pt">Commitar um .mcp.json no nível do projeto que define o server e lê o token de ${GITHUB_TOKEN}.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="c">C. Commit a project-level .mcp.json with one shared team token, so the server works out of the box for everyone.<div class="pt">Commitar um .mcp.json no nível do projeto com um token único do time, para o server funcionar de cara para todos.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="d">D. Build a custom MCP server that handles authentication internally, so developers never need their own tokens.<div class="pt">Construir um MCP server custom que cuida da autenticação internamente, para os devs nunca precisarem de token próprio.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Os dois requisitos apontam para a mesma solução: escopo project-level (<code>.mcp.json</code> vai no VCS e chega a todos no clone) + expansão de env var (o config é compartilhado, o segredo fica no ambiente de cada dev). A usa o escopo user-level, que não é compartilhado via VCS — o dev novo não recebe nada automaticamente. C commita um segredo no git, exatamente o que a expansão de variável existe para evitar (e token compartilhado quebra auditoria individual). D é over-engineering: "construir server custom" para uma integração padrão que já tem server da comunidade — e ainda contorna o requisito de autenticação individual.<span class="ts">Domínio 2 · TS 2.4 — Integração de MCP servers</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="2.2" data-dom="2">
+  <div class="qnum">Questão 4 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">In your multi-agent research system, the document-retrieval subagent occasionally hits a backend timeout mid-task. You need to decide how this failure should reach the coordinator. Which design best supports intelligent recovery?</div>
+  <div class="pt-block pt">No seu sistema de pesquisa multi-agent, o subagent de recuperação de documentos ocasionalmente sofre um timeout do backend no meio da tarefa. Você precisa decidir como essa falha deve chegar ao coordinator. Qual design melhor suporta recuperação inteligente?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q4" value="a">A. Return an empty result set marked as successful, since partial research is more useful than an error state.<div class="pt">Devolver um conjunto de resultados vazio marcado como sucesso, já que pesquisa parcial é mais útil que um estado de erro.</div></label>
+    <label class="opt"><input type="radio" name="q4" value="b">B. Let the timeout exception reach a top-level handler that stops the whole research workflow right away.<div class="pt">Deixar a exceção de timeout chegar a um handler de topo que interrompe o workflow de pesquisa inteiro na hora.</div></label>
+    <label class="opt"><input type="radio" name="q4" value="c">C. Retry inside the subagent and, if the outage persists, send the coordinator a short "retrieval unavailable" status.<div class="pt">Tentar de novo dentro do subagent e, se a indisponibilidade persistir, mandar ao coordinator um status curto "retrieval unavailable".</div></label>
+    <label class="opt"><input type="radio" name="q4" value="d">D. Retry locally first; if it still fails, return the failure type, what was attempted, and any partial results to the coordinator.<div class="pt">Tentar a recuperação local primeiro; se ainda falhar, devolver ao coordinator o tipo da falha, o que foi tentado e os resultados parciais.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> Timeout é erro <em>transient</em>: o subagent deve tentar se recuperar localmente primeiro e só propagar o que não resolveu — com contexto rico para o coordinator decidir (retry com query diferente? fonte alternativa? seguir com o parcial?). A suprime o erro: mascara uma <em>falha de acesso</em> como <em>empty result válido</em>, e o coordinator nem fica sabendo que houve problema. B é o anti-padrão oposto: derruba o workflow inteiro e joga fora todo o trabalho parcial por causa de uma única falha recuperável. C tenta o retry local (bom), mas o status genérico esconde do coordinator exatamente as informações de que ele precisaria para uma recuperação inteligente.<span class="ts">Domínio 2 · TS 2.2 — Erros estruturados em MCP tools</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="2.5" data-dom="2">
+  <div class="qnum">Questão 5 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">You ask Claude Code to change one branch of a large legacy file using the Edit tool, but the anchor text you chose (a common return statement) appears in dozens of places, so the edit keeps failing. What is the reliable way to make this modification?</div>
+  <div class="pt-block pt">Você pede ao Claude Code para alterar um trecho de um arquivo legado grande usando a tool Edit, mas o texto âncora escolhido (um return comum) aparece em dezenas de lugares, então a edição continua falhando. Qual é a forma confiável de fazer essa modificação?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q5" value="a">A. Read the full file, apply the change to the loaded content, and Write the complete file back.<div class="pt">Ler o arquivo inteiro com Read, aplicar a mudança no conteúdo carregado e gravar o arquivo completo de volta com Write.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. Retry the Edit call with the same anchor text until one attempt happens to match the intended location.<div class="pt">Repetir a chamada Edit com o mesmo texto âncora até que uma tentativa acerte o local pretendido.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. Use Grep with a replacement pattern, which edits only the occurrence on the line you target.<div class="pt">Usar Grep com um padrão de substituição, que edita só a ocorrência na linha que você indicar.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. Delete the file and regenerate it from scratch with Write, based on the model's understanding of its contents.<div class="pt">Apagar o arquivo e regerá-lo do zero com Write, com base no entendimento do modelo sobre o conteúdo.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> O Edit exige texto âncora <strong>único</strong>; quando isso não é possível, o fallback documentado e confiável é Read (arquivo inteiro) → modificar → Write. Custa mais tokens, mas é o fallback confiável que o guide indica: o arquivo inteiro está no contexto e a mudança não depende de âncora única. B é retry cego de um erro non-retryable: o mesmo input produzirá a mesma falha. C inventa uma capacidade — Grep é ferramenta de <em>busca de conteúdo</em>, não de edição. D é destrutivo e arriscado: regenerar um arquivo legado "do zero" sem o conteúdo original convida a perda silenciosa de código.<span class="ts">Domínio 2 · TS 2.5 — Tools nativas (Read, Write, Edit, Bash, Grep, Glob)</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="2.4" data-dom="2">
+  <div class="qnum">Questão 6 · múltipla escolha <span class="cenario">Developer Productivity with Claude</span></div>
+  <div class="stem">Your developer-productivity agent answers questions about internal runbooks, architecture decision records and data-warehouse tables through an MCP server. Traces show that most tool calls in a typical session are list_* calls whose results the agent reads only to decide what to open next. Which MCP design change targets this overhead?</div>
+  <div class="pt-block pt">Seu agente de produtividade responde perguntas sobre runbooks internos, registros de decisão de arquitetura e tabelas do data warehouse por meio de um MCP server. Os traces mostram que a maioria das chamadas de tool de uma sessão típica são chamadas list_* cujo resultado o agente lê só para decidir o que abrir em seguida. Qual mudança de design no MCP ataca esse overhead?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q6" value="a">A. Merge the list_* tools into one list_everything tool and force the agent to call it at the start of every session.<div class="pt">Juntar as tools list_* numa única list_everything e forçar o agente a chamá-la no início de toda sessão.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="b">B. Cache the results of the list_* tools on the server, so that repeated discovery calls return much faster.<div class="pt">Cachear no servidor os resultados das tools list_*, para que as chamadas repetidas de descoberta voltem bem mais rápido.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="c">C. Expose the runbook index, the ADR list and the table schemas as MCP resources the agent can read directly.<div class="pt">Expor o índice de runbooks, a lista de ADRs e os schemas das tabelas como MCP resources que o agente lê diretamente.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. Add a system prompt instruction that limits the agent to two list_* calls per question before it must answer.<div class="pt">Adicionar ao system prompt uma instrução que limita o agente a duas chamadas list_* por pergunta antes de responder.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> É o sintoma clássico das MCP resources: o agente gasta tool calls só para descobrir <em>o que existe</em>. Expor os catálogos (índice de runbooks, lista de ADRs, schemas das tabelas) como resources dá essa visibilidade sem chamadas exploratórias — resource é dado para consultar; tool é ação. A continua sendo uma chamada exploratória (agora obrigatória em toda sessão) e ainda despeja o catálogo inteiro no contexto. B acelera cada chamada, mas não reduz quantas o agente faz: ataca a latência, não a causa. D é um limite arbitrário via prompt: corta a descoberta sem dar ao agente outra forma de saber o que existe, e ele passa a responder às cegas.<span class="ts">Domínio 2 · TS 2.4 — Integração de MCP servers</span></div>
+</div>
+
+<div class="q" data-correct="c,e" data-ts="2.4" data-dom="2">
+  <div class="qnum">Questão 7 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">Your platform team is adding MCP integrations to Claude Code for all engineers: GitHub, Sentry, and an in-house approval tool that gates production data-retention changes and exists only at your company. Which TWO statements describe the recommended approach?</div>
+  <div class="pt-block pt">Seu time de plataforma está adicionando integrações MCP ao Claude Code para todos os engenheiros: GitHub, Sentry e uma ferramenta interna de aprovação que controla mudanças de retenção de dados em produção e só existe na sua empresa. Quais DUAS afirmações descrevem a abordagem recomendada?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q7" value="a">A. Build custom servers for all three integrations, so the team owns every tool description from end to end.<div class="pt">Construir servers custom para as três integrações, para o time ser dono de cada descrição de tool de ponta a ponta.</div></label>
+    <label class="opt"><input type="checkbox" name="q7" value="b">B. Enable only one server per session and switch between them with a command when a task needs another one.<div class="pt">Habilitar só um server por sessão e alternar entre eles com um comando quando a tarefa precisar de outro.</div></label>
+    <label class="opt"><input type="checkbox" name="q7" value="c">C. Use existing community servers for GitHub and Sentry, and build a custom server only for the in-house tool.<div class="pt">Usar servers prontos da comunidade para GitHub e Sentry e construir um server custom só para a ferramenta interna.</div></label>
+    <label class="opt"><input type="checkbox" name="q7" value="d">D. Register all three servers in each engineer's ~/.claude.json, so that every person can review the setup first.<div class="pt">Registrar os três servers no ~/.claude.json de cada engenheiro, para que cada pessoa possa revisar o setup antes.</div></label>
+    <label class="opt"><input type="checkbox" name="q7" value="e">E. Configure all three together; tools from every configured server are discovered on connect and usable at once.<div class="pt">Configurar os três juntos: as tools de todos os servers configurados são descobertas na conexão e ficam disponíveis ao mesmo tempo.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C e E.</strong> Para integração padrão (GitHub, Sentry), o guide manda preferir o server pronto da comunidade e reservar o custom para o fluxo que só o seu time tem (C). E as tools de todos os servers configurados são descobertas na conexão e ficam disponíveis ao mesmo tempo (E) — por isso descrições boas importam tanto. A é over-engineering: reconstruir integrações que já existem prontas. B descreve uma limitação que não existe: não há "um server por vez". D usa o escopo errado: tooling do time vai no <code>.mcp.json</code> versionado; <code>~/.claude.json</code> é para server pessoal ou experimental.<span class="ts">Domínio 2 · TS 2.4 — Integração de MCP servers</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="2.4" data-dom="2">
+  <div class="qnum">Questão 8 · múltipla escolha <span class="cenario">Developer Productivity with Claude</span></div>
+  <div class="stem">Your agent has the built-in Grep tool and an MCP tool, code_search, backed by a semantic index of every repository in the company, including cross-repo call graphs. code_search's description reads only "Searches code." When engineers ask where a shared client library is used, the agent greps the local checkout and misses the callers in other repositories. What is the most effective fix?</div>
+  <div class="pt-block pt">Seu agente tem a tool nativa Grep e uma MCP tool, code_search, apoiada num índice semântico de todos os repositórios da empresa, inclusive grafos de chamadas entre repositórios. A descrição de code_search diz só "Searches code." Quando engenheiros perguntam onde uma biblioteca cliente compartilhada é usada, o agente faz grep no checkout local e perde os chamadores em outros repositórios. Qual é a correção mais eficaz?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q8" value="a">A. Remove Grep from the agent's tools, so that code_search becomes the only search option it can choose from.<div class="pt">Remover Grep das tools do agente, para que code_search vire a única opção de busca que ele pode escolher.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="b">B. Add a system prompt rule telling the agent to always try code_search first and fall back to Grep only afterwards.<div class="pt">Adicionar uma regra no system prompt dizendo ao agente para sempre tentar code_search primeiro e só depois recorrer ao Grep.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="c">C. Rename code_search to grep_all_repos, so that the agent associates it with the searches it already prefers.<div class="pt">Renomear code_search para grep_all_repos, para o agente associá-la às buscas que ele já prefere.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="d">D. Rewrite code_search's description to state its cross-repo scope, its output, and when it beats a local Grep.<div class="pt">Reescrever a descrição de code_search informando o escopo entre repositórios, a saída e quando ela supera um Grep local.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> O agente fica no Grep porque é a única tool de busca cuja utilidade ele entende: "Searches code." não diz nada sobre o índice entre repositórios. O guide manda detalhar a descrição da MCP tool (capacidades, saída, quando preferi-la) para o agente não preferir as tools nativas a uma MCP tool mais capaz. A tira uma tool legítima — Grep continua sendo a escolha certa para busca literal no checkout — e troca um problema de descrição por restrição. B é instrução de prompt: probabilística, e o "sempre" erra nos casos em que o Grep local é o certo. C muda só o nome; sem descrever escopo e saída, o modelo continua sem saber quando ela é melhor.<span class="ts">Domínio 2 · TS 2.4 — Integração de MCP servers</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="2.5" data-dom="2">
+  <div class="qnum">Questão 9 · múltipla escolha <span class="cenario">Developer Productivity with Claude</span></div>
+  <div class="stem">To list every Storybook file in a monorepo, the agent runs Grep for the pattern ".stories.tsx". It gets hundreds of hits inside import statements and still misses stories files that no other file imports. Which tool fits this task, and why?</div>
+  <div class="pt-block pt">Para listar todos os arquivos de Storybook de um monorepo, o agente roda Grep com o padrão ".stories.tsx". Ele recebe centenas de ocorrências dentro de imports e ainda perde arquivos de stories que nenhum outro arquivo importa. Qual tool serve para essa tarefa, e por quê?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q9" value="a">A. Grep with a stricter regular expression, so that only the import lines that reference a stories file are matched.<div class="pt">Grep com uma expressão regular mais estrita, para casar só as linhas de import que referenciam um arquivo de stories.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="b">B. Glob with **/*.stories.tsx, because it matches file paths by name pattern instead of searching inside file contents.<div class="pt">Glob com **/*.stories.tsx, porque ele casa caminhos de arquivo por padrão de nome em vez de buscar dentro do conteúdo.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="c">C. Read on the repository root, so that the agent sees the whole directory tree and picks out the stories files.<div class="pt">Read na raiz do repositório, para o agente ver a árvore de diretórios inteira e separar os arquivos de stories.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="d">D. Bash with a custom find script, because none of the built-in tools can match files by their names.<div class="pt">Bash com um script find customizado, porque nenhuma das tools nativas consegue casar arquivos pelo nome.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Grep busca <em>dentro</em> dos arquivos; Glob busca <em>os</em> arquivos pelo caminho. Listar arquivos por padrão de nome (<code>**/*.stories.tsx</code>) é trabalho de Glob — e não depende de alguém importar o arquivo. A insiste na ferramenta errada: qualquer regex sobre o conteúdo continua perdendo os arquivos que ninguém importa. C confunde as tools: Read carrega o conteúdo de um arquivo, não lista uma árvore de diretórios. D parte de uma premissa falsa: a tool nativa para casar nomes de arquivo existe, e é o Glob.<span class="ts">Domínio 2 · TS 2.5 — Tools nativas (Read, Write, Edit, Bash, Grep, Glob)</span></div>
+</div>
+
+<div class="q" data-correct="a,d" data-ts="2.5" data-dom="2">
+  <div class="qnum">Questão 10 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Developer Productivity with Claude</span></div>
+  <div class="stem">An agent has to explain how invoice numbers are generated in an unfamiliar repository of about 4,000 files, and then list every place that calls the numbering function. Which TWO practices should it follow?</div>
+  <div class="pt-block pt">Um agente precisa explicar como os números de fatura são gerados num repositório desconhecido de cerca de 4.000 arquivos e, depois, listar todos os lugares que chamam a função de numeração. Quais DUAS práticas ele deve seguir?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q10" value="a">A. Grep for entry points such as the numbering function, Read those files, and follow their imports to trace the flow.<div class="pt">Fazer Grep dos pontos de entrada, como a função de numeração, ler esses arquivos com Read e seguir os imports para rastrear o fluxo.</div></label>
+    <label class="opt"><input type="checkbox" name="q10" value="b">B. Read every file under src/ before answering anything, so that no relevant module can be missed along the way.<div class="pt">Ler todos os arquivos de src/ antes de responder qualquer coisa, para que nenhum módulo relevante fique de fora.</div></label>
+    <label class="opt"><input type="checkbox" name="q10" value="c">C. Glob all source files and Read them in batches of 100, writing a short summary of each batch as it goes.<div class="pt">Fazer Glob de todos os arquivos-fonte e lê-los com Read em lotes de 100, escrevendo um resumo curto de cada lote.</div></label>
+    <label class="opt"><input type="checkbox" name="q10" value="d">D. Identify every name the function is exported under, including re-exports in wrapper modules, and Grep each one.<div class="pt">Identificar todos os nomes sob os quais a função é exportada, inclusive reexportações em módulos wrapper, e fazer Grep de cada um.</div></label>
+    <label class="opt"><input type="checkbox" name="q10" value="e">E. Answer from general knowledge of how invoicing systems are usually built, and check only the final answer in code.<div class="pt">Responder com base no conhecimento geral de como sistemas de faturamento costumam ser feitos e conferir no código só a resposta final.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A e D.</strong> O guide descreve a exploração incremental: Grep acha os pontos de entrada, Read carrega esses arquivos e os imports levam ao resto do fluxo (A). Para achar todos os chamadores, primeiro levante todos os nomes exportados — inclusive reexportações em módulos wrapper — e busque cada um (D); procurar só o nome original perde quem importa pelo apelido. B e C são variações de "ler tudo antes": gastam o contexto com arquivos irrelevantes e atrasam a resposta. E troca evidência por suposição: o sistema real raramente é o "típico", e conferir só no fim não reconstrói o fluxo.<span class="ts">Domínio 2 · TS 2.5 — Tools nativas (Read, Write, Edit, Bash, Grep, Glob)</span></div>
+</div>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir aula 05</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="aula-04.html">← Aula 04</a></span>
+  <span><a href="aula-06.html">Aula 06 →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  var total = 0, score = 0;
+  document.querySelectorAll('.q').forEach(function (q) {
+    total++;
+    document.getElementById('total').textContent = total;
+    var btn = q.querySelector('button.answer');
+    var correct = q.dataset.correct.split(',').map(function (s) { return s.trim(); });
+    btn.addEventListener('click', function () {
+      var checked = Array.prototype.slice.call(q.querySelectorAll('input:checked')).map(function (i) { return i.value; });
+      if (checked.length === 0) return;
+      var ok = checked.length === correct.length && checked.every(function (v) { return correct.indexOf(v) !== -1; });
+      q.querySelectorAll('label.opt').forEach(function (l) {
+        var v = l.querySelector('input').value;
+        if (correct.indexOf(v) !== -1) l.classList.add('correct');
+        else if (l.querySelector('input').checked) l.classList.add('wrong');
+        l.querySelector('input').disabled = true;
+      });
+      var fb = q.querySelector('.feedback');
+      fb.classList.add(ok ? 'ok' : 'ko');
+      fb.innerHTML = (ok ? '✅ Correto. ' : '❌ Incorreto. ') + fb.innerHTML;
+      btn.disabled = true;
+      if (ok) score++;
+      document.getElementById('score').textContent = score;
+    });
+  });
+  var KEY = 'ccarf-aula-05';
+  var btn = document.getElementById('finish');
+  if (localStorage.getItem(KEY)) {
+    document.getElementById('donemsg').textContent = 'Aula já concluída — ' + localStorage.getItem(KEY);
+  }
+  btn.addEventListener('click', function () {
+    var rec = new Date().toLocaleDateString('pt-BR') + ' · ' + score + '/' + total + ' acertos';
+    localStorage.setItem(KEY, rec);
+    document.getElementById('donemsg').textContent = 'Concluída: ' + rec;
+  });
+})();
+</script>
+</body>
+</html>
