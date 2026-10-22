@@ -1,9 +1,10 @@
 // Banco do simulado em modo prova — aula 14 do curso CCAR-F.
-// Questões inéditas (não repetem as aulas nem simulados de terceiros), 5 por cenário oficial do Exam Guide v1.0.
+// Questões inéditas (não repetem as aulas nem simulados de terceiros), 10 por cenário oficial do Exam Guide v1.0;
+// o modo prova sorteia 5 por cenário a cada tentativa, preferindo as ainda não vistas.
 // Campos: id, s (cenário), d (domínio), t (task statement), q/qpt (stem EN/PT), o/opt (alternativas EN/PT),
 // a (índices corretos; 2 = "select TWO"), e (explicação PT, HTML permitido).
 window.CCARF_BANCO = {
-  versao: "2026-10-20",
+  versao: "2026-10-22",
   scen: {
     CS: {
       name: "Customer Support Resolution Agent",
@@ -620,6 +621,579 @@ window.CCARF_BANCO = {
       ],
       a: [0],
       e: "Falha de acesso (índice indisponível) e resultado vazio válido são coisas diferentes; devolver as duas como lista vazia esconde a falha e leva a decisões erradas (“pode apagar”). Um erro estruturado, transitório e retryable, separado do vazio legítimo, deixa o agente esperar, tentar de novo ou avisar. B joga no modelo uma ambiguidade que a interface deveria resolver. C repete chamadas que, durante a reconstrução, devolvem o mesmo vazio. D fabrica um dado falso para mascarar o problema."
+    },
+    // ------------------------------------------------------------------ Ampliação 2026-10-22 (objetivos oficiais do score report)
+    {
+      id: "CS6", s: "CS", d: 1, t: "1.1",
+      q: "In one response the model requests get_customer, lookup_order for order #5120, and lookup_order for order #5133. The order service times out on #5133; your tool wrapper catches the exception and returns an empty list as that call's tool_result. The agent then tells the customer that order #5133 does not exist. What should the loop send back for the failed call?",
+      qpt: "Numa única resposta, o modelo pede get_customer, lookup_order do pedido #5120 e lookup_order do pedido #5133. O serviço de pedidos estoura o timeout no #5133; o wrapper da tool captura a exceção e devolve uma lista vazia como tool_result dessa chamada. O agente então diz ao cliente que o pedido #5133 não existe. O que o loop deve devolver para a chamada que falhou?",
+      o: [
+        "An empty list, as now, plus a system prompt rule telling the agent never to say that an order does not exist.",
+        "No result for #5133 until a background retry succeeds, holding back the other two results until then.",
+        "A tool_result marked is_error, with the reason and whether a retry may help, sent with the other two.",
+        "Nothing: remove the #5133 tool_use block from the history, so that the model asks for that order again later."
+      ],
+      opt: [
+        "Uma lista vazia, como hoje, mais uma regra no system prompt para o agente nunca dizer que um pedido não existe.",
+        "Nenhum resultado para o #5133 até um retry em segundo plano dar certo, segurando os outros dois até lá.",
+        "Um tool_result marcado com is_error, com o motivo e se vale tentar de novo, enviado junto com os outros dois.",
+        "Nada: remover do histórico o bloco tool_use do #5133, para o modelo pedir esse pedido de novo depois."
+      ],
+      a: [2],
+      e: "Falha não pode parecer sucesso: a lista vazia diz ao modelo “consultei e não há nada”, e ele conclui que o pedido não existe. O <code>tool_result</code> da chamada que falhou vai com <code>is_error: true</code> e o motivo (timeout, se vale tentar de novo), junto com os outros dois resultados na mesma mensagem <code>user</code> — cada <code>tool_use</code> precisa do seu <code>tool_result</code>. A ataca o sintoma com instrução e mantém o dado enganoso. B deixa o loop parado esperando um serviço instável, sem informar nada ao modelo. D apaga do histórico o que o modelo pediu: ele perde a informação de que a consulta falhou e pode repetir o pedido sem fim ou responder sem ele."
+    },
+    {
+      id: "CS7", s: "CS", d: 5, t: "5.1",
+      q: "Each lookup_order result carries about 40 fields per order (warehouse codes, carrier scan events, internal flags), and every result stays in the conversation. When a customer asks about several orders, answers degrade after the sixth or seventh lookup, and the agent starts mixing up return windows between orders. Support needs only order ID, status, total, purchase date and return window. What should change?",
+      qpt: "Cada resultado de lookup_order traz cerca de 40 campos por pedido (códigos de armazém, eventos de rastreio da transportadora, flags internas), e todos os resultados ficam na conversa. Quando o cliente pergunta sobre vários pedidos, as respostas pioram depois do sexto ou sétimo lookup, e o agente começa a misturar prazos de devolução entre pedidos. O suporte só precisa de ID, status, total, data da compra e prazo de devolução. O que deve mudar?",
+      o: [
+        "Keep in context only the support-relevant fields of each lookup result, and drop the rest of the raw payload.",
+        "Summarize the whole conversation in prose after every lookup, replacing all earlier turns with that summary.",
+        "Move to a model with a larger context window, so that all forty fields of every order fit with room to spare.",
+        "Ask customers to discuss one order per conversation, and open a fresh session for each additional order."
+      ],
+      opt: [
+        "Manter no contexto só os campos de cada resultado que importam ao suporte e descartar o resto do payload bruto.",
+        "Resumir a conversa inteira em prosa depois de cada lookup, trocando todos os turnos anteriores pelo resumo.",
+        "Usar um modelo com janela de contexto maior, para os quarenta campos de cada pedido caberem com folga.",
+        "Pedir ao cliente um pedido por conversa e abrir uma sessão nova para cada pedido adicional."
+      ],
+      a: [0],
+      e: "Retenção seletiva: resultado de tool verboso é o primeiro candidato a sair do contexto. Guardar só os campos que o suporte usa (ID, status, total, data, prazo de devolução) mantém o necessário e tira o ruído que dilui a atenção e mistura os pedidos. B troca dado exato por prosa — prazos e valores viram aproximação a cada resumo. C adia o problema: o ruído continua lá, só cabe mais dele. D transfere ao cliente um limite do sistema e piora a resolução no primeiro contato."
+    },
+    {
+      id: "CS8", s: "CS", d: 2, t: "2.1",
+      q: "lookup_order is described as “Looks up an order.” About 15% of its calls fail with “order not found”: the agent passes the customer's email, or the order number exactly as typed (“#51-20”), while the tool accepts only the 8-digit order ID with no prefix. What is the most effective first fix?",
+      qpt: "A lookup_order está descrita como “Looks up an order.” Cerca de 15% das chamadas falham com “order not found”: o agente passa o e-mail do cliente, ou o número do pedido do jeito que ele digitou (“#51-20”), enquanto a tool só aceita o ID de 8 dígitos, sem prefixo. Qual é a primeira correção mais eficaz?",
+      o: [
+        "Retry each failed lookup up to three times, so that the agent can try other formats until one of them works.",
+        "Add a system prompt rule telling the agent to ask customers to retype order numbers in the correct format.",
+        "Merge lookup_order and get_customer into one lookup tool that accepts any identifier the customer gives.",
+        "Expand the description with the accepted input format, an example, and that emails go to get_customer first."
+      ],
+      opt: [
+        "Repetir cada lookup que falhou até três vezes, para o agente testar outros formatos até um funcionar.",
+        "Acrescentar ao system prompt uma regra para o agente pedir ao cliente que redigite o número no formato certo.",
+        "Juntar lookup_order e get_customer numa tool de busca que aceite qualquer identificador que o cliente der.",
+        "Ampliar a description com o formato de entrada aceito, um exemplo e a indicação de que e-mail vai antes para get_customer."
+      ],
+      a: [3],
+      e: "A description é o contrato que o modelo lê para montar a chamada, e “Looks up an order” não diz o formato aceito. Dizer que a entrada é o ID de 8 dígitos sem prefixo, dar um exemplo e apontar que e-mail se resolve antes com get_customer ataca a causa com a correção mais barata. A gasta chamadas em tentativa e erro. B joga para o cliente uma formatação que o agente faz sozinho. C cria uma tool genérica e ambígua, o oposto de tools com propósito e contrato de entrada definidos."
+    },
+    {
+      id: "CS9", s: "CS", d: 1, t: "1.5",
+      q: "A PostToolUse hook converts every date in tool results to ISO 8601 before the model sees them. It is registered with the matcher “mcp__backend__get_customer|mcp__backend__lookup_order”. Last month the team added get_return_status from a separate returns server, which reports dates as “DD/MM”. Return-window mistakes are back, but only in conversations about returns. What should the team change?",
+      qpt: "Um hook PostToolUse converte toda data dos resultados de tools para ISO 8601 antes de o modelo vê-las. Ele está registrado com o matcher “mcp__backend__get_customer|mcp__backend__lookup_order”. No mês passado o time acrescentou get_return_status, de um server de devoluções separado, que informa datas como “DD/MM”. Os erros de prazo de devolução voltaram, mas só em conversas sobre devoluções. O que o time deve mudar?",
+      o: [
+        "Add a prompt note that explains the DD/MM format the returns tool uses, alongside the existing hook.",
+        "Add the returns tool to the hook's matcher, or match every MCP tool, so its results are converted too.",
+        "Move the conversion into a PreToolUse hook, so that dates are normalized before each tool call is made.",
+        "Ask the returns team to switch their API to ISO dates, and keep the current hook as it is until then."
+      ],
+      opt: [
+        "Acrescentar ao prompt uma nota explicando o formato DD/MM da tool de devoluções, junto do hook atual.",
+        "Incluir a tool de devoluções no matcher do hook, ou casar todas as MCP tools, para os resultados dela também serem convertidos.",
+        "Levar a conversão para um hook PreToolUse, para as datas serem normalizadas antes de cada chamada.",
+        "Pedir ao time de devoluções que mude a API para datas ISO e manter o hook como está até lá."
+      ],
+      a: [1],
+      e: "O hook só roda para as tools que o matcher casa — e o matcher é comparado com o nome da tool. Com <code>mcp__backend__get_customer|mcp__backend__lookup_order</code>, o resultado da tool nova (<code>mcp__returns__get_return_status</code>) chega cru ao modelo. Incluí-la no matcher, ou usar <code>^mcp__</code> para todas as MCP tools, estende a normalização determinística ao formato novo. A volta à aposta probabilística que o hook substituiu. C erra a fase: o PreToolUse roda antes da chamada, quando ainda não há resultado para converter. D ataca a origem, mas os erros continuam enquanto a migração não chega."
+    },
+    {
+      id: "CS10", s: "CS", d: 5, t: "5.2",
+      q: "A customer named Ana Souza asks for a refund of a duplicate charge. get_customer returns three accounts with that name, two of them in the same city. The agent picked the account whose billing city matched the customer's IP location and refunded it, but the duplicate charge was on another account. How should the agent handle multiple matches?",
+      qpt: "Uma cliente chamada Ana Souza pede o reembolso de uma cobrança duplicada. O get_customer devolve três contas com esse nome, duas delas na mesma cidade. O agente escolheu a conta cuja cidade de cobrança batia com a localização do IP do cliente e fez o reembolso, mas a cobrança duplicada estava em outra conta. Como o agente deve tratar várias correspondências?",
+      o: [
+        "Keep matching by IP location, as now, but also log which account was chosen and the reason for it.",
+        "Escalate every case with more than one match to a human agent, since only a person can resolve identity.",
+        "Ask the customer for another identifier, such as the email or an order number, before taking any action.",
+        "Refund the charge on all three accounts, then reverse the extra refunds once the right account is known."
+      ],
+      opt: [
+        "Continuar casando pela localização do IP, como hoje, mas registrar qual conta foi escolhida e o motivo.",
+        "Escalar para um humano todo caso com mais de uma correspondência, já que só uma pessoa resolve identidade.",
+        "Pedir ao cliente outro identificador, como o e-mail ou um número de pedido, antes de qualquer ação.",
+        "Reembolsar a cobrança nas três contas e estornar os reembolsos extras quando a conta certa for conhecida."
+      ],
+      a: [2],
+      e: "Com várias correspondências, escolher por heurística é chutar a identidade — por isso o reembolso caiu na conta errada, e registrar a escolha (A) não muda isso. O certo é pedir um identificador adicional (e-mail, número do pedido) e só agir depois de saber qual é a conta. B escala o que o agente resolve com uma pergunta e derruba a resolução no primeiro contato. D mexe em contas de outras pessoas e cria um problema maior para desfazer."
+    },
+    {
+      id: "MR6", s: "MR", d: 1, t: "1.2",
+      q: "Reports must cover eight independent subtopics and be ready within 10 minutes. The current design is a sequential pipeline: the search subagent covers subtopic 1, then subtopic 2, and so on, and the synthesis subagent runs at the end. Runs take 35 minutes. Which structure best meets the coverage and latency requirements?",
+      qpt: "Os relatórios precisam cobrir oito subtópicos independentes e ficar prontos em até 10 minutos. O desenho atual é um pipeline sequencial: o subagent de busca cobre o subtópico 1, depois o 2, e assim por diante, e o subagent de síntese roda no fim. Cada execução leva 35 minutos. Qual estrutura atende melhor os requisitos de cobertura e latência?",
+      o: [
+        "A single agent with every tool and a larger context window, so that it handles all eight subtopics in one session.",
+        "Keep the pipeline but have the search subagent return shorter summaries, so that each sequential step runs faster.",
+        "Run the eight searches and the synthesis all in parallel, so that every subagent starts at the same moment.",
+        "The coordinator spawns one search subagent per subtopic in parallel, then passes all the results to synthesis."
+      ],
+      opt: [
+        "Um único agente com todas as tools e uma janela de contexto maior, para tratar os oito subtópicos numa sessão só.",
+        "Manter o pipeline, mas fazer o subagent de busca devolver resumos mais curtos, para cada passo sequencial rodar mais rápido.",
+        "Rodar as oito buscas e a síntese todas em paralelo, para todos os subagents começarem no mesmo instante.",
+        "O coordinator dispara um subagent de busca por subtópico em paralelo e depois passa todos os resultados para a síntese."
+      ],
+      a: [3],
+      e: "Subtópicos independentes não precisam esperar uns pelos outros: o coordinator dispara as buscas em paralelo (várias chamadas de subagent na mesma resposta), e a latência passa a ser a da busca mais lenta, não a soma. A síntese depende de todos os resultados, então vem depois — é sequencial por necessidade. Regra geral: coordinator-worker em paralelo para o que é independente, pipeline sequencial para o que depende do passo anterior. C ignora essa dependência: a síntese começaria sem dados. A perde o isolamento de contexto e a cobertura de oito frentes. B mexe no tamanho da saída, não na causa da latência, que é a execução em série."
+    },
+    {
+      id: "MR7", s: "MR", d: 1, t: "1.3",
+      q: "After a refactor moved the coordinator's query options into a shared config module, research runs stop delegating entirely: the coordinator writes every report from its own knowledge, with no citations, and the logs show zero subagent invocations. The four AgentDefinitions, their descriptions and the agents option were copied over unchanged. What is the most likely cause?",
+      qpt: "Depois de um refactor que levou as opções da query do coordinator para um módulo de config compartilhado, os runs de pesquisa param de delegar por completo: o coordinator escreve todo relatório com o próprio conhecimento, sem citações, e os logs mostram zero invocações de subagents. As quatro AgentDefinitions, suas descriptions e a opção agents foram copiadas sem mudança. Qual é a causa mais provável?",
+      o: [
+        "The new config's allowedTools lacks the Task tool, so the coordinator can no longer spawn subagents.",
+        "The subagent definitions omit the tools field, so each one starts with no tools and declines the work.",
+        "The config text now fills the coordinator's context, so it no longer has room left to emit tool calls.",
+        "The subagents' prompts are too long, so the SDK silently drops them from the agents list at startup."
+      ],
+      opt: [
+        "A lista allowedTools da config nova não inclui mais a tool Task, então nenhum subagent pode ser criado.",
+        "As definições dos subagents omitem o campo tools, então cada um começa sem tools e recusa o trabalho.",
+        "O texto da config agora enche o contexto do coordinator, que fica sem espaço para emitir tool calls.",
+        "Os prompts dos subagents são longos demais, e o SDK os descarta calado da lista agents ao iniciar."
+      ],
+      a: [0],
+      e: "Sintoma: nenhuma delegação, para nenhum subagent, com definições e registro intactos. O que falta para todos ao mesmo tempo é a permissão de spawn: sem a tool de criar subagents no <code>allowedTools</code> do coordinator (Task no guia), ele não invoca ninguém e faz o trabalho sozinho. B parte de premissa falsa: sem <code>tools</code>, o subagent herda as tools disponíveis — e haveria invocações no log de qualquer jeito. C e D não são mecanismos reais: config não ocupa o contexto do modelo, e o SDK não descarta definições pelo tamanho do prompt. 🧭 Produto atual: a tool se chama Agent (Task segue como alias), e <code>allowedTools</code> só pré-aprova; quem tira tools é <code>tools</code>/<code>disallowedTools</code>. Na prova, vale o guia."
+    },
+    {
+      id: "MR8", s: "MR", d: 1, t: "1.3",
+      q: "Traces show the coordinator correctly sending the collected findings to the synthesizer subagent. Yet the synthesizer returns one separate analysis per source instead of a combined synthesis — the same kind of output the document analyzer produces. The synthesizer's AgentDefinition was created by copying the document analyzer's and then changing its name and description. What should the team fix?",
+      qpt: "Os traces mostram o coordinator mandando corretamente os achados coletados para o subagent synthesizer. Mesmo assim, o synthesizer devolve uma análise separada por fonte em vez de uma síntese combinada — o mesmo tipo de saída do analisador de documentos. A AgentDefinition do synthesizer foi criada copiando a do analisador de documentos e trocando o nome e a description. O que o time deve corrigir?",
+      o: [
+        "Rewrite the synthesizer's description, so that the coordinator understands it should send the findings there.",
+        "Rewrite the synthesizer's prompt field to define its synthesis role and its output, since it runs on that.",
+        "Give the synthesizer the document-reading tools too, so it can analyze each source in depth first.",
+        "Add step-by-step synthesis instructions to every delegation message the coordinator sends to the synthesizer."
+      ],
+      opt: [
+        "Reescrever a description do synthesizer, para o coordinator entender que deve mandar os achados para ele.",
+        "Reescrever o campo prompt do synthesizer definindo o papel de síntese e a saída, porque é com ele que o subagent roda.",
+        "Dar também ao synthesizer as tools de leitura de documentos, para ele analisar cada fonte mais a fundo antes.",
+        "Acrescentar instruções passo a passo de síntese em toda mensagem de delegação que o coordinator manda ao synthesizer."
+      ],
+      a: [1],
+      e: "A <code>description</code> serve para o coordinator escolher o subagent — e a escolha já está certa, como mostram os traces. O comportamento do subagent vem do <code>prompt</code> da AgentDefinition (o system prompt dele): copiado do analisador, faz o papel do analisador. Corrigir esse campo ataca a causa. A mexe no que já funciona. C reforça o papel errado. D remenda em cada chamada um defeito da definição e troca objetivo por procedimento no prompt de delegação."
+    },
+    {
+      id: "MR9", s: "MR", d: 2, t: "2.3",
+      q: "The synthesis subagent's AgentDefinition has a description and a prompt but no tools field. Traces show it running web searches during synthesis and overwriting the shared findings file, which breaks the citations. What should the team change?",
+      qpt: "A AgentDefinition do subagent de síntese tem description e prompt, mas não tem o campo tools. Os traces mostram que ele faz buscas na web durante a síntese e sobrescreve o arquivo compartilhado de achados, o que quebra as citações. O que o time deve mudar?",
+      o: [
+        "Add a line to the synthesis prompt telling it to use only the findings it receives and never to search the web.",
+        "Remove the web search tool from the coordinator, so that no subagent is able to inherit it from the parent.",
+        "Set the tools field to only what synthesis needs, since omitting it gives the subagent every available tool.",
+        "Run the synthesis subagent in its own process with a private copy of the findings file for every request."
+      ],
+      opt: [
+        "Acrescentar ao prompt da síntese uma linha mandando usar só os achados recebidos e nunca buscar na web.",
+        "Tirar a tool de busca web do coordinator, para nenhum subagent conseguir herdá-la do agente pai.",
+        "Preencher o campo tools só com o que a síntese precisa, já que omiti-lo dá ao subagent todas as tools disponíveis.",
+        "Rodar o subagent de síntese num processo próprio, com uma cópia privada do arquivo de achados a cada request."
+      ],
+      a: [2],
+      e: "Sem o campo <code>tools</code>, a AgentDefinition herda as tools disponíveis para subagents — inclusive busca e escrita de arquivo. Listar só o que a síntese precisa tira o comportamento pela raiz. A é prompt contra uma capacidade que continua lá. B quebra o fluxo de quem precisa buscar e não define o conjunto da síntese. D isola o arquivo, mas a síntese continua trazendo fontes novas, sem citação controlada."
+    },
+    {
+      id: "MR10", s: "MR", d: 5, t: "5.3",
+      q: "During a run on battery recycling, the patents subagent returns a structured error: the patent database was unavailable for the whole run, even after retries. The coordinator continues, and the final report covers chemistry, logistics and policy but says nothing about patents. Readers conclude that no relevant patents exist. What should change?",
+      qpt: "Num run sobre reciclagem de baterias, o subagent de patentes devolve um erro estruturado: a base de patentes ficou indisponível durante todo o run, mesmo depois dos retries. O coordinator segue, e o relatório final cobre química, logística e regulação, mas não diz nada sobre patentes. Os leitores concluem que não existem patentes relevantes. O que deve mudar?",
+      o: [
+        "Stop the whole run whenever any subagent fails, and return only an error message to the user who asked.",
+        "Have the synthesis subagent fill the patent section from the model's own knowledge when sources fail.",
+        "Retry the patents subagent until the database recovers, holding the report back for as long as it takes.",
+        "Have the report annotate its coverage: which sections are well supported and which have gaps, and why."
+      ],
+      opt: [
+        "Interromper o run inteiro sempre que um subagent falhar e devolver só uma mensagem de erro a quem pediu.",
+        "Fazer o subagent de síntese preencher a seção de patentes com o conhecimento do próprio modelo quando as fontes falham.",
+        "Repetir o subagent de patentes até a base voltar, segurando o relatório pelo tempo que for preciso.",
+        "Fazer o relatório anotar a cobertura: que seções estão bem sustentadas e quais têm lacunas, e por quê."
+      ],
+      a: [3],
+      e: "O erro foi propagado direito; o defeito está na síntese, que transformou ausência de dados em silêncio. O relatório deve trazer anotações de cobertura: o que está bem sustentado e que área ficou sem fonte, e por quê (a base de patentes fora do ar). Assim o leitor não confunde “não pesquisado” com “não existe”. A joga fora o trabalho dos outros subagents por uma falha parcial. B inventa conteúdo sem fonte num relatório com citações. C troca a entrega por uma espera sem prazo."
+    },
+    {
+      id: "CI6", s: "CI", d: 3, t: "3.6",
+      q: "A test-generation job runs claude -p inside a throwaway container with no network access and no credentials, destroyed after every run. It must run many build and test commands that the team cannot list in advance, and in -p anything that needs approval would be refused and the build would fail. Which permission mode fits this environment?",
+      qpt: "Um job de geração de testes roda claude -p dentro de um container descartável, sem acesso à rede e sem credenciais, destruído depois de cada execução. Ele precisa rodar muitos comandos de build e teste que o time não consegue listar de antemão, e, no -p, tudo o que precisasse de aprovação seria recusado e o build falharia. Qual permission mode serve para esse ambiente?",
+      o: [
+        "default, since -p answers every approval request automatically when no one is there to respond.",
+        "bypassPermissions, fine here because the container is isolated, offline, secret-free and disposable.",
+        "plan, so that Claude runs the build and test commands freely while every file edit is held back.",
+        "dontAsk with no allow rules, so that every command Claude decides to run goes through without asking."
+      ],
+      opt: [
+        "default, porque o -p responde sozinho a todo pedido de aprovação quando não há ninguém para responder.",
+        "bypassPermissions, aceitável aqui porque o container é isolado, sem rede, sem segredos e descartável.",
+        "plan, para o Claude rodar à vontade os comandos de build e teste enquanto toda edição fica retida.",
+        "dontAsk sem regras allow, para todo comando que o Claude decidir rodar passar sem perguntar."
+      ],
+      a: [1],
+      e: "<code>bypassPermissions</code> pula as checagens de permissão, e a documentação o reserva exatamente para este caso: container ou VM isolados, sem internet e sem credenciais, onde o pior resultado fica contido e é descartado. É o caso oposto ao do runner compartilhado com segredos, em que o certo é <code>dontAsk</code> com o necessário pré-aprovado. A: no <code>-p</code>, o que precisaria de aprovação é recusado, e o build falha. C: o plan mode só explora e propõe, sem editar — e o job precisa escrever os testes. D descreve o contrário do <code>dontAsk</code>: ele <strong>nega</strong> o que pediria permissão, então sem regras allow os comandos de build seriam recusados."
+    },
+    {
+      id: "CI7", s: "CI", d: 3, t: "3.6",
+      q: "A documentation job runs claude -p with --max-turns 8. It rarely loops, but each turn reads very large files, and one run last week cost $40 in only six turns. The team wants a spend cap on every single run. What should they add?",
+      qpt: "Um job de documentação roda claude -p com --max-turns 8. Ele quase nunca entra em loop, mas cada turno lê arquivos muito grandes, e um run da semana passada custou US$ 40 em só seis turnos. O time quer um teto de gasto para cada run. O que deve acrescentar?",
+      o: [
+        "--max-budget-usd, which stops the run once its estimated API spend reaches the amount you set.",
+        "A lower --max-turns, such as 3, since cutting turns always cuts the run's cost in proportion.",
+        "A shell timeout of ten minutes around the command, so that long and costly runs get killed.",
+        "--output-format json, so that the job reads the run's cost from the output and fails if too high."
+      ],
+      opt: [
+        "--max-budget-usd, que encerra o run quando o gasto estimado de API chega ao valor definido.",
+        "Um --max-turns menor, como 3, porque cortar turnos sempre corta o custo do run na mesma proporção.",
+        "Um timeout de shell de dez minutos em volta do comando, para matar runs longos e caros.",
+        "--output-format json, para o job ler o custo do run na saída e falhar se ele passar do limite."
+      ],
+      a: [0],
+      e: "<code>--max-turns</code> limita turnos, não gasto — e aqui o custo vem de poucos turnos caros. Quem trava o gasto é <code>--max-budget-usd</code>, que encerra o run quando o custo estimado atinge o valor (só no modo <code>-p</code>). O teto não é exato: o gasto pode passar dele em até o custo de uma resposta, mais o de subagents em andamento — deixe folga. Os dois limites se combinam: turnos contra loop, orçamento contra custo. B parte de premissa falsa: o custo por turno varia muito. C limita tempo, e um turno caro pode ser rápido. D só descobre o gasto depois que ele aconteceu."
+    },
+    {
+      id: "CI8", s: "CI", d: 3, t: "3.6",
+      q: "A review job runs claude -p --tools \"Read,Grep,Glob\" so that it cannot change the checkout. The project's .mcp.json also loads a GitHub server, and the job's settings pre-approve all of its tools so the reviewer can post comments. In one run, the reviewer merged the pull request it was reviewing. What closes this gap?",
+      qpt: "Um job de review roda claude -p --tools \"Read,Grep,Glob\" para não poder alterar o checkout. O .mcp.json do projeto também carrega um server do GitHub, e o settings do job pré-aprova todas as tools dele para o revisor poder postar comentários. Numa execução, o revisor fez o merge do pull request que estava revisando. O que fecha essa brecha?",
+      o: [
+        "A CLAUDE.md line forbidding merges, since --tools already limits every tool that the session can call.",
+        "--permission-mode acceptEdits, so that file edits are approved and anything else, like a merge, is refused.",
+        "Deny the server's merge and push tools with --disallowedTools; --tools covers built-in tools only.",
+        "Replace --tools with --allowedTools \"Read,Grep,Glob\", so that only the tools listed there can run."
+      ],
+      opt: [
+        "Uma linha no CLAUDE.md proibindo merge, já que o --tools limita todas as tools que a sessão pode chamar.",
+        "--permission-mode acceptEdits, para edições de arquivo serem aprovadas e todo o resto, como merge, ser recusado.",
+        "Negar as tools de merge e push do server com --disallowedTools; o --tools só cobre as tools nativas.",
+        "Trocar --tools por --allowedTools \"Read,Grep,Glob\", para só as tools listadas ali poderem rodar."
+      ],
+      a: [2],
+      e: "<code>--tools</code> restringe as tools <strong>nativas</strong> (Read, Edit, Bash…); tools de MCP server ficam fora dessa lista e continuam disponíveis — e aqui ainda estavam pré-aprovadas. A correção é negar as tools perigosas do server (por exemplo <code>mcp__github__merge_pull_request</code>) com <code>--disallowedTools</code>, mantendo a de comentar, ou não carregar o server nesse job. A parte de premissa falsa e é só instrução. B não recusa nada: <code>acceptEdits</code> aprova edições e não bloqueia as tools já pré-aprovadas. D piora: <code>--allowedTools</code> só pré-aprova, não restringe."
+    },
+    {
+      id: "CI9", s: "CI", d: 4, t: "4.6",
+      q: "Last month the team split its CI review into three passes — security, business logic and API design — but all three prompts still share the same block of eight few-shot examples, six of them about security. The API design pass now reports mostly security issues and still misses most of the API problems that reviewers catch by hand. What should change?",
+      qpt: "No mês passado o time dividiu o review de CI em três passes — segurança, lógica de negócio e design de API —, mas os três prompts ainda compartilham o mesmo bloco de oito exemplos few-shot, seis deles sobre segurança. O passe de design de API agora reporta sobretudo problemas de segurança e continua perdendo a maioria dos problemas de API que os revisores pegam à mão. O que deve mudar?",
+      o: [
+        "Merge the three passes back into one prompt, since separate passes are only repeating each other's work.",
+        "Add a final step that discards findings whose category does not match the pass that reported them.",
+        "Run the API design pass on a larger model, keeping the same shared block of examples in all three passes.",
+        "Give each pass its own few-shot examples for its concern only, instead of the shared mixed example block."
+      ],
+      opt: [
+        "Juntar os três passes de novo num prompt só, já que passes separados só repetem o trabalho um do outro.",
+        "Acrescentar um passo final que descarta findings cuja categoria não bate com o passe que os reportou.",
+        "Rodar o passe de design de API num modelo maior, mantendo o mesmo bloco de exemplos nos três passes.",
+        "Dar a cada passe exemplos few-shot só do próprio concern, no lugar do bloco misto compartilhado."
+      ],
+      a: [3],
+      e: "Separar por concern só funciona com exemplos <strong>dedicados</strong>: o few-shot ensina o que procurar, e um bloco dominado por segurança puxa todos os passes para segurança. Cada passe precisa de prompt focado e exemplos do próprio concern; depois os findings são juntados. A volta ao prompt único, onde os concerns competem pelo recall. B limpa a saída, mas não faz o passe achar os problemas de API que ele não vê. C mantém a causa — os exemplos errados — e só aumenta o custo."
+    },
+    {
+      id: "CI10", s: "CI", d: 4, t: "4.1",
+      q: "The team wrote in CLAUDE.md that raw SQL is accepted, meaning the hand-tuned queries in reporting/. Since then the CI reviewer no longer flags raw SQL anywhere, including string-built queries in api/ that a penetration test later exploited. What is the best fix?",
+      qpt: "O time escreveu no CLAUDE.md que SQL cru é aceito, pensando nas queries otimizadas à mão em reporting/. Desde então o reviewer de CI não aponta mais SQL cru em lugar nenhum, inclusive queries montadas com concatenação de strings em api/ que um pentest depois explorou. Qual é a melhor correção?",
+      o: [
+        "Remove the sentence from CLAUDE.md, accepting that the reporting queries get flagged on every PR again.",
+        "Rewrite it to name reporting/ and the reason, and state that raw SQL elsewhere must still be reported.",
+        "Have the reviewer give each finding a confidence score, and post SQL findings only above 0.8 confidence.",
+        "Add a separate security-only review job for api/, leaving the CLAUDE.md sentence exactly as it is now."
+      ],
+      opt: [
+        "Tirar a frase do CLAUDE.md, aceitando que as queries de reporting voltem a ser apontadas em todo PR.",
+        "Reescrevê-la nomeando reporting/ e o motivo, e dizendo que SQL cru fora dali continua sendo reportado.",
+        "Fazer o reviewer dar uma confiança a cada finding e postar os de SQL só acima de 0.8.",
+        "Criar um job de review só de segurança para api/, mantendo a frase do CLAUDE.md exatamente como está."
+      ],
+      a: [1],
+      e: "Critério de exclusão precisa ser explícito sobre o <strong>alcance</strong> e o motivo: “SQL cru é aceito”, sem caminho, virou licença geral, e o reviewer passou a silenciar um risco real. Nomear <code>reporting/</code>, dizer por que ali é aceito e que fora dali continua sendo finding mantém o contexto persistente útil nos dois sentidos — sem falso positivo em reporting/ e sem falso negativo em api/. A troca um erro pelo outro: os falsos positivos voltam. C: autoconfiança não calibrada não separa os dois casos. D cobre só api/ e deixa o critério errado valendo para o resto do repositório."
+    },
+    {
+      id: "EX6", s: "EX", d: 4, t: "4.3",
+      q: "To stop truncated output, contract extraction now makes one call per 20-page range with the same schema and merges the item lists in code. Line items that start on page 20 and continue on page 21 now show up twice, or as two partial items, in the merged result. What is the best fix?",
+      qpt: "Para acabar com a saída truncada, a extração de contratos agora faz uma chamada por faixa de 20 páginas, com o mesmo schema, e junta as listas de itens no código. Itens que começam na página 20 e continuam na 21 agora aparecem duas vezes, ou como dois itens parciais, no resultado juntado. Qual é a melhor correção?",
+      o: [
+        "Go back to a single call for the whole contract, with max_tokens raised to the model's maximum.",
+        "Tell the model in each call to skip any item that seems to continue onto the next page range.",
+        "Overlap the ranges by one page and dedupe in code by item number, keeping the fullest version.",
+        "Send all partial outputs to one more call that rewrites them as a single list in free-form text."
+      ],
+      opt: [
+        "Voltar a uma chamada única para o contrato inteiro, com max_tokens no máximo do modelo.",
+        "Instruir o modelo, em cada chamada, a pular qualquer item que pareça continuar na faixa seguinte.",
+        "Sobrepor as faixas em uma página e deduplicar no código pelo número do item, ficando com a versão mais completa.",
+        "Mandar todas as saídas parciais para mais uma chamada que as reescreve como uma lista única em texto livre."
+      ],
+      a: [2],
+      e: "Dividir e juntar é o caminho certo; o defeito está na junção. Faixas com sobreposição garantem que todo item apareça inteiro em pelo menos uma chamada, e a deduplicação em código por chave estável (número do item) fica com a versão completa. A volta ao problema original: <code>max_tokens</code> tem teto prático, e o truncamento retorna no contrato maior. B perde de vez os itens da fronteira. D troca dado estruturado por texto livre e põe o modelo para fazer um merge que o código faz de forma determinística."
+    },
+    {
+      id: "EX7", s: "EX", d: 4, t: "4.3",
+      q: "The extractor prefills the assistant turn with “{” and gets valid JSON almost every time. But about 2% of records still miss a required field or put text in a numeric field, and the database loader rejects them. What should the team change?",
+      qpt: "O extrator faz prefill do turno do assistant com “{” e recebe JSON válido quase sempre. Mas cerca de 2% dos registros ainda vêm sem um campo obrigatório ou com texto num campo numérico, e o loader do banco os rejeita. O que o time deve mudar?",
+      o: [
+        "Define the record as a tool's input schema and set strict on that tool, so that its inputs must match.",
+        "Keep the prefill and add a strict system prompt instruction listing every required field and its type.",
+        "Prefill a longer opening, such as the first two keys, so that the model completes the remaining fields.",
+        "Lower the temperature to 0, so that the prefilled response follows the expected format more strictly."
+      ],
+      opt: [
+        "Definir o registro como input schema de uma tool e ligar strict nela, para os argumentos terem de seguir o schema.",
+        "Manter o prefill e acrescentar no system prompt uma instrução rígida listando cada campo obrigatório e seu tipo.",
+        "Fazer prefill de uma abertura maior, como as duas primeiras chaves, para o modelo completar o resto dos campos.",
+        "Baixar a temperatura para 0, para a resposta com prefill seguir o formato esperado com mais rigor."
+      ],
+      a: [0],
+      e: "Na escala de confiabilidade, o prefill garante o começo do JSON, não o schema; instrução no prompt (B) fica abaixo dele. Quando campo ausente ou de tipo errado quebra o consumidor, o método é tool use com JSON schema — e com <code>strict: true</code> os argumentos seguem o schema. C só fixa mais alguns caracteres do começo. D reduz variação, mas não impõe campos nem tipos. 🧭 Produto atual: prefill devolve 400 no Claude 4.6 em diante (e no Mythos Preview); lá o substituto é a saída estruturada (<code>output_config.format</code>). Na prova, vale a escala do objetivo."
+    },
+    {
+      id: "EX8", s: "EX", d: 5, t: "5.5",
+      q: "Field confidence is calibrated on a labeled set drawn from the 12 invoice layouts the company has always received, and fields below the threshold go to review. A new supplier now sends about 120 invoices a day in a layout absent from that set. Reviewers have 400 daily slots and use about 250 today. Spot checks find errors on the new layout even at high scores. What should the team do?",
+      qpt: "A confiança por campo é calibrada num conjunto rotulado tirado dos 12 layouts de fatura que a empresa sempre recebeu, e campos abaixo do threshold vão para revisão. Um fornecedor novo agora manda cerca de 120 faturas por dia num layout que não está nesse conjunto. Os revisores têm 400 vagas por dia e usam cerca de 250 hoje. Checagens pontuais acham erros no layout novo mesmo com score alto. O que o time deve fazer?",
+      o: [
+        "Keep the current threshold for the new layout, since the scores were calibrated on a large labeled set.",
+        "Route every new-layout invoice to review for now, and label those reviews to recalibrate the layout.",
+        "Replace routing with a random 5% sample of all invoices, so that the new layout is covered without bias.",
+        "Have the model rate its own certainty on new-layout invoices, and route those below 0.9 to review."
+      ],
+      opt: [
+        "Manter o threshold atual para o layout novo, já que os scores foram calibrados num conjunto rotulado grande.",
+        "Mandar por ora toda fatura do layout novo para revisão e usar essas revisões como rótulos para recalibrar o layout.",
+        "Trocar o roteamento por uma amostra aleatória de 5% de todas as faturas, cobrindo o layout novo sem viés.",
+        "Pedir ao modelo que avalie a própria certeza nas faturas do layout novo e mandar as abaixo de 0.9 para revisão."
+      ],
+      a: [1],
+      e: "Calibração vale para a população em que foi feita: o layout novo está fora do conjunto rotulado, e os erros com score alto mostram que o threshold não se aplica a ele — por isso A falha. Característica do documento é critério de roteamento: enquanto não houver dados rotulados do layout, todas as faturas dele vão para revisão — 120 por dia cabem nas 150 vagas livres — e as revisadas viram rótulos para recalibrar. C troca roteamento por sorteio: amostra aleatória mede erro, não leva a revisão para onde ele está. D usa autoavaliação sem calibração — o mesmo problema de A, sem nem o conjunto rotulado."
+    },
+    {
+      id: "EX9", s: "EX", d: 4, t: "4.4",
+      q: "Validation rejects three kinds of extraction: (1) invoice_date in “03.11.2026” form where the schema requires YYYY-MM-DD; (2) contract_reference missing because the invoice never states one; (3) line items that don't sum to the total because a discount line was misread. Which of these should be retried with the validation error as feedback?",
+      qpt: "A validação rejeita três tipos de extração: (1) invoice_date no formato “03.11.2026”, quando o schema exige AAAA-MM-DD; (2) contract_reference ausente porque a fatura não informa nenhum; (3) itens que não somam o total porque uma linha de desconto foi mal lida. Quais devem ir para retry com o erro de validação como feedback?",
+      o: [
+        "All three, since in each case the validation error tells the model exactly what it needs to fix.",
+        "Only 1 and 3, since the data is in the document; 2 should come back as null or not found instead.",
+        "Only 2, since a missing value is the one case where a second attempt can still find something new.",
+        "None; send all three to human review, since a failed validation shows that the model can't be trusted."
+      ],
+      opt: [
+        "Os três, porque em cada caso o erro de validação diz ao modelo exatamente o que corrigir.",
+        "Só 1 e 3, porque o dado está no documento; o 2 deve voltar como null ou não encontrado.",
+        "Só o 2, porque valor ausente é o único caso em que uma segunda tentativa ainda pode achar algo novo.",
+        "Nenhum; mandar os três para revisão humana, porque validação que falhou mostra que o modelo não é confiável."
+      ],
+      a: [1],
+      e: "Retry com feedback funciona quando a informação <strong>está no documento</strong> e o erro é de formato (1) ou de leitura (3): devolver o documento, a extração que falhou e o erro específico permite a correção. Em (2) o dado não existe, e insistir empurra o modelo a inventar um número; o schema deve aceitar ausência (nullable ou “not_found”). A erra justamente no caso 2. C inverte a lógica. D gasta revisão humana em erros que o próprio loop corrige."
+    },
+    {
+      id: "EX10", s: "EX", d: 1, t: "1.4",
+      q: "After a programmatic gate made post_to_ledger refuse any invoice without a passing validate_totals result, the team wants to move every rule of the extraction agent into code: the gate, plus “prefer bullet lists in summaries”, “mention the vendor's name first” and “flag unusual payment terms”. What is the right split?",
+      qpt: "Depois que um gate em código fez o post_to_ledger recusar toda fatura sem um resultado aprovado de validate_totals, o time quer levar para o código todas as regras do agente de extração: o gate, mais “prefira listas nos resumos”, “cite primeiro o nome do fornecedor” e “sinalize condições de pagamento incomuns”. Qual é a divisão certa?",
+      o: [
+        "Enforce all four rules in code, since prompt instructions always have some failure rate in production.",
+        "Remove the gate and keep all four rules in the prompt, since it now states the validation order clearly.",
+        "Replace the agent with a fixed pipeline in code, so that no step can ever be skipped or reordered at all.",
+        "Keep the code gate for posting, where a skipped step causes financial errors, and the rest as guidance."
+      ],
+      opt: [
+        "Impor as quatro regras em código, porque instrução no prompt sempre tem alguma taxa de falha em produção.",
+        "Tirar o gate e deixar as quatro regras no prompt, que agora explica com clareza a ordem da validação.",
+        "Trocar o agente por um pipeline fixo em código, para nenhum passo poder ser pulado ou reordenado.",
+        "Manter o gate em código para a postagem, onde um passo pulado causa erro financeiro, e o resto como orientação."
+      ],
+      a: [3],
+      e: "Enforcement em código é para o que <strong>não pode falhar</strong>: postar no razão sem validação gera erro financeiro, e instrução no prompt tem taxa de falha diferente de zero. Preferência de estilo e julgamento (formato do resumo, ordem das informações, o que conta como condição de pagamento incomum) são orientação: ficam no prompt, com critérios e exemplos. A engessa em código o que é julgamento e não se verifica de forma determinística. B volta ao problema que o gate resolveu. C troca a adaptação do agente por rigidez, quando só um passo exige garantia."
+    },
+    {
+      id: "DP6", s: "DP", d: 2, t: "2.5",
+      q: "To list every migration file (named like 0042_add_index.migration.sql), the agent runs Glob with db/*.migration.sql and gets 14 files. The team knows of about 60: each service keeps its own db/ folder, such as services/billing/db/, and some keep migrations in subfolders like db/2025/. What should the agent do?",
+      qpt: "Para listar todos os arquivos de migration (com nomes como 0042_add_index.migration.sql), o agente roda Glob com db/*.migration.sql e recebe 14 arquivos. O time sabe de cerca de 60: cada serviço tem a própria pasta db/, como services/billing/db/, e alguns guardam migrations em subpastas como db/2025/. O que o agente deve fazer?",
+      o: [
+        "Use Glob with **/db/**/*.migration.sql, because * stops at one folder level while ** matches any depth.",
+        "Switch to Grep for “migration.sql”, so that every file that mentions the extension anywhere is matched.",
+        "Run the same Glob from each service folder in turn, then add all of the results to one list in context.",
+        "Read the repository root and each db/ folder, then list the migration files that show up in the output."
+      ],
+      opt: [
+        "Usar Glob com **/db/**/*.migration.sql, porque * para num nível de pasta e ** casa qualquer profundidade.",
+        "Trocar para Grep por “migration.sql”, para casar todo arquivo que mencione a extensão em qualquer lugar.",
+        "Rodar o mesmo Glob a partir de cada pasta de serviço e juntar os resultados numa lista no contexto.",
+        "Ler a raiz do repositório e cada pasta db/ e listar os arquivos de migration que aparecerem na saída."
+      ],
+      a: [0],
+      e: "A tool certa com o padrão errado: <code>db/*.migration.sql</code> só casa arquivos direto na pasta <code>db/</code> da raiz, porque <code>*</code> não atravessa pastas. <code>**/db/**/*.migration.sql</code> pega qualquer <code>db/</code> em qualquer profundidade, com as subpastas dele. B volta à busca por conteúdo, que acha menções, não arquivos. C repete o padrão estreito pasta a pasta e ainda perde <code>db/2025/</code>. D gasta leituras com o que um padrão de caminho resolve."
+    },
+    {
+      id: "DP7", s: "DP", d: 2, t: "2.4",
+      q: "An SDK agent uses a remote code-index MCP server whose search_code_index tool is described in detail: semantic search across all 40 repositories, what it returns, and when to prefer it over Grep. Most runs use it well, but in some runs the agent answers cross-repository questions with local Grep only and misses callers in other repositories. What should the team check first?",
+      qpt: "Um agente do SDK usa um MCP server remoto de índice de código, cuja tool search_code_index está descrita em detalhe: busca semântica nos 40 repositórios, o que devolve e quando preferi-la à Grep. A maioria dos runs a usa bem, mas em alguns o agente responde perguntas entre repositórios só com a Grep local e perde chamadores em outros repositórios. O que o time deve checar primeiro?",
+      o: [
+        "Rewrite the tool's description again, with more examples of the cross-repository questions it handles.",
+        "Remove Grep from the agent's tools, so that search_code_index is the only search tool left in every run.",
+        "The mcp_servers status in each run's system init message, looking for failed or needs-auth in bad runs.",
+        "Add a system prompt rule saying that the code index must be used for every search question, in any run."
+      ],
+      opt: [
+        "Reescrever de novo a description da tool, com mais exemplos das perguntas entre repositórios que ela atende.",
+        "Tirar a Grep das tools do agente, para a search_code_index ser a única tool de busca em todo run.",
+        "O status em mcp_servers na mensagem system init de cada run, procurando failed ou needs-auth nos runs ruins.",
+        "Acrescentar ao system prompt uma regra dizendo que o índice deve ser usado em toda pergunta de busca."
+      ],
+      a: [2],
+      e: "A description já é boa e funciona na maioria dos runs; o que varia de um run para outro é a conexão. A mensagem <code>system</code> de subtype <code>init</code> traz o status de cada MCP server (<code>connected</code>, <code>failed</code>, <code>needs-auth</code>, <code>pending</code>), e com o server indisponível o agente recai nas tools nativas. Confirmar a descoberta vem antes de mexer em description ou prompt. A mexe no que não é a causa. B tira a Grep, que segue certa para busca local exata, e não conecta o server. D manda usar uma tool que, nesses runs, nem está disponível."
+    },
+    {
+      id: "DP8", s: "DP", d: 2, t: "2.3",
+      q: "The agent has 26 tools from four MCP servers plus the built-in tools. It increasingly picks the wrong tool, such as calling a Jira search when it needs a code search. Each of its tasks needs only a handful of these tools. Which design change best addresses this?",
+      qpt: "O agente tem 26 tools de quatro MCP servers, mais as tools nativas. Ele escolhe cada vez mais a tool errada, por exemplo uma busca no Jira quando precisa de busca no código. Cada tarefa dele usa só um punhado dessas tools. Qual mudança de desenho resolve melhor?",
+      o: [
+        "Split the work among subagents with focused roles, each given only the few tools that its role actually needs.",
+        "Add a paragraph to the system prompt listing all 26 tools in order, from the most useful to the least useful.",
+        "Force the tool choice on every turn by naming, from the orchestration code, the tool the agent should call next.",
+        "Merge the four MCP servers into one server, so that the agent sees all of the tools under a single namespace."
+      ],
+      opt: [
+        "Dividir o trabalho entre subagents com papéis focados, cada um só com as poucas tools de que o papel precisa.",
+        "Acrescentar ao system prompt um parágrafo listando as 26 tools em ordem, da mais útil à menos útil.",
+        "Forçar a escolha da tool em todo turno, com o código de orquestração nomeando a próxima tool que o agente deve chamar.",
+        "Fundir os quatro MCP servers num só, para o agente ver todas as tools sob um único namespace."
+      ],
+      a: [0],
+      e: "Muitas tools para escolher degradam a seleção. Distribuir as tools por papel — cada subagent com as poucas de que precisa — reduz a escolha e tira a concorrência entre descrições. B alonga o prompt sem tirar opções. C desloca a decisão para código fixo e perde a adaptação do agente. D muda a organização, não o número de tools."
+    },
+    {
+      id: "DP9", s: "DP", d: 1, t: "1.6",
+      q: "An engineer asks: “Explain how authentication works in this legacy system; nobody on the team fully understands it.” The team's chain for other requests runs fixed steps: list the modules, summarize each one, write the overview. Here it summarizes 300 modules and still misses the auth flow, which spans a few files. What approach fits better?",
+      qpt: "Um engenheiro pede: “Explique como a autenticação funciona neste sistema legado; ninguém do time entende direito.” A cadeia que o time usa para outros pedidos roda passos fixos: listar os módulos, resumir cada um, escrever a visão geral. Aqui ela resume 300 módulos e ainda perde o fluxo de autenticação, que passa por poucos arquivos. Que abordagem serve melhor?",
+      o: [
+        "Run the same fixed chain on the auth-related folders only, filtered by a keyword list chosen ahead of time.",
+        "Map the structure first, find the auth entry points, then build and adapt the plan from what each step shows.",
+        "Load the whole repository into one large context window and ask the question once, with all the code in view.",
+        "Run the fixed chain twice, the second time with a longer summary per module, and then compare both overviews."
+      ],
+      opt: [
+        "Rodar a mesma cadeia fixa só nas pastas ligadas a autenticação, filtradas por uma lista de palavras-chave definida antes.",
+        "Mapear a estrutura primeiro, achar os pontos de entrada da autenticação e montar e adaptar o plano pelo que cada passo mostrar.",
+        "Carregar o repositório inteiro numa janela de contexto grande e fazer a pergunta uma vez, com todo o código à vista.",
+        "Rodar a cadeia fixa duas vezes, a segunda com um resumo mais longo por módulo, e comparar as duas visões gerais."
+      ],
+      a: [1],
+      e: "Pergunta aberta sobre um sistema desconhecido pede decomposição <strong>adaptativa</strong>: mapear a estrutura, achar os pontos de entrada e decidir o próximo passo pelo que o passo anterior revelou. A cadeia fixa (prompt chaining) é ótima quando os passos são conhecidos e iguais para cada item — o caso oposto. A presume que você já sabe onde procurar. C dilui a atenção e não cabe num sistema grande. D repete a abordagem que já falhou."
+    },
+    {
+      id: "DP10", s: "DP", d: 5, t: "5.4",
+      q: "In a long session mapping a legacy codebase, the agent writes each finding to notes/findings.md as it goes. After the conversation is compacted, it starts contradicting findings recorded in that file, such as which service owns the session cache, and the logs show it never opens the file again. Which TWO changes help most?",
+      qpt: "Numa sessão longa mapeando uma codebase legada, o agente registra cada achado em notes/findings.md à medida que avança. Depois que a conversa é compactada, ele passa a contradizer achados registrados nesse arquivo, como qual serviço é dono do cache de sessão, e os logs mostram que ele nunca mais abre o arquivo. Quais DUAS mudanças ajudam mais?",
+      o: [
+        "Add a standing instruction to read notes/findings.md at the start of each phase and before any ownership claim.",
+        "Stop using the notes file and keep every finding in the conversation, so that nothing lives outside the context.",
+        "Compact more often, so that each summary covers a shorter stretch of the session and drops fewer details.",
+        "When compacting, pass focus instructions, such as /compact keep the service ownership map and open questions.",
+        "Ask the agent to rate its confidence in each finding, and re-explore only those findings below a 0.7 threshold."
+      ],
+      opt: [
+        "Acrescentar uma instrução fixa para ler notes/findings.md no início de cada fase e antes de afirmar quem é dono de algo.",
+        "Parar de usar o arquivo de notas e manter todo achado na conversa, para nada ficar fora do contexto.",
+        "Compactar com mais frequência, para cada resumo cobrir um trecho menor da sessão e perder menos detalhes.",
+        "Ao compactar, passar instruções de foco, como /compact keep the service ownership map and open questions.",
+        "Pedir ao agente uma nota de confiança para cada achado e reexplorar só os que ficarem abaixo de 0.7."
+      ],
+      a: [0, 3],
+      e: "O scratchpad só ajuda se for <strong>relido</strong>: depois da compactação, o que sobra no contexto é o resumo, e o agente passou a confiar nele em vez do arquivo. Uma instrução fixa para ler <code>notes/findings.md</code> no início de cada fase (A) devolve os achados exatos ao contexto, e instruções de foco no <code>/compact</code> (D) fazem o resumo preservar o que importa. B desfaz a memória estável fora do contexto. C produz mais resumos, não melhores, e cada rodada perde detalhe. E usa autoconfiança não calibrada e não impede a contradição."
+    },
+    {
+      id: "CG6", s: "CG", d: 3, t: "3.4",
+      q: "Every Monday a scheduled claude -p job must study the codebase and propose how to split a growing module, for the tech lead to approve before anyone changes code. Last week the job, which runs with acceptEdits, started editing files in the CI checkout on its own. Which setup fits?",
+      qpt: "Toda segunda-feira um job agendado de claude -p precisa estudar a codebase e propor como dividir um módulo que não para de crescer, para o tech lead aprovar antes de alguém mexer no código. Na semana passada o job, que roda com acceptEdits, começou a editar arquivos no checkout do CI por conta própria. Qual configuração serve?",
+      o: [
+        "Keep acceptEdits and add a final step that reverts any edits once the proposal text has been saved.",
+        "Run it with --permission-mode plan, so that the job explores and returns a plan without file edits.",
+        "Move the job to an interactive session, since plan mode is not available in non-interactive runs.",
+        "Run it with --max-turns 1, so that Claude only has time to describe the change instead of making it."
+      ],
+      opt: [
+        "Manter o acceptEdits e acrescentar um passo final que desfaz as edições depois de salvar o texto da proposta.",
+        "Rodar com --permission-mode plan, para o job explorar e devolver um plano sem editar arquivos.",
+        "Levar o job para uma sessão interativa, já que o plan mode não existe em execuções não interativas.",
+        "Rodar com --max-turns 1, para o Claude só ter tempo de descrever a mudança em vez de fazê-la."
+      ],
+      a: [1],
+      e: "Plan mode é o modo de explorar e propor sem alterar nada, e a mesma flag funciona com <code>-p</code>: <code>claude -p --permission-mode plan</code> devolve o plano, que segue para aprovação humana antes da execução. O critério aqui não é o tamanho da mudança, e sim a exigência de aprovação antes de editar. A deixa as edições acontecerem e depende de desfazê-las. C parte de premissa falsa. D corta a exploração de que a proposta precisa e não impede que o primeiro turno edite."
+    },
+    {
+      id: "CG7", s: "CG", d: 3, t: "3.2",
+      q: "Claude Code may run the migrate script against local and staging databases, but never when DATABASE_URL points to the production host. The team tried a deny rule for the migrate command, but it also blocked local and staging runs. Which mechanism fits?",
+      qpt: "O Claude Code pode rodar o script de migrate contra os bancos local e de staging, mas nunca quando o DATABASE_URL aponta para o host de produção. O time tentou uma regra deny para o comando de migrate, mas ela bloqueou também as execuções local e de staging. Qual mecanismo serve?",
+      o: [
+        "A CLAUDE.md section warning that migrations must never run against the production database host.",
+        "A broader deny rule in .claude/settings.json covering every command that is able to reach the database.",
+        "A skill describing how to check DATABASE_URL, which developers invoke before running any migration.",
+        "A PreToolUse hook in .claude/settings.json that checks the target and blocks the call on production."
+      ],
+      opt: [
+        "Uma seção do CLAUDE.md avisando que migrations nunca devem rodar contra o host de produção.",
+        "Uma regra deny mais ampla no .claude/settings.json, cobrindo todo comando capaz de alcançar o banco.",
+        "Uma skill explicando como checar o DATABASE_URL, que os devs invocam antes de rodar qualquer migration.",
+        "Um hook PreToolUse no .claude/settings.json que checa o alvo e bloqueia a chamada quando é produção."
+      ],
+      a: [3],
+      e: "Proibição <strong>condicional</strong> — depende de para onde o comando aponta — é caso de hook: um <code>PreToolUse</code> configurado no <code>settings.json</code> do projeto roda em toda chamada, inspeciona o alvo e bloqueia só quando é produção, devolvendo o motivo ao Claude. Regra <code>deny</code> serve para o que é sempre proibido; como casa pelo padrão do comando, ela bloqueia também os usos legítimos — o problema relatado, que B amplia. A e C são orientação: o modelo lê e pode não seguir, e a skill ainda depende de alguém lembrar de invocá-la."
+    },
+    {
+      id: "CG8", s: "CG", d: 2, t: "2.4",
+      q: "After pulling the repository, a developer runs /mcp. The team's docs server, defined in the committed .mcp.json, shows a warning that the DOCS_TOKEN variable is not set; the other servers look fine. What is the right fix?",
+      qpt: "Depois de dar pull no repositório, um dev roda /mcp. O server de docs do time, definido no .mcp.json commitado, aparece com um aviso de que a variável DOCS_TOKEN não está definida; os outros servers parecem normais. Qual é a correção certa?",
+      o: [
+        "Set DOCS_TOKEN in their own environment or secret manager, then restart, leaving the .mcp.json unchanged.",
+        "Paste their token into .mcp.json in place of ${DOCS_TOKEN}, and commit it so that teammates get it too.",
+        "Copy the server into their ~/.claude.json with the same ${DOCS_TOKEN} reference, so it loads in user scope.",
+        "Rewrite the docs tool descriptions, so that Claude prefers them over Grep for documentation questions."
+      ],
+      opt: [
+        "Definir DOCS_TOKEN no próprio ambiente ou no gerenciador de segredos e reiniciar, sem mexer no .mcp.json.",
+        "Colar o próprio token no .mcp.json no lugar de ${DOCS_TOKEN} e commitar, para o time também receber.",
+        "Copiar o server para o próprio ~/.claude.json com a mesma referência ${DOCS_TOKEN}, para carregar no escopo de usuário.",
+        "Reescrever as descrições das tools de docs, para o Claude preferi-las ao Grep em perguntas de documentação."
+      ],
+      a: [0],
+      e: "O <code>.mcp.json</code> do projeto é compartilhado e referencia o segredo por variável; cada dev fornece o valor no próprio ambiente. Quando a variável falta, a config carrega com o texto literal, e o <code>/mcp</code> (assim como <code>claude mcp list</code>) avisa qual variável está faltando — então a correção é defini-la e reiniciar. B põe um segredo pessoal no repositório. C muda o escopo, mas a variável continua faltando. D trata como problema de descrição o que é falha de autenticação: o server nem tem credencial."
+    },
+    {
+      id: "CG9", s: "CG", d: 3, t: "3.2",
+      q: "Every file that Claude Code edits must go through the project's formatter right after the edit, with no exceptions. A CLAUDE.md line asking for this is followed most of the time, but formatting-only diffs still show up in reviews. What should the team use?",
+      qpt: "Todo arquivo que o Claude Code edita precisa passar pelo formatter do projeto logo depois da edição, sem exceção. Uma linha no CLAUDE.md pedindo isso é seguida na maior parte das vezes, mas diffs só de formatação continuam aparecendo nos reviews. O que o time deve usar?",
+      o: [
+        "A stronger CLAUDE.md line in capital letters, placed at the very top of the file so Claude reads it first.",
+        "A /format skill that developers invoke at the end of each session to format every file that was touched.",
+        "A PostToolUse hook in the project's settings.json that runs the formatter after each edit or write.",
+        "A rule in .claude/rules/ with a glob for source files, so that the formatting reminder loads near edits."
+      ],
+      opt: [
+        "Uma linha mais enfática no CLAUDE.md, em maiúsculas, no topo do arquivo para o Claude ler primeiro.",
+        "Uma skill /format que os devs invocam no fim de cada sessão para formatar todos os arquivos tocados.",
+        "Um hook PostToolUse no settings.json do projeto que roda o formatter depois de cada edição ou escrita.",
+        "Uma rule em .claude/rules/ com glob para arquivos de código, para o lembrete de formatação carregar perto das edições."
+      ],
+      a: [2],
+      e: "Ação que precisa acontecer <strong>sempre</strong>, a cada evento, é hook: um <code>PostToolUse</code> configurado no <code>settings.json</code> roda o formatter de forma determinística depois de cada Edit/Write, sem depender de o modelo lembrar. A e D são texto que o modelo pode deixar de seguir — que é o problema atual. B depende de alguém lembrar de invocar a skill."
+    },
+    {
+      id: "CG10", s: "CG", d: 1, t: "1.3",
+      q: "A code-reviewer subagent in .claude/agents/reviewer.md lists tools: Read, Grep, Glob in its frontmatter. The team now wants it to confirm each fix by running the test suite, but it replies that it cannot run commands and asks the main session to run them. It must still not get the Edit or Write tools. What should change?",
+      qpt: "Um subagent de code review em .claude/agents/reviewer.md lista tools: Read, Grep, Glob no frontmatter. O time agora quer que ele confirme cada correção rodando a suíte de testes, mas ele responde que não consegue rodar comandos e pede à sessão principal que rode. Ele continua sem poder ter as tools Edit e Write. O que deve mudar?",
+      o: [
+        "Tell the reviewer in its prompt that it is allowed to run the tests with Bash whenever it needs to.",
+        "Start the main session with --allowedTools \"Bash\", so that the reviewer can run commands without asking.",
+        "Remove the tools line from the frontmatter, so that the reviewer inherits all of the available tools.",
+        "Add Bash to the reviewer's tools list, keeping Edit and Write out of it, so it can run the test suite."
+      ],
+      opt: [
+        "Dizer ao revisor, no prompt dele, que ele pode rodar os testes com Bash sempre que precisar.",
+        "Abrir a sessão principal com --allowedTools \"Bash\", para o revisor rodar comandos sem pedir permissão.",
+        "Tirar a linha tools do frontmatter, para o revisor herdar todas as tools disponíveis.",
+        "Acrescentar Bash à lista tools do revisor, mantendo Edit e Write de fora, para ele rodar a suíte de testes."
+      ],
+      a: [3],
+      e: "O campo <code>tools</code> do subagent define quais tools ele <strong>tem</strong>: sem Bash na lista, nenhuma instrução (A) nem pré-aprovação (B) o faz rodar comandos — <code>--allowedTools</code> só pré-aprova o que já está disponível. A correção é acrescentar Bash à lista, mantendo Edit e Write de fora. C vai ao outro extremo: sem <code>tools</code>, o subagent herda todas as tools disponíveis, inclusive as de edição. Ressalva: Bash também consegue mudar arquivos (<code>sed -i</code>, <code>mv</code>, <code>rm</code>; aula 08) — para o revisor continuar sem escrever, restrinja o Bash ao comando de teste com regras de permissão (ex.: allow só <code>Bash(npm test)</code>) ou um hook <code>PreToolUse</code>."
     }
   ]
 };

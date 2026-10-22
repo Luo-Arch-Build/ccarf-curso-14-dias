@@ -112,6 +112,9 @@ configuração ou desenho — + alternativas plausíveis (4 na múltipla escolha
 marcar). A resposta certa quase sempre é
 a que ataca a <strong>causa raiz</strong> com a solução <strong>proporcional</strong> — nem remendo cosmético, nem
 over-engineering. Guarde isso: ele reaparece em todas as aulas.</p>
+<p>Sobre a múltipla resposta: o guia prevê questões do tipo "select TWO", e o curso mantém algumas para treino.
+Mas um candidato que já fez a prova relatou ter visto só questões de resposta única. Um relato não prova nada:
+treine os dois formatos, mas não conte com a múltipla resposta aparecendo, nem estranhe se ela não vier.</p>
 
 <h2>2. O agentic loop (Task Statement 1.1)</h2>
 <p>Um agente não é "uma chamada à API". É um <strong>loop</strong>: o modelo raciocina, pede uma tool,
@@ -140,6 +143,49 @@ recebe o resultado, raciocina de novo — até decidir que terminou. O ciclo de 
     messages.append({"role": "assistant", "content": response.content})
     messages.append({"role": "user", "content": results})   # tool_result blocks</code></pre>
 
+<h3>Os outros valores de <code>stop_reason</code></h3>
+<p>O guia fala de <code>"tool_use"</code> e <code>"end_turn"</code>, mas a API documenta mais cinco. O loop
+precisa saber o que fazer com cada um, porque nenhum deles é "terminei com sucesso":</p>
+<table class="gloss">
+  <tr><th>stop_reason</th><th>O que aconteceu</th><th>O que o loop faz</th></tr>
+  <tr><td class="en">tool_use</td><td>o modelo pediu uma ou mais tools</td><td class="uso">executa todas e devolve os resultados; continua</td></tr>
+  <tr><td class="en">end_turn</td><td>resposta final</td><td class="uso">encerra e entrega</td></tr>
+  <tr><td class="en">max_tokens</td><td>a saída bateu no limite e veio cortada</td><td class="uso">trata como incompleta (aula 10: dividir a tarefa)</td></tr>
+  <tr><td class="en">stop_sequence</td><td>apareceu uma sequência de parada que você configurou</td><td class="uso">segue a regra que você definiu para ela</td></tr>
+  <tr><td class="en">pause_turn</td><td>o loop de server tools do lado da API (ex.: busca web) atingiu o limite de iterações</td><td class="uso">devolve a resposta como está, num novo request, para o modelo continuar</td></tr>
+  <tr><td class="en">refusal</td><td>o modelo recusou (HTTP 200, não é erro; o motivo vem em <code>stop_details</code>)</td><td class="uso">não repete o mesmo request em loop; lê <code>stop_details</code> e trata como recusa ou tenta outro modelo</td></tr>
+  <tr><td class="en">model_context_window_exceeded</td><td>a geração parou porque a janela de contexto do modelo encheu</td><td class="uso">trata como saída truncada, igual a <code>max_tokens</code>: não usa o resultado como se estivesse completo</td></tr>
+</table>
+<p>Regra de bolso: <em><code>"end_turn"</code> encerra com resposta pronta e só <code>"tool_use"</code> pede
+execução de tool; os demais pedem tratamento próprio, nunca "sucesso" nem um retry cego. O caso oposto:
+um <code>"stop_sequence"</code> que você mesmo definiu como delimitador de fim também entrega resposta completa.</em></p>
+
+<h3>Várias tool calls numa única resposta</h3>
+<p>Uma mesma resposta do modelo pode trazer <strong>vários blocos <code>tool_use</code></strong>: por exemplo,
+<code>lookup_order</code> para dois pedidos diferentes. É assim que o loop paraleliza subtarefas independentes e
+economiza idas e voltas à API. O contrato:</p>
+<ul>
+  <li>Execute <strong>todos</strong> os blocos (em paralelo, se forem independentes).</li>
+  <li>Devolva <strong>todos</strong> os <code>tool_result</code> numa <strong>única mensagem <code>user</code></strong>,
+      cada um com o <code>tool_use_id</code> do bloco a que responde. O loop acima já faz isso: a lista
+      <code>results</code> vai inteira numa mensagem só.</li>
+  <li>Tool que falhou continua tendo resultado: <code>tool_result</code> com <code>"is_error": true</code> e a
+      mensagem do erro. Omitir o resultado quebra o histórico: um <code>tool_use</code> sem <code>tool_result</code> correspondente faz a
+      API rejeitar o request seguinte com erro 400.</li>
+</ul>
+<pre><code>{"role": "user", "content": [
+  {"type": "tool_result", "tool_use_id": "toolu_01A", "content": "{\"order\": 4471, \"status\": \"shipped\"}"},
+  {"type": "tool_result", "tool_use_id": "toolu_01B", "content": "order not found", "is_error": true}
+]}</code></pre>
+<p>Erro comum, citado na documentação: mandar cada <code>tool_result</code> numa mensagem <code>user</code>
+separada. A API aceita, mas o histórico passa a mostrar uma chamada por vez, e isso "ensina" o modelo a parar de
+fazer chamadas paralelas. Para limitar de propósito, use <code>disable_parallel_tool_use: true</code> no
+<code>tool_choice</code>: com <code>"auto"</code>, no máximo uma tool por resposta; com <code>"any"</code> ou tool
+forçada, exatamente uma.</p>
+<p>Regra de bolso: <em>subtarefas independentes → deixe o modelo pedir várias tools na mesma resposta e devolva
+tudo junto; quando uma depende do resultado da outra, ela vem naturalmente no turno seguinte, e serializar é o
+certo.</em></p>
+
 <h3>O ponto conceitual que a prova cobra</h3>
 <p>A decisão de <em>qual</em> tool chamar e <em>quando parar</em> é <strong>model-driven</strong>: o próprio Claude
 raciocina sobre o contexto e escolhe o próximo passo. Isso é o oposto de uma <strong>decision tree</strong>
@@ -163,6 +209,8 @@ como arquiteto é dar a ele boas tools, bom contexto e boas barreiras.</p>
   <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
   <tr><td class="en">agentic loop</td><td>loop agêntico (ciclo raciocinar→tool→resultado)</td><td class="uso">"the agentic loop continues while stop_reason is tool_use"</td></tr>
   <tr><td class="en">stop_reason</td><td>motivo de parada da resposta</td><td class="uso">"terminate the loop when stop_reason is end_turn"</td></tr>
+  <tr><td class="en">parallel tool calls</td><td>várias tool calls na mesma resposta</td><td class="uso">"emit multiple tool calls within a single response turn"</td></tr>
+  <tr><td class="en">tool_use_id</td><td>id que liga cada resultado ao bloco tool_use dele</td><td class="uso">"return each tool_result with its matching tool_use_id"</td></tr>
   <tr><td class="en">tool_use / end_turn</td><td>pedido de tool / fim de turno</td><td class="uso">"handle both tool_use and end_turn stop reasons"</td></tr>
   <tr><td class="en">tool result</td><td>resultado da tool (devolvido ao histórico)</td><td class="uso">"append tool results to the conversation history"</td></tr>
   <tr><td class="en">model-driven decision-making</td><td>decisão guiada pelo modelo (não por fluxo fixo)</td><td class="uso">"model-driven routing vs a pre-configured decision tree"</td></tr>
@@ -255,6 +303,20 @@ como arquiteto é dar a ele boas tools, bom contexto e boas barreiras.</p>
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: D.</strong> Resposta final sem pedidos de tool = <code>"end_turn"</code>: o loop termina e a resposta vai ao cliente. A inverte a lógica: se houvesse tool pendente, o <code>stop_reason</code> seria <code>"tool_use"</code> — isso não se infere do texto. B descreve outro sintoma (<code>"max_tokens"</code> = saída truncada pelo limite), que não é o caso. C não tem relação com o cenário: <code>"stop_sequence"</code> só aparece quando você configura sequências de parada, e reiniciar o loop arriscaria repetir o reembolso.<span class="ts">Domínio 1 · TS 1.1 — Loop agêntico</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="1.1" data-dom="1">
+  <div class="qnum">Questão 6 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">Early in development, your research agent often requested web_search for three subtopics in one response. Since then the team changed three things: each tool_result is now appended as its own user message as soon as it finishes, turns older than 20 messages are trimmed, and the web_search description was shortened. Over later turns the agent starts requesting one search per turn, and total latency triples. Which change most likely caused it?</div>
+  <div class="pt-block pt">No começo do desenvolvimento, seu agente de pesquisa costumava pedir web_search para três subtópicos numa só resposta. Desde então o time mudou três coisas: cada tool_result passou a ser anexado como uma mensagem user própria assim que termina, turnos com mais de 20 mensagens de idade são cortados, e a descrição da web_search foi encurtada. Nos turnos seguintes o agente passa a pedir uma busca por turno, e a latência total triplica. Qual mudança é a causa mais provável?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q6" value="a">A. The shorter web_search description, which left the model unsure which subtopic to search first.<div class="pt">A descrição mais curta da web_search, que deixou o modelo sem saber qual subtópico buscar primeiro.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="b">B. Trimming old turns, which removed the earlier examples of the agent issuing several searches at once.<div class="pt">O corte dos turnos antigos, que removeu os exemplos anteriores do agente pedindo várias buscas de uma vez.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="c">C. Appending each result in its own user message, which shows the model one call per turn.<div class="pt">Anexar cada resultado numa mensagem user própria, o que mostra ao modelo uma chamada por turno.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. None of them: parallel tool use is off by default and needs an explicit instruction in the prompt.<div class="pt">Nenhuma delas: o uso paralelo de tools vem desligado por padrão e exige uma instrução explícita no prompt.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Todos os <code>tool_result</code> de uma resposta vão numa <strong>única</strong> mensagem <code>user</code>, cada um com seu <code>tool_use_id</code>. Separados, o histórico mostra uma chamada por vez, e o modelo passa a imitar esse padrão; a documentação da API cita esse erro de formatação como a causa mais comum de o modelo parar de paralelizar. A mexe na seleção da tool, não no formato das chamadas: uma descrição mais curta pode piorar a escolha, mas não ensina a pedir uma busca por turno. B ataca o sintoma errado: cortar turnos antigos não muda o padrão que os turnos recentes mostram, e são eles, com um resultado por mensagem, que o modelo imita. D inverte o default: o paralelismo vem ligado, e o agente já paralelizava no começo; <code>disable_parallel_tool_use</code> serve para <em>desligar</em>.<span class="ts">Domínio 1 · TS 1.1 — Loop agêntico</span></div>
 </div>
 
 <div class="concluir">

@@ -195,6 +195,34 @@ de teste espalhados pelo codebase → a resposta é <code>.claude/rules/</code> 
 porque é o único mecanismo que aplica a convenção <em>deterministamente pelo path do arquivo</em>.</p>
 
 <h2>4. Mapa de decisão rápido</h2>
+<p><strong>Orientação × garantia.</strong> Tudo o que esta aula ensinou (CLAUDE.md, <code>@import</code>,
+rules) é <strong>contexto</strong>: o modelo lê e tende a seguir, mas segue de forma probabilística. Quando a
+exigência é "isso <em>nunca</em> pode acontecer", o mecanismo é outro e fica no <code>settings.json</code>
+(usuário <code>~/.claude/settings.json</code>, projeto <code>.claude/settings.json</code> versionado, local
+<code>.claude/settings.local.json</code>), aplicado pelo próprio Claude Code, não pelo modelo:</p>
+<ul>
+  <li><strong>Regras de permissão</strong> (<code>permissions.deny</code> / <code>ask</code> / <code>allow</code>):
+      avaliadas na ordem <strong>deny → ask → allow</strong> — um <code>deny</code> vence qualquer <code>allow</code>.
+      Entre arquivos, a precedência é managed &gt; linha de comando &gt; local &gt; projeto &gt; usuário, e as listas
+      de regras se <em>somam</em> entre eles em vez de uma substituir a outra.</li>
+  <li><strong>Hooks</strong> (ação determinística num evento, ex.: validar o comando antes de rodar, formatar depois
+      de editar): também se configuram no <code>settings.json</code> — e ainda em plugins e no frontmatter de skills
+      e de subagents.</li>
+</ul>
+<pre><code>// .claude/settings.json  (commitado: vale para o time todo)
+{
+  "permissions": {
+    "deny": ["Read(**/.env)", "Read(./secrets/**)", "Bash(terraform apply:*)"]
+  }
+}</code></pre>
+<p>Regra de bolso: <em>o que o Claude deve saber ou considerar vai no CLAUDE.md/rules; o que não pode acontecer
+de jeito nenhum, decida o modelo o que decidir, vai num <code>deny</code> do settings.json ou num hook. O inverso
+também vale: convenção de estilo ou de nomes não cabe em <code>deny</code> nem em hook — não há comando para
+bloquear; ela é orientação e mora no CLAUDE.md. E o deny tem alcance: cobre as tools nativas e os comandos que o
+Claude Code reconhece (<code>cat</code>, <code>head</code>, redirecionamentos), não um script Python ou Node que abre o
+arquivo por conta própria — bloqueio no nível do sistema operacional pede o sandbox.</em></p>
+<p>Detalhe de sintaxe: <code>Read(./.env)</code> casa só com o <code>.env</code> do diretório atual; para todos os
+<code>.env</code> do repositório, use <code>Read(**/.env)</code>.</p>
 <table class="gloss">
   <tr><th>Situação</th><th>Mecanismo certo</th></tr>
   <tr><td>Preferência pessoal sua, todos os projetos</td><td><code>~/.claude/CLAUDE.md</code> (não versionado — nunca para regras do time)</td></tr>
@@ -203,6 +231,8 @@ porque é o único mecanismo que aplica a convenção <em>deterministamente pelo
   <tr><td>CLAUDE.md gigante demais</td><td>Quebrar em <code>.claude/rules/*.md</code> e/ou <code>@import</code> (organização); para cortar contexto, <code>paths:</code> com glob nas rules específicas</td></tr>
   <tr><td>Convenção por tipo de arquivo, espalhado pelo repo</td><td><code>.claude/rules/</code> com <code>paths:</code> glob no frontmatter</td></tr>
   <tr><td>Comportamento inconsistente entre sessões</td><td><code>/memory</code> para ver o que está carregado</td></tr>
+  <tr><td>Bloquear sempre um comando ou arquivo (garantia, não orientação)</td><td>Regra <code>deny</code> em <code>permissions</code> no <code>.claude/settings.json</code> (ou hook)</td></tr>
+  <tr><td>Ação automática em todo evento (ex.: formatar após cada edição)</td><td>Hook configurado no <code>settings.json</code></td></tr>
 </table>
 
 <h2>5. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
@@ -219,6 +249,7 @@ porque é o único mecanismo que aplica a convenção <em>deterministamente pelo
   <tr><td class="en">conditional loading</td><td>carregamento só ao editar arquivo que dá match</td><td class="uso">"path-scoped rules load only when editing matching files"</td></tr>
   <tr><td class="en">/memory</td><td>comando que lista os arquivos de memória carregados</td><td class="uso">"use /memory to verify which memory files are loaded"</td></tr>
   <tr><td class="en">directory-bound</td><td>preso ao diretório (limitação do CLAUDE.md de subpasta)</td><td class="uso">"CLAUDE.md files are directory-bound and can't handle files spread across many directories"</td></tr>
+  <tr><td class="en">settings permissions (deny rule)</td><td>regra de permissão no settings.json que bloqueia tool, comando ou arquivo</td><td class="uso">"add a deny rule to .claude/settings.json so the command is blocked for everyone"</td></tr>
   <tr><td class="en">version control (VCS)</td><td>controle de versão (git)</td><td class="uso">"shared via version control"</td></tr>
 </table>
 
@@ -304,6 +335,20 @@ porque é o único mecanismo que aplica a convenção <em>deterministamente pelo
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: D.</strong> O guide lista <code>/memory</code> como a ferramenta para verificar quais arquivos estão carregados e diagnosticar comportamento inconsistente entre sessões — diagnóstico antes de reescrita. A busca texto solto sem mostrar o que a sessão carregou. B é superstição: não existe "cache corrompido" de CLAUDE.md nesse modelo. C confia em auto-relato do modelo em vez da fonte estrutural de verdade.<span class="ts">Domínio 3 · TS 3.1 — Hierarquia e organização do CLAUDE.md</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="3.1" data-dom="3">
+  <div class="qnum">Questão 6 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">Team policy says Claude Code must never read the repository's .env files or run terraform apply. The rule is written in the project CLAUDE.md, yet in one session Claude ran terraform apply while fixing an infrastructure bug. Which change enforces the policy for every engineer on the team?</div>
+  <div class="pt-block pt">A política do time diz que o Claude Code nunca pode ler os arquivos .env do repositório nem rodar terraform apply. A regra está escrita no CLAUDE.md do projeto, mas numa sessão o Claude rodou terraform apply enquanto corrigia um bug de infraestrutura. Qual mudança garante a política para todos os engenheiros do time?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q6" value="a">A. Move the rule to the top of CLAUDE.md in capital letters, so that it is the first instruction of every session.<div class="pt">Mover a regra para o topo do CLAUDE.md em letras maiúsculas, para ela ser a primeira instrução de toda sessão.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="b">B. Add the rule to each engineer's ~/.claude/CLAUDE.md, so that it applies in every project they open.<div class="pt">Adicionar a regra ao ~/.claude/CLAUDE.md de cada engenheiro, para ela valer em todo projeto que abrirem.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="c">C. Add deny rules for the .env reads and the terraform apply command to the committed .claude/settings.json.<div class="pt">Adicionar regras deny para a leitura dos .env e para o comando terraform apply no .claude/settings.json commitado.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. Create a .claude/rules/ file with paths: ["**/*.tf"] that repeats the ban whenever Terraform files are edited.<div class="pt">Criar um arquivo em .claude/rules/ com paths: ["**/*.tf"] que repete a proibição sempre que arquivos Terraform forem editados.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> "Nunca" pede garantia, e CLAUDE.md é orientação: o modelo lê e costuma seguir, mas já mostrou que pode não seguir. Uma regra <code>deny</code> em <code>permissions</code> é aplicada pelo próprio Claude Code antes da tool rodar, vence qualquer <code>allow</code> e, no <code>.claude/settings.json</code> versionado, chega ao time inteiro pelo git (o deny cobre as tools e os comandos que o Claude Code reconhece; leitura indireta por um script próprio pede o sandbox). A é o mesmo mecanismo probabilístico com mais ênfase. B usa um arquivo pessoal que não viaja pelo VCS e continua sendo orientação. D carrega a regra só ao editar <code>.tf</code> — o <code>terraform apply</code> é um comando, não uma edição — e ainda é contexto, não bloqueio.<span class="ts">Domínio 3 · TS 3.1 — Hierarquia e organização do CLAUDE.md</span></div>
 </div>
 
 <div class="concluir">

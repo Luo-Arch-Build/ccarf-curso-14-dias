@@ -173,14 +173,23 @@ por campo</strong>.</p>
   <li><strong>Calibração com validation set rotulado</strong>: os scores brutos do modelo não são
       probabilidades reais. Use um conjunto de validação rotulado para calibrar os thresholds de
       roteamento (ex.: "abaixo de 0,82 no campo <code>valor_total</code> → fila humana").</li>
-  <li><strong>Roteamento</strong>: extrações <strong>low-confidence</strong> e documentos
-      <strong>ambíguos ou contraditórios</strong> vão para revisão humana — priorizando a capacidade
-      limitada dos revisores onde o modelo é fraco.</li>
+  <li><strong>Roteamento</strong>: quem decide o que vai para revisão humana é a <strong>confiança calibrada
+      por campo</strong>, as <strong>características do documento</strong> (tipo, escaneado ou manuscrito, segmento
+      com acurácia baixa) e a <strong>ambiguidade do campo</strong> (valor ilegível, fontes contraditórias no
+      próprio documento) — priorizando a capacidade limitada dos revisores onde o modelo é fraco.</li>
   <li><strong>Stratified random sampling</strong>: mesmo as extrações <em>high-confidence</em> (que vão
       direto, sem revisão) precisam de amostragem aleatória estratificada contínua — por tipo de
-      documento e campo — para medir a taxa de erro real e <strong>detectar padrões de erro novos</strong>
+      documento e campo — para <strong>medir</strong> a taxa de erro real e <strong>detectar padrões de erro novos</strong>
       que o threshold não captura.</li>
 </ol>
+
+<p><strong>Rotear × medir: são duas funções diferentes.</strong> A amostragem aleatória <strong>mede</strong>: é o
+controle de qualidade dos auto-aprovados, e por ser aleatória ela olha justamente o que a confiança não
+apontou. Ela <strong>não roteia</strong>: mandar para a fila uma fatia aleatória de tudo gasta a capacidade dos
+revisores com extrações certas e deixa passar os erros concentrados num tipo de documento ou num campo.
+Regra de bolso: <em>a fila de revisão é alimentada por confiança calibrada, tipo de documento e ambiguidade
+do campo — não por sorteio; e o sorteio estratificado continua existindo, numa fatia pequena, para medir os
+auto-aprovados e recalibrar os thresholds.</em></p>
 
 <pre><code>{
   "document_type": "contrato_manuscrito",
@@ -400,6 +409,20 @@ formato natural dele — uniformidade de formato não é virtude.</em></p>
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: A e D.</strong> TS 5.6: a análise termina com os valores conflitantes incluídos e anotados com suas fontes, e quem decide a reconciliação é o coordinator, antes da síntese (A) — abortar por "dados inconsistentes" joga fora evidência legítima. E o relatório separa em seções explícitas o que está estabelecido do que é contestado, preservando como cada fonte caracterizou o achado (D). B escolhe um valor por heurística e apaga a divergência que o leitor precisava ver. C e E aplicam o mesmo tratamento a tudo: um aviso genérico ou um "pode" uniforme continuam sem dizer ao leitor qual achado é sólido e qual é disputado. <span class="ts">Domínio 5 · TS 5.6 — Proveniência e incerteza na síntese</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="5.5" data-dom="5">
+  <div class="qnum">Questão 9 · múltipla escolha <span class="cenario">Structured Data Extraction</span></div>
+  <div class="stem">Your extraction pipeline processes about 10,000 invoices a day, and the review team can check about 300 of them. Today a random 3% of all extractions goes to the review queue. Audits show that the errors reaching production are concentrated in scanned multi-currency invoices and in the tax_id field when it is partly illegible. How should the 300 daily reviews be allocated?</div>
+  <div class="pt-block pt">Seu pipeline de extração processa cerca de 10.000 faturas por dia, e o time de revisão consegue conferir cerca de 300. Hoje, 3% aleatórios de todas as extrações vão para a fila de revisão. Auditorias mostram que os erros que chegam à produção se concentram em faturas escaneadas com várias moedas e no campo tax_id quando ele está parcialmente ilegível. Como as 300 revisões diárias devem ser alocadas?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q9" value="a">A. Raise the random share from 3% to 5% of all extractions, so that more of the concentrated errors get caught.<div class="pt">Subir a fatia aleatória de 3% para 5% de todas as extrações, para pegar mais dos erros concentrados.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="b">B. Use the model's self-reported per-field confidence as a calibrated score and queue every field below 0.8.<div class="pt">Usar a confiança por campo autorrelatada pelo modelo como score calibrado e mandar à fila todo campo abaixo de 0,8.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="c">C. Route by calibrated per-field confidence and document traits; keep a small stratified sample to measure the rest.<div class="pt">Rotear por confiança calibrada por campo e por características do documento; manter uma pequena amostra estratificada para medir o resto.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="d">D. Send every scanned multi-currency invoice to review and stop reviewing all other document types.<div class="pt">Mandar toda fatura escaneada com várias moedas para revisão e parar de revisar todos os outros tipos de documento.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Amostragem aleatória mede a taxa de erro; ela não sabe <em>onde</em> o erro está. Com capacidade para 300 revisões, a fila tem que ir para onde o erro se concentra: confiança calibrada por campo (o <code>tax_id</code> parcialmente ilegível), características do documento (escaneada, várias moedas) e ambiguidade do campo. Uma fatia pequena de amostragem estratificada fica para medir os auto-aprovados e achar padrões novos. A estoura a capacidade (5% = 500 revisões) e continua espalhando o esforço às cegas. B chama de calibrado um autorrelato que ninguém mediu: calibrar exige comparar a confiança com um conjunto de validação rotulado, e o autorrelato costuma errar justamente nos casos difíceis. D acerta um segmento, mas zera a medição de todo o resto — um erro novo em outro tipo de documento passa despercebido.<span class="ts">Domínio 5 · TS 5.5 — Revisão humana e calibração de confiança</span></div>
 </div>
 
 <div class="concluir">

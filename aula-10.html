@@ -94,7 +94,8 @@
 <div class="card objetivo">
   <strong>🎯 Objetivo do dia.</strong> Dominar os Task Statements <strong>4.3</strong> e <strong>4.4</strong>:
   por que <code>tool_use</code> com JSON schema é a forma mais confiável de obter saída estruturada
-  (e o que ele <em>não</em> garante), como desenhar schemas que não induzem o modelo a fabricar dados,
+  (e o que ele <em>não</em> garante), quando prompt ou prefill bastam, por que saída truncada se resolve dividindo a
+  tarefa e não aumentando <code>max_tokens</code>, como desenhar schemas que não induzem o modelo a fabricar dados,
   e como montar o loop de validação → retry com feedback de erro — incluindo saber quando retry é inútil.
 </div>
 
@@ -102,9 +103,8 @@
 <p>O jeito ingênuo de extrair dados estruturados é pedir no prompt "responda APENAS com JSON válido" e fazer
 <code>json.loads()</code> na saída de texto. Em produção isso quebra: o modelo embeleza o JSON com
 markdown (<code>```json</code>), adiciona frase antes ("Aqui está a extração:"), solta trailing comma.
-Cada quebra é uma exceção no seu pipeline. (Saída cortada por <code>max_tokens</code> é outro problema: tool_use não
-resolve, porque o bloco <code>tool_use</code> também pode vir incompleto, com <code>stop_reason: "max_tokens"</code> — a correção é
-aumentar <code>max_tokens</code> ou dividir a tarefa.)</p>
+Cada quebra é uma exceção no seu pipeline. (Saída <em>cortada</em> por <code>max_tokens</code> é outro problema, que
+tool_use não resolve: veja "Saída truncada" no fim desta seção.)</p>
 <p>A abordagem mais confiável — e a resposta padrão da prova para esse sintoma — é definir uma
 <strong>tool de extração</strong> cujo <code>input_schema</code> é o seu JSON schema. O modelo preenche os
 parâmetros da tool e a API devolve um bloco <code>tool_use</code> com o <code>input</code> já estruturado e
@@ -164,6 +164,65 @@ data = next(b.input for b in resp.content if b.type == "tool_use")</code></pre>
   </ul>
   <em>Na prova, responda como o guia: "any" quando o tipo do documento é desconhecido; forced para garantir que uma extração específica rode antes.</em>
 </div>
+
+<h3>Três métodos, um critério: quanto de conformidade você precisa</h3>
+<p>O objetivo oficial pede para escolher o método de saída estruturada <strong>pela exigência de conformidade ao
+schema</strong>. Do menos ao mais confiável:</p>
+<table class="gloss">
+  <tr><th>Método</th><th>O que garante</th><th>Quando basta</th></tr>
+  <tr>
+    <td><strong>Formatação pedida no prompt</strong> ("responda só com JSON neste formato", com um exemplo)</td>
+    <td>Nada: reduz a variação, mas o modelo ainda pode pôr preâmbulo, markdown ou esquecer um campo</td>
+    <td>Um humano lê a saída, ou o consumidor tolera falha ocasional</td>
+  </tr>
+  <tr>
+    <td><strong>Resposta pré-preenchida (prefill)</strong>: você escreve o começo da resposta do assistant, por exemplo <code>{</code></td>
+    <td>Que a resposta começa no objeto: somem o preâmbulo e o markdown. Não garante campos, tipos nem o fechamento do JSON</td>
+    <td>O parser precisa de JSON puro, mas aceita variação nos campos</td>
+  </tr>
+  <tr>
+    <td><strong>Tool use com JSON schema</strong> (com <code>strict: true</code>)</td>
+    <td>Estrutura imposta pela camada de tool; com <code>strict: true</code>, o input sai conforme o schema</td>
+    <td>Um sistema consome a saída e rejeita qualquer desvio</td>
+  </tr>
+</table>
+<pre><code>messages = [
+  {"role": "user", "content": "Extract the invoice fields as a JSON object:\n" + document},
+  {"role": "assistant", "content": "{"}         # prefill: a resposta começa no objeto
+]
+resp = client.messages.create(model=..., max_tokens=1024, messages=messages)
+data = json.loads("{" + resp.content[0].text)    # o "{" do prefill não volta na resposta</code></pre>
+<p>Regra de bolso: <em>quanto mais o consumidor rejeita desvio, mais para baixo na tabela. O inverso também vale: se
+um humano lê a saída, tool use com schema é custo sem ganho, e o prompt basta.</em></p>
+
+<div class="card" style="border-left: 3px solid var(--accent2);">
+  <strong>🧭 Prova × produto atual</strong> <span style="color:var(--muted);font-size:12.5px">(documentação da API Claude conferida em 22/10/2026)</span>
+  <ul>
+    <li><strong>Prefill não é suportado</strong> nos modelos Claude 4.6 e posteriores (o que inclui Opus 5.5 e Sonnet 5.5) nem no Claude Mythos Preview: a request com a última mensagem do assistant pré-preenchida devolve erro 400.</li>
+    <li>O substituto é a <strong>saída estruturada</strong> (<code>output_config.format</code> com <code>type: "json_schema"</code>) ou instruções no system prompt.</li>
+  </ul>
+  <em>Na prova, responda pela hierarquia do objetivo: prompt &lt; prefill &lt; tool use com JSON schema, escolhendo pela exigência de conformidade.</em>
+</div>
+
+<h3>Saída truncada: dividir a tarefa, não inflar max_tokens</h3>
+<p>Sintoma: a resposta para com <code>stop_reason: "max_tokens"</code> e o bloco <code>tool_use</code> vem incompleto
+(o array de findings cortado no meio). Schema e tool use não ajudam: a estrutura estava certa, o espaço acabou. A
+resposta do objetivo oficial é <strong>dividir a tarefa grande em chamadas menores, cada uma com escopo próprio</strong>
+(um arquivo do PR, uma seção do contrato, um lote de páginas), com o mesmo schema, e <strong>juntar as estruturas no
+código</strong>: concatenar os arrays, deduplicar por chave, recalcular totais.</p>
+<pre><code>findings = []
+for part in split_by_file(pr_diff):                # escopo menor por chamada
+    resp = review(part, tools=[report_findings])    # mesmo schema em todas
+    if resp.stop_reason == "max_tokens":
+        ...                                         # a parte ainda é grande: dividir de novo
+    findings += tool_input(resp)["findings"]
+report = dedupe(findings, key=("file", "line", "issue"))</code></pre>
+<p>Por que aumentar <code>max_tokens</code> é o distrator: o teto de saída do modelo é finito, a saída cresce com o
+tamanho da entrada, e o próximo PR maior estoura de novo; uma resposta enorme demora mais e, quando corta, perde tudo
+de uma vez. O caso oposto existe: se a saída tem tamanho previsível e passou pouco de um limite configurado baixo (um
+objeto de 1.500 tokens com <code>max_tokens</code> em 1024), subir o limite é o ajuste certo. Regra de bolso:
+<em>saída que cresce com a entrada → dividir em chamadas com escopo e juntar no código; limite baixo para uma saída de
+tamanho fixo → subir <code>max_tokens</code>.</em></p>
 
 <h2>2. Schema estrito NÃO impede erros semânticos</h2>
 <p>Distinção que a prova cobra sem dó: tool_use com schema elimina <strong>erros de sintaxe</strong>
@@ -250,6 +309,8 @@ por ele e só então mexa no prompt.</em></p>
   <tr><td class="en">detected_pattern</td><td>campo que registra o padrão que disparou o finding</td><td class="uso">"track detected_pattern to analyze dismissal patterns"</td></tr>
   <tr><td class="en">conflict_detected</td><td>flag booleano de inconsistência na fonte</td><td class="uso">"extract calculated_total alongside stated_total and flag conflict_detected"</td></tr>
   <tr><td class="en">format normalization rules</td><td>regras de normalização de formato (no prompt)</td><td class="uso">"include format normalization rules in prompts alongside strict output schemas"</td></tr>
+  <tr><td class="en">prefilled response (prefill)</td><td>resposta pré-preenchida (você escreve o começo da resposta do assistant)</td><td class="uso">"prefill the assistant response with an opening brace"</td></tr>
+  <tr><td class="en">output truncation</td><td>saída truncada (cortada por max_tokens)</td><td class="uso">"split large review tasks into smaller scoped calls rather than increasing max_tokens"</td></tr>
   <tr><td class="en">dismissal pattern</td><td>padrão dos findings descartados pelos devs</td><td class="uso">"analyze which constructs trigger dismissed findings"</td></tr>
 </table>
 
@@ -381,6 +442,34 @@ por ele e só então mexa no prompt.</em></p>
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: A.</strong> Schema estrito garante a forma (é um número), não a leitura correta do documento. Quando a fonte usa formatos inconsistentes, o guia manda pôr <strong>regras de normalização no prompt, junto do schema</strong>, com exemplos dos casos ambíguos (TS 4.3): o modelo aprende a ler "1.250,00" como 1250.00 <em>antes</em> de preencher o campo. B é a ferramenta certa no contexto errado: hook PostToolUse normaliza dado que já chega correto de uma tool (TS 1.5); aqui o erro nasce na leitura do documento, e depois que o valor virou 1.25 nenhum hook sabe que era 1250. C confunde forma com conteúdo: um mínimo arbitrário quebra notas legítimas de valor baixo e um pattern não detecta o valor mal lido. D nunca dispara: 1.25 é um número válido, então não há erro de validação para reenviar. <span class="ts">Domínio 4 · TS 4.3 — Saída estruturada com tool use e JSON schema</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="4.3" data-dom="4">
+  <div class="qnum">Questão 8 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">Your CI job asks Claude to review an entire pull request and return every finding through a report_findings tool with a JSON schema. On large pull requests, the response stops with stop_reason "max_tokens" and the tool_use input is cut off partway through the findings array, so the job discards the whole review. max_tokens is already close to the model's output limit. What is the most effective fix?</div>
+  <div class="pt-block pt">Seu job de CI pede ao Claude o review de um pull request inteiro, com todos os findings devolvidos por uma tool report_findings com JSON schema. Em pull requests grandes, a resposta para com stop_reason "max_tokens" e o input do tool_use vem cortado no meio do array de findings, então o job descarta o review inteiro. O max_tokens já está perto do limite de saída do modelo. Qual é a correção mais eficaz?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q8" value="a">A. Raise max_tokens to the model's maximum and add a retry for the reviews that are still cut off at the end.<div class="pt">Subir o max_tokens ao máximo do modelo e acrescentar um retry para os reviews que ainda vierem cortados no fim.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="b">B. Review each changed file in its own call with the same schema, then merge the findings in code.<div class="pt">Revisar cada arquivo alterado numa chamada própria, com o mesmo schema, e juntar os findings no código.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="c">C. Add "be concise and report at most 10 findings" to the prompt, so that the whole output fits in one response.<div class="pt">Acrescentar "seja conciso e reporte no máximo 10 findings" ao prompt, para a saída inteira caber numa resposta.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="d">D. Switch to plain-text output and extract the findings with a regex, since cut-off text is easier to salvage.<div class="pt">Trocar para saída em texto livre e extrair os findings com regex, já que texto cortado é mais fácil de aproveitar.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> É o objetivo oficial ao pé da letra: truncamento de saída estruturada se resolve <strong>dividindo a tarefa grande em chamadas menores com escopo</strong> e juntando as estruturas no código, não subindo <code>max_tokens</code> além do razoável. Cada arquivo cabe com folga, e o merge (concatenar, deduplicar) é determinístico. A é o distrator previsto pelo objetivo: o limite já está perto do teto, o próximo PR maior estoura de novo, e o retry repete a mesma chamada que corta. C troca o truncamento por perda silenciosa de recall: findings reais ficam de fora para caber. D joga fora a estrutura e o problema continua: o texto também é cortado, e agora sem schema. <span class="ts">Domínio 4 · TS 4.3 — Saída estruturada com tool use e JSON schema</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="4.3" data-dom="4">
+  <div class="qnum">Questão 9 · múltipla escolha <span class="cenario">Structured Data Extraction</span></div>
+  <div class="stem">Two teams consume the same model's output. Team 1 feeds extracted contract fields straight into a database loader that rejects any record with a missing field or a wrong type. Team 2's chat widget breaks when a reply opens with prose or a markdown fence before the JSON; its parser tolerates absent optional fields, and the team does not want to maintain tool definitions. Which pairing best fits the reliability hierarchy for structured output?</div>
+  <div class="pt-block pt">Dois times consomem a saída do mesmo modelo. O Time 1 manda os campos extraídos de contratos direto para um loader de banco que rejeita qualquer registro com campo faltando ou tipo errado. O widget de chat do Time 2 quebra quando a resposta abre com texto ou com uma cerca de markdown antes do JSON; o parser dele tolera campos opcionais ausentes, e o time não quer manter definições de tools. Qual combinação segue melhor a hierarquia de confiabilidade de saída estruturada?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q9" value="a">A. Prompt-based formatting for both teams, with a stronger instruction and one example of the expected object.<div class="pt">Formatação pedida no prompt para os dois times, com instrução mais forte e um exemplo do objeto esperado.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="b">B. A prefilled response for Team 1, and tool use with a JSON schema for Team 2, whose parser is more tolerant.<div class="pt">Resposta pré-preenchida para o Time 1, e tool use com JSON schema para o Time 2, cujo parser é mais tolerante.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="c">C. Tool use with a JSON schema for Team 1, and an assistant response prefilled with "{" for Team 2.<div class="pt">Tool use com JSON schema para o Time 1, e resposta do assistant pré-preenchida com "{" para o Time 2.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="d">D. Tool use with a JSON schema for both teams, since it is the most reliable method for any requirement.<div class="pt">Tool use com JSON schema para os dois times, já que é o método mais confiável para qualquer exigência.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> O método se escolhe pela <strong>exigência de conformidade</strong>. O Time 1 rejeita qualquer desvio, então precisa da estrutura imposta por tool use com JSON schema (com <code>strict: true</code>, input conforme o schema). O Time 2 só precisa que a resposta comece no objeto, e o prefill garante exatamente isso, sem o custo de definir uma tool. A deixa o Time 1 com o método mais fraco: instrução forte continua probabilística, e registros seguem sendo rejeitados. B inverte a hierarquia: prefill não garante campos nem tipos, que é justamente o que o loader do Time 1 exige. D funciona para o Time 2, mas ignora o que ele pediu: não manter definições de tools e não precisar de garantia de campos — confiabilidade máxima onde ela não é exigida é custo sem ganho. (No produto atual o prefill devolve 400 nos modelos 4.6 em diante; veja o card 🧭 da seção 1.) <span class="ts">Domínio 4 · TS 4.3 — Saída estruturada com tool use e JSON schema</span></div>
 </div>
 
 <div class="concluir">

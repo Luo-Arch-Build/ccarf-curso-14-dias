@@ -211,6 +211,17 @@ servers são <strong>descobertas no momento da conexão</strong> e ficam <strong
 simultaneamente</strong> para o agente. Não existe "ativar um server por vez": o modelo vê o catálogo
 completo e escolhe — o que reforça a importância de descrições boas (aula 04) para ele não confundir
 tools de servers diferentes.</p>
+<p><strong>Conferir a descoberta antes de mexer em descrição.</strong> Integrar o server não termina no
+<code>.mcp.json</code>: confira se ele de fato conectou. O comando <code>/mcp</code> lista os servers
+configurados, o <strong>status de conexão</strong> de cada um e <strong>quantas tools</strong> cada server
+expôs. É aqui que aparece a falha da expansão de variável do 2.2: se o dev não definiu <code>GITHUB_TOKEN</code>
+no ambiente, a config carrega com o texto literal <code>${GITHUB_TOKEN}</code>, o server não autentica e não expõe
+tool nenhuma — e o agente "ignora" o GitHub porque não há o que escolher. O <code>/mcp</code> e o
+<code>claude mcp list</code> mostram um aviso com o nome da variável que falta. Outro caso que só o
+<code>/mcp</code> revela: num server de escopo de projeto, o dev novo ainda não aprovou o server
+(<em>pending approval</em>), e ele não carrega. Regra de bolso:
+<em>tool que nunca é usada → primeiro <code>/mcp</code> (conectou? quantas tools?); só com o server
+conectado e as tools expostas o problema passa a ser de descrição (aula 04).</em></p>
 
 <div class="card" style="border-left: 3px solid var(--accent2);">
   <strong>🧭 Prova × produto atual</strong> <span style="color:var(--muted);font-size:12.5px">(documentação do Claude Code conferida em 20/10/2026)</span>
@@ -296,6 +307,7 @@ chamadores, levante primeiro todos os nomes exportados.</em></p>
   <tr><td class="en">valid empty result</td><td>resultado vazio legítimo (query ok, sem matches)</td><td class="uso">"distinguish access failures from valid empty results"</td></tr>
   <tr><td class="en">.mcp.json</td><td>config de MCP servers no nível do projeto (VCS)</td><td class="uso">"project-level .mcp.json is shared via version control"</td></tr>
   <tr><td class="en">~/.claude.json</td><td>config de MCP servers no nível do usuário (pessoal)</td><td class="uso">"user-level ~/.claude.json for personal servers"</td></tr>
+  <tr><td class="en">/mcp</td><td>comando que mostra os MCP servers, o status de conexão e a contagem de tools</td><td class="uso">"run /mcp to verify the server connected and its tools were discovered"</td></tr>
   <tr><td class="en">environment variable expansion</td><td>expansão de ${VAR} no .mcp.json</td><td class="uso">"use ${GITHUB_TOKEN} expansion to avoid committing secrets"</td></tr>
   <tr><td class="en">MCP resources</td><td>catálogo de conteúdo exposto pelo server</td><td class="uso">"expose content catalogs as MCP resources"</td></tr>
   <tr><td class="en">content catalog</td><td>catálogo do que existe (índice de docs, lista de issues, schemas)</td><td class="uso">"content catalogs (e.g., issue summaries, documentation hierarchies, database schemas)"</td></tr>
@@ -463,6 +475,20 @@ chamadores, levante primeiro todos os nomes exportados.</em></p>
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: A e D.</strong> O guide descreve a exploração incremental: Grep acha os pontos de entrada, Read carrega esses arquivos e os imports levam ao resto do fluxo (A). Para achar todos os chamadores, primeiro levante todos os nomes exportados — inclusive reexportações em módulos wrapper — e busque cada um (D); procurar só o nome original perde quem importa pelo apelido. B e C são variações de "ler tudo antes": gastam o contexto com arquivos irrelevantes e atrasam a resposta. E troca evidência por suposição: o sistema real raramente é o "típico", e conferir só no fim não reconstrói o fluxo.<span class="ts">Domínio 2 · TS 2.5 — Tools nativas (Read, Write, Edit, Bash, Grep, Glob)</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="2.4" data-dom="2">
+  <div class="qnum">Questão 11 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">Your team commits a project-level .mcp.json for an internal ticketing server that reads its token from ${TICKETS_TOKEN}. For most engineers, Claude Code uses the ticketing tools without trouble. One new engineer reports that Claude never calls them and answers ticket questions by grepping the repository instead. What should you check first?</div>
+  <div class="pt-block pt">Seu time commita um .mcp.json de projeto para um server interno de tickets que lê o token de ${TICKETS_TOKEN}. Para a maioria dos engenheiros, o Claude Code usa as tools de tickets sem problema. Um engenheiro novo relata que o Claude nunca as chama e responde perguntas sobre tickets fazendo grep no repositório. O que você deve verificar primeiro?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q11" value="a">A. Run /mcp in that engineer's session to see whether the server connected and how many tools it exposed.<div class="pt">Rodar /mcp na sessão desse engenheiro para ver se o server conectou e quantas tools ele expôs.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="b">B. Rewrite the ticketing tool descriptions so that the agent prefers them over the built-in Grep on ticket questions.<div class="pt">Reescrever as descrições das tools de tickets para o agente preferi-las ao Grep nativo em perguntas sobre tickets.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="c">C. Copy the server definition into that engineer's ~/.claude.json, so the setup also loads in the user scope.<div class="pt">Copiar a definição do server para o ~/.claude.json desse engenheiro, para o setup carregar também no escopo de usuário.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="d">D. Add a CLAUDE.md rule telling Claude to always call the ticketing tools first for any question about tickets.<div class="pt">Adicionar uma regra no CLAUDE.md dizendo ao Claude para sempre chamar primeiro as tools de tickets em qualquer pergunta sobre tickets.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> O mesmo <code>.mcp.json</code> funciona para o resto do time, então o que muda é o ambiente desse engenheiro — o suspeito número um é a variável <code>TICKETS_TOKEN</code> não definida: a config fica com o texto literal, o server não autentica e não expõe tool nenhuma. O outro suspeito é o server de projeto ainda pendente de aprovação na máquina dele. <code>/mcp</code> mostra o status de cada server, a contagem de tools e o aviso com o nome da variável que falta; é o diagnóstico antes de qualquer reescrita. B ataca a seleção de tools, mas o problema é de descoberta: com zero tools expostas não há o que preferir, e as mesmas descrições funcionam para os outros. C duplica a config num escopo pessoal e não cria a variável que falta — o server continua sem token. D manda chamar tools que não existem na sessão; instrução não conserta conexão.<span class="ts">Domínio 2 · TS 2.4 — Integração de MCP servers</span></div>
 </div>
 
 <div class="concluir">

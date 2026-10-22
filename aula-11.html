@@ -95,8 +95,9 @@
   <strong>🎯 Objetivo do dia.</strong> Dominar dois Task Statements do Domínio 4: <strong>4.5</strong> (quando usar a
   Message Batches API — 50% mais barata, janela de até 24h, sem SLA de latência — e como operar batches:
   <code>custom_id</code>, resubmissão de falhas, amostra antes do volume) e <strong>4.6</strong> (arquiteturas de review
-  multi-instância e multi-pass: por que self-review é fraco e como dividir reviews grandes em passes focados por
-  arquivo + passe de integração cross-file).
+  multi-instância e multi-pass: por que self-review é fraco, como dividir reviews grandes em passes focados por
+  arquivo + passe de integração cross-file, e quando separar passes por tipo de problema — segurança, lógica de negócio,
+  design de API).
 </div>
 
 <h2>1. Message Batches API (Task Statement 4.5)</h2>
@@ -202,6 +203,22 @@ a atenção do modelo se distribui de forma desigual — não é falta de capaci
 menores (joga o problema no dev em vez de melhorar o sistema), e rodar 3 passes idênticos e exigir consenso
 (suprime bugs reais detectados de forma intermitente).</p>
 
+<h3>Passes por tipo de problema: segurança, lógica de negócio, design de API</h3>
+<p>Outro sintoma, outra divisão. Mesmo num PR pequeno, um prompt único que pede segurança, lógica de negócio e design de
+API ao mesmo tempo faz os critérios <strong>competirem</strong>: os exemplos de um tipo puxam o modelo para aquele tipo,
+e o recall dos outros cai. Você acrescenta few-shot de injeção de SQL, o reviewer passa a achar mais injeção e começa a
+perder regra de negócio violada. É o <em>recall trade-off</em> que o objetivo oficial manda evitar.</p>
+<p>A estrutura certa são <strong>passes especializados por concern</strong>, cada um com prompt focado e
+<strong>few-shot próprios</strong>: exemplos de vulnerabilidade só no passe de segurança, de regra de negócio violada só
+no de lógica, de contrato e nomenclatura de endpoint só no de API. Os passes são independentes (rodam em paralelo), e
+os findings se juntam numa lista só.</p>
+<p>As duas divisões se complementam. Por arquivo ataca a diluição por <strong>volume</strong> (profundidade desigual
+entre arquivos); por concern ataca a <strong>competição entre critérios</strong> (um tipo de problema sempre perdido
+enquanto outro vai bem). Num PR grande dá para combinar as duas, mas o custo multiplica. E o caso oposto: se o recall
+de um prompt único já atende todos os tipos, separar é custo sem ganho. Regra de bolso: <em>atenção desigual entre
+arquivos → passes por arquivo + integração; um concern roubando recall de outro → um passe focado por concern, com
+few-shot próprios.</em></p>
+
 <h3>Verification pass com confidence</h3>
 <p>Complemento útil: um <strong>verification pass</strong> em que o modelo revisa os findings e reporta uma
 <strong>confidence self-reportada</strong> junto de cada finding. Isso permite <em>calibrated routing</em>:
@@ -229,6 +246,8 @@ cada finding vai.</em></p>
   <tr><td class="en">independent review instance</td><td>instância independente de revisão</td><td class="uso">"an independent instance without prior reasoning context"</td></tr>
   <tr><td class="en">attention dilution</td><td>diluição de atenção</td><td class="uso">"attention dilution when processing many files at once"</td></tr>
   <tr><td class="en">cross-file integration pass</td><td>passe de integração entre arquivos</td><td class="uso">"a separate integration pass examining cross-file data flow"</td></tr>
+  <tr><td class="en">specialized review passes</td><td>passes de review especializados por tipo de problema (concern)</td><td class="uso">"separate security, business logic, and API design into focused prompts with dedicated few-shot examples"</td></tr>
+  <tr><td class="en">recall trade-off</td><td>troca de recall (ganhar num tipo de problema perdendo noutro)</td><td class="uso">"preventing recall trade-offs from competing concerns in a single prompt"</td></tr>
   <tr><td class="en">self-reported confidence</td><td>confiança autorreportada (crua: mal calibrada; calibrada contra dados rotulados: sinal de roteamento)</td><td class="uso">"the model self-reports confidence alongside each finding"</td></tr>
   <tr><td class="en">verification pass</td><td>passe de verificação dos findings</td><td class="uso">"run verification passes where the model self-reports confidence"</td></tr>
   <tr><td class="en">calibrated review routing</td><td>roteamento de revisão calibrado</td><td class="uso">"enable calibrated review routing with labeled data"</td></tr>
@@ -331,6 +350,20 @@ cada finding vai.</em></p>
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: B.</strong> É o TS 4.6: o passe de verificação com confiança por finding serve para <strong>roteamento calibrado</strong> — os thresholds nascem de um conjunto rotulado (findings que o time confirmou ou descartou no passado), e a confiança decide para onde vai cada finding: direto pro PR ou fila de triagem humana. A usa um corte no chute e descarta o resto: bug real com score baixo some sem ninguém ver. C generaliza demais a regra do 5.2: autoconfiança crua é gatilho ruim de escalonamento, mas calibrada contra dados rotulados é sinal legítimo de roteamento. D é self-review: a sessão que gerou os findings tende a confirmar o próprio raciocínio. <span class="ts">Domínio 4 · TS 4.6 — Review multi-instância e multi-pass</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="4.6" data-dom="4">
+  <div class="qnum">Questão 7 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">Your CI review uses one prompt that asks Claude to check security, business logic, and API design, with few-shot examples for all three mixed together. Pull requests are small (two or three files). Since you added more security examples, the reviewer catches more injection flaws but misses business-rule violations it used to find. Which change best addresses this?</div>
+  <div class="pt-block pt">Seu review de CI usa um prompt único que pede ao Claude para checar segurança, lógica de negócio e design de API, com few-shot dos três misturados. Os pull requests são pequenos (dois ou três arquivos). Desde que você acrescentou mais exemplos de segurança, o reviewer acha mais falhas de injeção, mas perde violações de regra de negócio que antes encontrava. Qual mudança resolve melhor?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q7" value="a">A. Split the review into one pass per changed file, followed by a cross-file integration pass over the data flow.<div class="pt">Dividir o review em um passe por arquivo alterado, seguido de um passe de integração cross-file sobre o data flow.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="b">B. Keep the single prompt, but reorder the few-shot examples so business logic comes first and gets more weight.<div class="pt">Manter o prompt único, mas reordenar os few-shot para a lógica de negócio vir primeiro e ganhar mais peso.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="c">C. Run a focused pass per concern, each with its own prompt and few-shot examples, then merge the findings.<div class="pt">Rodar um passe focado por concern, cada um com prompt e few-shot próprios, e juntar os findings.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="d">D. Remove the security examples and rely on instructions alone, so that no single concern dominates the prompt.<div class="pt">Tirar os exemplos de segurança e confiar só nas instruções, para nenhum concern dominar o prompt.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> O sintoma é <strong>competição entre concerns no mesmo prompt</strong>: ganhar recall em segurança custou recall em lógica de negócio. O objetivo oficial manda separar em <strong>passes especializados por concern</strong>, cada um com prompt focado e few-shot dedicados, para um tipo de problema não roubar o recall do outro. A é a ferramenta do outro sintoma (attention dilution por muitos arquivos); com dois ou três arquivos, o problema não é volume, é critério. B só move o trade-off: o concern que ficar por último passa a perder. D devolve o recall de lógica tirando o de segurança, que era o ganho que se queria manter. <span class="ts">Domínio 4 · TS 4.6 — Review multi-instância e multi-pass</span></div>
 </div>
 
 <div class="concluir">

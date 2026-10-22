@@ -94,7 +94,7 @@
 
 <div class="card objetivo">
   <strong>🎯 Objetivo do dia.</strong> Aprender a transformar regras de negócio em garantias
-  <em>determinísticas</em> via hooks e prerequisite gates (nunca só via prompt quando a regra é determinística e
+  <em>determinísticas</em> via hooks (<code>PreToolUse</code> para bloquear, <code>PostToolUse</code> para normalizar) e prerequisite gates (nunca só via prompt quando a regra é determinística e
   checável em código — identidade antes de operação financeira, limite de valor, ordem obrigatória de etapas), montar handoffs estruturados para humanos, escolher entre prompt chaining e
   decomposição dinâmica, e gerenciar sessões com <code>--resume</code>, <code>fork_session</code> e
   recomeços com resumo estruturado.
@@ -169,16 +169,24 @@ tool result <strong>antes de o modelo processá-lo</strong> e normaliza para um 
 <p>Alternativa errada que aparece como distrator: "ensinar no prompt que timestamps Unix devem ser
 convertidos" — de novo, probabilístico. A normalização é transformação mecânica; faça-a mecanicamente.</p>
 
-<h3>2.2 Interceptação de tool call — bloquear violação de política</h3>
+<h3>2.2 PreToolUse — bloquear violação de política</h3>
 <p>Cenário: a política diz que reembolsos acima de <strong>$500</strong> exigem aprovação humana. A garantia
 correta é um hook que intercepta a chamada <em>antes</em> da execução, bloqueia a violação e
-<strong>redireciona para o workflow alternativo</strong> (escalação humana):</p>
-<pre><code>def intercept(tool_name, tool_input):
-    if tool_name == "process_refund" and tool_input["amount"] &gt; 500:
-        return block_and_redirect(
-            reason="refund exceeds $500 policy threshold",
-            redirect_to="human_approval_workflow")
-    return allow()</code></pre>
+<strong>redireciona para o workflow alternativo</strong> (escalação humana). No Agent SDK esse hook se chama
+<code>PreToolUse</code>: ele bloqueia com <code>permissionDecision: "deny"</code>, e o
+<code>permissionDecisionReason</code> diz ao modelo por que a chamada foi negada e qual caminho seguir:</p>
+<pre><code>async def pre_tool_use(input_data, tool_use_id, context):
+    if input_data["tool_name"].endswith("process_refund") and input_data["tool_input"]["amount"] &gt; 500:
+        return {"hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason":
+                "Refund exceeds the $500 policy threshold: call escalate_to_human instead."}}
+    return {}   # sem objeção: a chamada segue</code></pre>
+<p>A ordem importa: <code>PreToolUse</code> roda antes da execução e serve para <strong>impedir</strong>;
+<code>PostToolUse</code> roda depois e serve para <strong>transformar</strong> o resultado (2.1). Regra de bolso:
+<em>para impedir uma ação, PreToolUse; para normalizar o que a tool devolveu, PostToolUse. Bloquear em PostToolUse
+chega tarde, porque o reembolso já saiu.</em></p>
 <p>A frase-chave do guide: <em>"choosing hooks over prompt-based enforcement when business rules require
 guaranteed compliance"</em>. Distrator clássico: "adicionar ao system prompt que refunds acima de $500 devem
 ser escalados" — funciona 95% das vezes, e os 5% restantes viram prejuízo financeiro.</p>
@@ -209,6 +217,9 @@ A arquitetura correta:</p>
 <p>O pass cross-file existe porque bugs de integração <em>não são visíveis</em> olhando arquivo por arquivo —
 mas tentar pegar os dois tipos de bug num único pass dilui a atenção e piora os dois. Separação de concerns
 aplicada a review.</p>
+<p>Os passes também podem se dividir por <strong>tipo de problema</strong> (segurança, lógica de negócio, design de API),
+cada um com prompt e few-shot próprios. É outro sintoma: não é volume de arquivos, são critérios competindo no mesmo
+prompt, e ganhar recall num tipo custa recall noutro. Detalhes na aula 11 (TS 4.6).</p>
 
 <h2>4. Sessões: resume, fork e recomeço (TS 1.7)</h2>
 <p>Claude Code persiste sessões nomeadas. Três operações que a prova cobra:</p>
@@ -252,6 +263,7 @@ das conclusões relevantes da sessão anterior. Você preserva o <em>conheciment
   <tr><td class="en">shared context</td><td>contexto compartilhado (mesmo cliente, mesmos dados)</td><td class="uso">"investigate each item in parallel using shared context"</td></tr>
   <tr><td class="en">unified resolution</td><td>resolução unificada (uma resposta para todos os itens)</td><td class="uso">"synthesize a unified resolution"</td></tr>
   <tr><td class="en">PostToolUse hook</td><td>hook que intercepta o resultado da tool</td><td class="uso">"a PostToolUse hook normalizes heterogeneous data formats"</td></tr>
+  <tr><td class="en">PreToolUse hook</td><td>hook que intercepta a chamada antes da execução e pode negá-la (<code>permissionDecision: "deny"</code>)</td><td class="uso">"a PreToolUse hook blocks refunds above the policy threshold"</td></tr>
   <tr><td class="en">tool call interception</td><td>interceptação da chamada de tool (antes de executar)</td><td class="uso">"intercept tool calls to block policy-violating actions"</td></tr>
   <tr><td class="en">policy threshold</td><td>limite de política (ex.: refund &gt; $500)</td><td class="uso">"refunds exceeding $500 require human approval"</td></tr>
   <tr><td class="en">deterministic vs probabilistic compliance</td><td>conformidade determinística vs probabilística</td><td class="uso">"business rules requiring guaranteed compliance"</td></tr>
@@ -376,6 +388,20 @@ das conclusões relevantes da sessão anterior. Você preserva o <em>conheciment
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: C.</strong> TS 1.4: o humano que recebe a escalação não tem o transcript, então o handoff precisa ser autossuficiente e estruturado — customer ID verificado, causa raiz já apurada, valor envolvido e ação recomendada. Com isso ele age em vez de reinvestigar. A entrega volume, não conclusão: o atendente ainda precisa ler tudo e refazer o diagnóstico. B usa a autoconfiança do modelo, que é mal calibrada e não diz ao humano o que fazer. D resolve outra coisa (a ordem da fila) e não elimina o retrabalho de cada caso.<span class="ts">Domínio 1 · TS 1.4 — Workflows com enforcement e handoff</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="1.5" data-dom="1">
+  <div class="qnum">Questão 8 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">Your Agent SDK support agent must never issue refunds above $500 without human approval. A teammate implemented the check in a PostToolUse hook: it reads the refund amount and, when it is over the limit, appends a warning to the tool result. Audits still find refunds above $500 being paid out. What is the correct fix?</div>
+  <div class="pt-block pt">Seu agente de suporte no Agent SDK nunca pode emitir reembolso acima de $500 sem aprovação humana. Um colega implementou a checagem num hook PostToolUse: ele lê o valor do reembolso e, quando passa do limite, acrescenta um aviso ao resultado da tool. As auditorias continuam achando reembolsos acima de $500 pagos. Qual é a correção correta?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q8" value="a">A. Keep the PostToolUse hook, but have it raise an exception so that the agent loop stops after an oversized refund.<div class="pt">Manter o hook PostToolUse, mas fazê-lo lançar uma exceção para o loop do agente parar depois de um reembolso alto demais.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="b">B. Move the warning into the system prompt, so that the model knows the $500 limit before it decides to call the tool.<div class="pt">Levar o aviso para o system prompt, para o modelo saber do limite de $500 antes de decidir chamar a tool.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="c">C. Add a PostToolUse check on escalate_to_human, so that a human reviews every refund the agent has already issued.<div class="pt">Acrescentar uma checagem PostToolUse em escalate_to_human, para um humano revisar cada reembolso que o agente já emitiu.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="d">D. Use a PreToolUse hook that denies refund calls above $500, with a reason telling the model to escalate.<div class="pt">Usar um hook PreToolUse que nega chamadas de reembolso acima de $500, com um motivo que manda o modelo escalar.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> <code>PostToolUse</code> roda <em>depois</em> da execução: quando o aviso aparece, o dinheiro já saiu. Enforcement de política precisa ser antes, num hook <code>PreToolUse</code> que nega a chamada (<code>permissionDecision: "deny"</code>) e devolve no <code>permissionDecisionReason</code> o motivo e o caminho alternativo, a escalação. A continua depois do fato: parar o loop não desfaz o reembolso. B volta para o prompt, que é probabilístico, justamente o que o hook deveria substituir. C transforma prevenção em auditoria a posteriori: o humano revisa um pagamento já feito. <span class="ts">Domínio 1 · TS 1.5 — Hooks do Agent SDK (interceptação e normalização)</span></div>
 </div>
 
 <div class="concluir">

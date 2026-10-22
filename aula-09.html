@@ -94,7 +94,7 @@
 <div class="card objetivo">
   <strong>🎯 Objetivo do dia.</strong> Dominar as duas técnicas de prompt que a prova mais cobra no
   Domínio 4: substituir instruções vagas ("be conservative") por <strong>critérios categóricos explícitos</strong>
-  para derrubar falsos positivos, e usar <strong>few-shot prompting</strong> — 2 a 4 exemplos mirados em casos
+  para derrubar falsos positivos — guardados como <strong>contexto persistente</strong>, que vale em todo review —, e usar <strong>few-shot prompting</strong> — 2 a 4 exemplos mirados em casos
   ambíguos, mostrando o raciocínio — para obter formato consistente e reduzir alucinação em extração.
 </div>
 
@@ -145,6 +145,26 @@ concreto</strong>:</p>
   Example: duplicated date-parsing logic that could drift apart.</code></pre>
 <p>Sem os exemplos, "major" vs "minor" vira julgamento de humor do modelo. Com exemplos, a classificação
 fica consistente entre PRs e entre desenvolvedores.</p>
+
+<h3>Onde os critérios moram: contexto persistente</h3>
+<p>Critério bom escrito no prompt de <strong>uma</strong> execução vale só para ela: no próximo PR, no próximo job ou
+no rerun de um colega, o mesmo falso positivo volta. O objetivo oficial da prova pede o contrário: <em>"supplying
+project-specific conventions, accepted patterns, and exclusion criteria as persistent context applied on every
+review"</em>. São três tipos de conteúdo:</p>
+<ul>
+  <li><strong>Convenções do projeto</strong>: como o time escreve código aqui (padrão de erros, nomes, camadas).</li>
+  <li><strong>Padrões aceitos</strong>: o que parece problema mas é decisão do time (ex.: o <code>catch</code> amplo no adapter
+      de pagamento é intencional e documentado; SQL cru é aceito no módulo de relatórios).</li>
+  <li><strong>Critérios de exclusão</strong>: o que nunca reportar (código gerado em <code>src/gen/</code>, <code>vendor/</code>,
+      estilo que o linter já cobre).</li>
+</ul>
+<p>Onde guardar: no <code>CLAUDE.md</code> do projeto, que toda invocação do Claude Code carrega, inclusive no CI
+(aula 08, seção 2.5); em <code>.claude/rules/</code> com glob quando o critério depende do tipo de arquivo (aula 06); no
+<code>REVIEW.md</code> quando o review é o Code Review gerenciado (aula 08, seção 2.4).</p>
+<p>Regra de bolso: <em>critério que vale para todo review → arquivo versionado no repo (CLAUDE.md, rule, REVIEW.md),
+nunca colado no prompt de cada execução. O caso oposto: critério que vale só para uma execução (ex.: "neste PR, ignore o
+módulo legado que vai ser apagado") fica no prompt daquela execução — persistir isso faria todo review futuro pular o
+módulo.</em></p>
 
 <h2>2. Few-shot prompting (Task Statement 4.2)</h2>
 <p>Quando instruções detalhadas sozinhas produzem saída <strong>inconsistente</strong> — formato variando,
@@ -213,6 +233,9 @@ diante da ambiguidade do mundo real.</p>
   <tr><td class="en">precision</td><td>precisão (% de achados reportados que são reais)</td><td class="uso">"improve review precision by defining which issues to report vs skip"</td></tr>
   <tr><td class="en">developer trust</td><td>confiança do time (no sistema de review)</td><td class="uso">"false positives erode developer trust across all categories"</td></tr>
   <tr><td class="en">temporarily disable a category</td><td>desabilitar temporariamente uma categoria</td><td class="uso">"disable the noisiest category while its prompt is being improved"</td></tr>
+  <tr><td class="en">persistent context</td><td>contexto persistente (CLAUDE.md, rules: vale em todo review)</td><td class="uso">"supply project conventions as persistent context applied on every review"</td></tr>
+  <tr><td class="en">accepted patterns</td><td>padrões aceitos (parecem problema, mas são decisão do time)</td><td class="uso">"document accepted patterns to stop recurring false positives"</td></tr>
+  <tr><td class="en">exclusion criteria</td><td>critérios de exclusão (o que nunca reportar)</td><td class="uso">"exclusion criteria for generated code and vendored files"</td></tr>
   <tr><td class="en">severity criteria</td><td>critérios de severidade (com exemplo de código por nível)</td><td class="uso">"define severity levels with concrete code examples for consistency"</td></tr>
   <tr><td class="en">few-shot prompting</td><td>prompt com poucos exemplos (entrada→saída desejada)</td><td class="uso">"few-shot examples are the most effective technique for consistent formatting"</td></tr>
   <tr><td class="en">ambiguous case</td><td>caso ambíguo (duas ações plausíveis)</td><td class="uso">"target 2-4 few-shot examples at ambiguous scenarios"</td></tr>
@@ -294,6 +317,20 @@ diante da ambiguidade do mundo real.</p>
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: D.</strong> A causa raiz é que o modelo nunca viu demonstrado como se comportar diante de layouts variados — few-shot por variação de estrutura (incluindo o exemplo "ausente → null, não fabrique") é a técnica comprovada para reduzir alucinação em extração. A encolhe o produto em vez de consertar o pipeline; B é o remendo cosmético — instrução negativa genérica não ensina comportamento; C é custo 3x para tratar sintoma, e valores fabricados costumam ser consistentes entre runs, passando no filtro.<span class="ts">Domínio 4 · TS 4.2 — Few-shot prompting</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="4.1" data-dom="4">
+  <div class="qnum">Questão 6 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">Your CI review bot flags the same things on almost every PR: generated files under src/gen/, a deliberately broad exception handler in the payment adapter (a documented team decision), and raw SQL in the reporting module, which the team accepts there. Developers keep adding "ignore these" to the prompt of individual runs, and the false positives return on the next PR. What is the most effective fix?</div>
+  <div class="pt-block pt">Seu bot de review no CI aponta as mesmas coisas em quase todo PR: arquivos gerados em src/gen/, um tratamento de exceção propositalmente amplo no adapter de pagamento (decisão documentada do time) e SQL cru no módulo de relatórios, que o time aceita ali. Os devs continuam acrescentando "ignore isto" ao prompt de execuções avulsas, e os falsos positivos voltam no PR seguinte. Qual é a correção mais eficaz?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q6" value="a">A. Tell the reviewer in the prompt to report only the findings it is highly confident about.<div class="pt">Dizer ao revisor, no prompt, para reportar só os achados em que ele tem alta confiança.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="b">B. Put the conventions, accepted patterns and exclusions in CLAUDE.md, read by every review.<div class="pt">Colocar as convenções, os padrões aceitos e as exclusões no CLAUDE.md, lido por todo review.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="c">C. Have developers reply "won't fix" to each repeated finding so the bot learns to skip it.<div class="pt">Fazer os devs responderem "won't fix" a cada achado repetido, para o bot aprender a pulá-lo.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. Post-filter the output with a script that drops every finding located in those three paths.<div class="pt">Pós-filtrar a saída com um script que descarta todo achado localizado nesses três caminhos.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> O problema não é falta de critério, é critério que não persiste: escrito no prompt de uma execução, some na seguinte. Convenções, padrões aceitos e critérios de exclusão guardados no CLAUDE.md do projeto entram em toda invocação, inclusive no CI — é o <em>"persistent context applied on every review"</em> dos objetivos oficiais (com <code>.claude/rules/</code> se o critério depender do tipo de arquivo). A é a instrução vaga clássica: "alta confiança" não é testável e não diz que esses três casos são aceitos. C supõe uma memória que o bot não tem: cada execução de review começa do zero. D é cego: descarta também os bugs reais nesses arquivos (uma injeção de SQL de verdade no módulo de relatórios sumiria) e não cobre o mesmo padrão em outro lugar.<span class="ts">Domínio 4 · TS 4.1 — Critérios explícitos e falsos positivos</span></div>
 </div>
 
 <div class="concluir">
