@@ -159,7 +159,7 @@
 <div class="card objetivo">
   <strong>🎯 Objetivo do dia.</strong> Consolidar tudo: fixar a estratégia de execução no dia da prova,
   revisar os termos mais cobrados do curso inteiro e fazer o <strong>simulado em modo prova</strong> — questões
-  inéditas, 4 cenários sorteados entre os 6 oficiais, cronômetro e resultado por domínio, como no relatório
+  inéditas, 4 cenários sorteados entre os 6 oficiais, questões que mudam a cada tentativa, cronômetro e resultado por domínio, como no relatório
   oficial. No final, o checklist da véspera para não perder a prova por burocracia.
 </div>
 
@@ -184,7 +184,10 @@
       sintoma com o menor esforço que resolve de verdade.</li>
   <li><strong>"Select TWO" significa exatamente DUAS.</strong> A questão de múltipla resposta diz quantas
       marcar. O guia não diz como esses itens são pontuados nem se há crédito parcial: trate como tudo-ou-nada
-      e confira a contagem antes de seguir.</li>
+      e confira a contagem antes de seguir. O guia prevê itens de múltipla resposta, mas um candidato que fez a prova
+      relata ter visto só questões de resposta única. Um relato só não prova nada: o curso mantém algumas para treino,
+      e pode ser que na sua prova não apareça nenhuma. Leia o enunciado de cada questão procurando "Select TWO" e não presuma
+      o formato.</li>
   <li><strong>Elimine, decida, marque, siga.</strong> No simulado abaixo, use <strong>✕ riscar</strong> nas
       alternativas descartadas e <strong>⚑ marcar p/ revisar</strong> nas dúvidas — volte a elas no fim, com o
       tempo que sobrar. Treine o hábito aqui para não improvisar no dia.</li>
@@ -246,8 +249,10 @@
 <h2>3. Simulado em modo prova</h2>
 
 <div class="card" style="border-left: 3px solid var(--accent2);">
-  <strong>⏱️ Como a prova real.</strong> Banco de questões <strong>inéditas</strong> — nenhuma repete as aulas —,
-  5 por cenário oficial. Cada tentativa sorteia <strong>4 dos 6 cenários</strong>, como a prova, no mesmo ritmo de
+  <strong>⏱️ Como a prova real.</strong> Banco de 60 questões <strong>inéditas</strong> — nenhuma repete as aulas —,
+  10 por cenário oficial. Cada tentativa sorteia <strong>4 dos 6 cenários</strong>, como a prova, e 5 questões de
+  cada um, dando preferência às que você ainda não viu neste navegador; assim a segunda e a terceira tentativas
+  trazem questões novas, e a nota mede entendimento, não memória do gabarito. Mesmo ritmo da prova:
   2 min por questão. Só inglês e sem correção imediata: risque, marque para revisar e finalize no fim. O resultado
   mostra a % de acerto por domínio, como o relatório oficial, e o gabarito comentado em português.
 </div>
@@ -285,7 +290,7 @@
 (function () {
   'use strict';
   var B = window.CCARF_BANCO, root = document.getElementById('exam');
-  var KS = 'ccarf-simulado-estado', KH = 'ccarf-simulado-hist', KA = 'ccarf-aula-14';
+  var KS = 'ccarf-simulado-estado', KH = 'ccarf-simulado-hist', KA = 'ccarf-aula-14', KV = 'ccarf-simulado-vistas';
   var LET = 'ABCDE', NW = { 1: 'ONE', 2: 'TWO', 3: 'THREE' };
   var DOM = { 1: 'Agentic Architecture & Orchestration', 2: 'Tool Design & MCP Integration',
     3: 'Claude Code Configuration & Workflows', 4: 'Prompt Engineering & Structured Output',
@@ -304,7 +309,8 @@
     '5.1': 'Contexto em interações longas', '5.2': 'Escalonamento e ambiguidade', '5.3': 'Propagação de erros em multiagente',
     '5.4': 'Contexto na exploração de codebases grandes', '5.5': 'Revisão humana e calibração de confiança',
     '5.6': 'Proveniência e incerteza na síntese' };
-  var MODES = { prova: { scen: 4, nome: '4 cenários sorteados' }, banco: { scen: 6, nome: 'banco completo' } };
+  // per = questões sorteadas por cenário (0 = todas)
+  var MODES = { prova: { scen: 4, per: 5, nome: '4 cenários sorteados' }, banco: { scen: 6, per: 0, nome: 'banco completo' } };
 
   if (!B || !B.q || !B.scen) {
     root.innerHTML = '<div class="card">Não consegui carregar o banco de questões (<code>simulado-banco.js</code>). ' +
@@ -324,11 +330,19 @@
   function fmt(ms) { var s = Math.max(0, Math.round(ms / 1000)), m = Math.floor(s / 60); s %= 60; return m + ':' + (s < 10 ? '0' : '') + s; }
   function isRight(q, ans) { return (ans || []).slice().sort().join(',') === q.a.slice().sort().join(','); }
   function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+  function take(k, mode) { var p = MODES[mode].per, n = perScen[k] || 0; return p ? Math.min(p, n) : n; }
   function countFor(mode) {
     // o banco tem o mesmo nº de questões por cenário, então qualquer sorteio dá o mesmo total
-    var per = Object.keys(B.scen).map(function (k) { return perScen[k] || 0; }), n = 0;
+    var per = Object.keys(B.scen).map(function (k) { return take(k, mode); }), n = 0;
     for (var i = 0; i < MODES[mode].scen && i < per.length; i++) n += per[i];
     return n;
+  }
+  // sorteio dentro do cenário: primeiro as nunca vistas, depois as vistas há mais tempo (empate = acaso)
+  function draw(k, mode, seen) {
+    var pool = shuffle(B.q.filter(function (q) { return q.s === k; }));
+    pool.sort(function (x, y) { return (seen[x.id] || 0) - (seen[y.id] || 0); });
+    var chosen = pool.slice(0, take(k, mode));
+    return B.q.filter(function (q) { return chosen.indexOf(q) >= 0; }).map(function (q) { return q.id; });
   }
 
   // ---------------------------------------------------------------- início
@@ -336,7 +350,8 @@
     stopTimer(); root.innerHTML = ''; root.className = '';
     var c = el('div', 'card');
     c.appendChild(html('div', null, '<strong>Escolha o formato.</strong> A prova real tem 60 questões em 120 min, em 4 cenários ' +
-      'sorteados de 6. Aqui você treina o mesmo ritmo (2 min por questão) com questões inéditas.'));
+      'sorteados de 6. Aqui você treina o mesmo ritmo (2 min por questão) com questões inéditas; cada tentativa sorteia ' +
+      '5 das 10 questões de cada cenário, preferindo as que você ainda não viu.'));
     var bt = el('div', 'btns');
     var b1 = el('button', 'btn primary', 'Prova — 4 cenários sorteados · ' + countFor('prova') + ' questões · ' + countFor('prova') * 2 + ' min');
     b1.onclick = function () { start('prova'); };
@@ -364,8 +379,10 @@
 
   function start(mode) {
     var keys = shuffle(Object.keys(B.scen)).slice(0, MODES[mode].scen), ids = [];
-    keys.forEach(function (k) { B.q.forEach(function (q) { if (q.s === k) ids.push(q.id); }); });
-    var now = Date.now();
+    var seen = read(KV) || {}, now = Date.now();
+    keys.forEach(function (k) { ids = ids.concat(draw(k, mode, seen)); });
+    ids.forEach(function (id) { seen[id] = now; });
+    write(KV, seen);
     st = { mode: mode, scen: keys, ids: ids, answers: {}, flags: {}, struck: {}, start: now,
       deadline: now + ids.length * 2 * 60000, done: false };
     save(); renderRun(); root.scrollIntoView({ block: 'start' });

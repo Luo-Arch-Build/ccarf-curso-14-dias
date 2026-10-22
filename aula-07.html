@@ -95,9 +95,10 @@
 <div class="card objetivo">
   <strong>🎯 Objetivo do dia.</strong> Saber <em>onde</em> criar comandos e skills (projeto vs pessoal) e
   <em>quando</em> usar cada mecanismo: slash command versionado, skill com frontmatter
-  (<code>context: fork</code>, <code>allowed-tools</code>, <code>argument-hint</code>) ou CLAUDE.md.
-  E dominar a decisão <strong>plan mode vs execução direta</strong> — incluindo o papel do Explore subagent
-  para proteger o contexto da conversa principal.
+  (<code>context: fork</code>, <code>allowed-tools</code>, <code>argument-hint</code>), CLAUDE.md, hook ou
+  regra de permissão em <code>settings.json</code>. E dominar a decisão <strong>plan mode vs execução direta</strong>
+  por escopo, risco e exigência de aprovação humana — incluindo o papel do Explore subagent para proteger o
+  contexto da conversa principal.
 </div>
 
 <h2>1. Slash commands: escopo de projeto vs escopo de usuário (TS 3.2)</h2>
@@ -150,8 +151,9 @@ argument-hint: "caminho-do-diretorio (ex.: src/api)"
 </ul>
 
 <div class="card" style="border-left: 3px solid var(--accent2);">
-  <strong>🧭 Prova × produto atual</strong> <span style="color:var(--muted);font-size:12.5px">(documentação do Claude Code conferida em 20/10/2026)</span>
+  <strong>🧭 Prova × produto atual</strong> <span style="color:var(--muted);font-size:12.5px">(documentação do Claude Code conferida em 22/10/2026)</span>
   <ul>
+    <li><strong>Comandos e skills:</strong> no produto atual, os custom commands foram unificados com as skills; os arquivos em <code>.claude/commands/</code> continuam funcionando. A prova trata os dois como mecanismos distintos (seção 1 e seção 2).</li>
     <li><strong><code>allowed-tools</code>:</strong> o guia (TS 3.2) diz que o campo <em>restringe</em> as tools durante a skill — e é assim que a prova cobra. No produto atual ele faz outra coisa: <strong>só pré-aprova</strong> as tools listadas, que rodam sem pedir permissão no turno que invoca a skill, e não tira nenhuma tool do alcance. Para remover tools enquanto a skill está ativa existe outro campo, <code>disallowed-tools</code>.</li>
     <li><strong><code>context: fork</code>:</strong> a skill roda num subagent que <strong>não vê o histórico</strong> da sua conversa e devolve um resumo ao terminar — o isolamento que o guia descreve.</li>
   </ul>
@@ -184,9 +186,33 @@ de todo mundo — e commitar sua preferência pessoal é exatamente o anti-padr�
   <tr><td>Workflow que roda às vezes, com parâmetros ou saída grande</td><td>Skill em <code>.claude/skills/</code> (com <code>context: fork</code> se for verboso)</td></tr>
   <tr><td>Prompt padronizado que o time dispara pelo nome</td><td>Slash command em <code>.claude/commands/</code></td></tr>
   <tr><td>Atalho só seu</td><td><code>~/.claude/commands/</code> ou <code>~/.claude/skills/</code> (com nome próprio)</td></tr>
-  <tr><td>Algo que precisa acontecer sempre, sem exceção</td><td>Enforcement programático (hook), não instrução — a lógica do TS 1.5 (aula 03)</td></tr>
+  <tr><td>Algo que precisa acontecer sempre, sem exceção (ex.: rodar o linter depois de toda edição)</td><td>Hook, configurado em <code>settings.json</code> — enforcement programático, não instrução; a lógica do TS 1.5 (aula 03)</td></tr>
+  <tr><td>Bloquear sempre um comando ou um arquivo (ex.: o <code>.env</code>, a pasta <code>secrets/</code>)</td><td>Regra <code>deny</code> em <code>permissions</code> no <code>.claude/settings.json</code> do projeto (versionado)</td></tr>
 </table>
-<p>Regra de bolso: <em>sempre carregado → CLAUDE.md; depende do arquivo → rule com glob; sob demanda → skill ou comando; garantia → código, nunca texto.</em></p>
+<p>As <strong>regras de permissão</strong> ficam em <code>permissions</code> (<code>allow</code>, <code>ask</code>, <code>deny</code>) nos arquivos
+de settings e são aplicadas pelo próprio Claude Code, antes de a tool rodar — não dependem do modelo seguir instrução:</p>
+<pre><code>// .claude/settings.json (no repo, vale para o time)
+{
+  "permissions": {
+    "deny": ["Read(**/.env)", "Read(./secrets/**)"]
+  }
+}</code></pre>
+<ul>
+  <li><strong>Ordem de avaliação:</strong> <code>deny</code> → <code>ask</code> → <code>allow</code>. Entre regras, o deny sempre ganha. (<code>Read(./.env)</code>
+      casa só com o do diretório atual; <code>Read(**/.env)</code>, com todos.)</li>
+  <li><strong>Precedência dos arquivos</strong> (do mais forte ao mais fraco): managed (política da organização) → argumentos
+      de linha de comando → <code>.claude/settings.local.json</code> (pessoal, fora do git) → <code>.claude/settings.json</code>
+      (projeto, versionado) → <code>~/.claude/settings.json</code> (usuário). Listas como <code>permissions.allow</code> se
+      <strong>combinam</strong> entre os arquivos em vez de se sobrescreverem — por isso um <code>allow</code> pessoal não reabre
+      o que um <code>deny</code> do projeto fechou.</li>
+  <li><strong>Hooks</strong> também se configuram nos arquivos de settings (e ainda em plugins e no frontmatter de skills e
+      subagents). Hook é para <em>executar</em> algo num evento; regra deny é para <em>impedir</em> uma tool call.</li>
+</ul>
+<p>Regra de bolso: <em>sempre carregado → CLAUDE.md; depende do arquivo → rule com glob; sob demanda → skill ou comando;
+garantia → código, nunca texto: algo que tem de acontecer → hook; algo que nunca pode acontecer → regra deny. O caso oposto:
+a regra deny bloqueia sem olhar contexto — se a proibição depende de uma condição (só em produção, só acima de um valor),
+ela vira hook com lógica. E o deny cobre as tools nativas e os comandos que o Claude Code reconhece
+(<code>cat</code>, <code>head</code>), não um script que abre o arquivo por conta própria: para isso, sandbox.</em></p>
 
 <h2>3. Plan mode vs execução direta (TS 3.4)</h2>
 <p><strong>Plan mode</strong> é o modo em que o Claude <strong>explora e planeja sem modificar nada</strong>: lê o
@@ -203,6 +229,24 @@ fronteira da decisão:</p>
 <p>O raciocínio econômico: plan mode <strong>previne retrabalho caro</strong>. Descobrir tarde demais que dois módulos
 são acoplados custa muito mais do que os minutos gastos explorando antes. Mas planejar uma mudança de 3 linhas
 é over-engineering de processo — o exame penaliza os dois extremos.</p>
+
+<h3>Além do escopo: risco e aprovação humana</h3>
+<p>Os objetivos oficiais da prova pedem para escolher entre plan mode, execução direta ou workflow multifase com base
+em <em>"task scope, risk level, and human approval requirements"</em>. Escopo é o que a seção acima cobre; os outros dois
+critérios mudam a resposta mesmo quando a mudança é pequena:</p>
+<table class="gloss">
+  <tr><th>Critério</th><th>Aponta para plan mode quando…</th><th>Aponta para execução direta quando…</th></tr>
+  <tr><td class="en">Escopo</td><td>muitos arquivos, várias abordagens válidas, decisão arquitetural</td><td>mudança pequena, bem entendida, um arquivo</td></tr>
+  <tr><td class="en">Risco</td><td>toca produção, dados de cliente ou algo irreversível (migração que apaga coluna, script que remove registros)</td><td>a mudança é reversível e os testes pegam o erro</td></tr>
+  <tr><td class="en">Aprovação humana</td><td>alguém precisa aprovar <strong>antes</strong> do efeito (política, dono do dado, change advisory)</td><td>ninguém precisa aprovar antes; review do PR basta</td></tr>
+</table>
+<p>No plan mode, o plano é o ponto de aprovação: o humano lê o que vai acontecer antes de qualquer arquivo mudar. Sem
+humano no terminal, o mesmo vale no modo não interativo: <code>claude -p --permission-mode plan "…"</code> produz o plano sem
+editar nada; depois da aprovação, uma segunda execução aplica o plano aprovado. Quando a tarefa tem fases distintas
+(discovery → plano → implementação → verificação), a resposta é o <strong>workflow multifase</strong> da seção seguinte.</p>
+<p>Regra de bolso: <em>plan mode se <strong>qualquer</strong> critério pesa — escopo grande, risco alto ou aprovação exigida antes do
+efeito; execução direta só quando os três estão baixos. O caso oposto: mudança pequena e reversível, sem aprovação prévia
+exigida, vai direto mesmo em código importante — planejar 3 linhas continua sendo over-engineering de processo.</em></p>
 
 <h3>Explore subagent: protegendo o contexto</h3>
 <p>Fases de <strong>discovery</strong> ("onde essa função é usada?", "mapeie todos os callers") geram output enorme:
@@ -238,6 +282,11 @@ se aparecer complexidade" — errado quando a complexidade <em>já está declara
   <tr><td class="en">verbose discovery output</td><td>saída verbosa da fase de descoberta</td><td class="uso">"isolate verbose discovery output and return summaries"</td></tr>
   <tr><td class="en">context window exhaustion</td><td>estouro da janela de contexto</td><td class="uso">"prevent context window exhaustion during multi-phase tasks"</td></tr>
   <tr><td class="en">always-loaded</td><td>sempre carregado (em toda sessão)</td><td class="uso">"CLAUDE.md for always-loaded universal standards"</td></tr>
+  <tr><td class="en">settings permissions</td><td>regras de permissão (allow / ask / deny) nos arquivos de settings</td><td class="uso">"select CLAUDE.md, rules, skills, hooks, or settings permissions"</td></tr>
+  <tr><td class="en">deny rule</td><td>regra que bloqueia uma tool, um comando ou um arquivo</td><td class="uso">"add a deny rule to the project settings to block reading .env"</td></tr>
+  <tr><td class="en">settings precedence</td><td>ordem de prioridade entre arquivos de settings</td><td class="uso">"managed settings take precedence over project and user settings"</td></tr>
+  <tr><td class="en">risk level</td><td>nível de risco (produção, dados, irreversível)</td><td class="uso">"select plan mode based on task scope, risk level, and human approval requirements"</td></tr>
+  <tr><td class="en">human approval requirement</td><td>exigência de aprovação humana antes do efeito</td><td class="uso">"the plan is reviewed and approved before execution"</td></tr>
 </table>
 
 <div class="card pegadinha">
@@ -247,10 +296,13 @@ se aparecer complexidade" — errado quando a complexidade <em>já está declara
   e "mandar cada dev copiar o arquivo" ignora o version control. (2) <strong>Plan mode como reflexo ou como
   fallback</strong>: "usar plan mode para toda tarefa" (over-engineering de processo) e "começar direto e trocar
   se complicar" (a complexidade já está no enunciado) são os dois errados simétricos.
+  (3) <strong>Proibição como texto</strong>: "never read .env" no CLAUDE.md ou numa rule — instrução é probabilística;
+  bloqueio garantido é regra <code>deny</code> no <code>settings.json</code> versionado.
   Regra de bolso: <em>compartilhado = dentro do repo e versionado; planeje quando há mudança em
   larga escala, várias abordagens válidas, decisão arquitetural ou muitos arquivos (ex.: migração em 45+ arquivos,
-  monólito → serviços); execute direto quando a mudança é simples, bem entendida e de escopo claro (ex.: bug de um
-  arquivo com stack trace claro).</em></p>
+  monólito → serviços), e também quando a mudança é pequena mas arriscada ou exige aprovação antes do efeito (ex.: script
+  que apaga dados em produção); execute direto quando a mudança é simples, reversível, de escopo claro e sem aprovação
+  prévia exigida (ex.: bug de um arquivo com stack trace claro).</em></p>
 </div>
 
 <h2>5. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
@@ -354,6 +406,34 @@ se aparecer complexidade" — errado quando a complexidade <em>já está declara
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: A e D.</strong> Workflow pontual, com saída exploratória grande, é caso de skill sob demanda — e <code>context: fork</code> mantém essa saída fora da conversa principal. Regra que vale para todo dev em toda sessão é padrão universal: CLAUDE.md do projeto, sempre carregado e versionado (TS 3.2: skill sob demanda × CLAUDE.md sempre carregado). B erra o mecanismo: convenção que acompanha um tipo de arquivo espalhado pelo repo pede <code>.claude/rules/</code> com <code>paths</code> glob (ex.: <code>**/*.sql</code>); o CLAUDE.md de diretório só vale dentro daquela pasta (TS 3.3). C erra o escopo: atalho pessoal vai em <code>~/.claude/commands/</code> — no repo, ele aparece para o time inteiro. E confunde contexto com garantia: instrução no CLAUDE.md é seguida de forma probabilística; o que precisa rodar sempre, sem exceção, pede enforcement programático (um hook) — a mesma lógica do TS 1.5.<span class="ts">Domínio 3 · TS 3.2 — Slash commands e skills</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="3.2" data-dom="3">
+  <div class="qnum">Questão 8 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">While debugging, Claude Code read the repository's root .env file, which holds live credentials. The team lead now wants Claude Code to be unable to read that file for every developer on the team, without relying on the model's judgment. What should the team add?</div>
+  <div class="pt-block pt">Durante um debugging, o Claude Code leu o arquivo .env da raiz do repositório, que guarda credenciais reais. O tech lead agora quer que o Claude Code não consiga ler esse arquivo para nenhum dev do time, sem depender do julgamento do modelo. O que o time deve acrescentar?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q8" value="a">A. A line in the project CLAUDE.md stating that the .env file must never be opened.<div class="pt">Uma linha no CLAUDE.md do projeto dizendo que o arquivo .env nunca deve ser aberto.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="b">B. A rule file in .claude/rules/ scoped to .env that tells Claude never to read it.<div class="pt">Um arquivo de rule em .claude/rules/ com escopo no .env, dizendo ao Claude para nunca lê-lo.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="c">C. A deny rule for Read(./.env) in each developer's own ~/.claude/settings.json.<div class="pt">Uma regra deny para Read(./.env) no ~/.claude/settings.json de cada dev.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="d">D. A deny rule for Read(./.env) in the project's committed .claude/settings.json.<div class="pt">Uma regra deny para Read(./.env) no .claude/settings.json do projeto, commitado no repo.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> "Sem depender do julgamento do modelo" pede uma regra de permissão, não uma instrução: o Claude Code avalia <code>deny</code> antes de <code>ask</code> e <code>allow</code> e bloqueia a tool call antes de ela rodar. No <code>.claude/settings.json</code> do projeto, versionado, a regra chega a todo dev que clona — e, como as listas de regras se combinam entre os arquivos, um <code>allow</code> pessoal não reabre o acesso. (O deny vale para as tools e os comandos que o Claude Code reconhece; bloquear qualquer processo exige o sandbox.) A e B são texto: CLAUDE.md e rules orientam o modelo de forma probabilística, e foi justamente o julgamento dele que falhou. C acerta o mecanismo e erra o escopo: o settings do usuário não é compartilhado e depende de cada dev configurar a própria máquina. (Para impor a regra à organização inteira, sem que ninguém a remova, existe ainda o nível managed.)<span class="ts">Domínio 3 · TS 3.2 — Slash commands e skills</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="3.4" data-dom="3">
+  <div class="qnum">Questão 9 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">To meet a retention policy, a nightly script must start deleting customer records older than seven years. The edit is one line in one file, but the script runs against the production database, deletions cannot be undone, and the policy requires the data owner to approve any deletion logic before it runs. How should you use Claude Code for this change?</div>
+  <div class="pt-block pt">Para cumprir uma política de retenção, um script noturno precisa passar a apagar registros de clientes com mais de sete anos. A edição é uma linha num arquivo, mas o script roda contra o banco de produção, as exclusões não podem ser desfeitas e a política exige que o dono do dado aprove qualquer lógica de exclusão antes de ela rodar. Como você deve usar o Claude Code nessa mudança?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q9" value="a">A. Direct execution: it is one line in one file, so planning would only add process overhead.<div class="pt">Execução direta: é uma linha num arquivo, então planejar só acrescentaria burocracia.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="b">B. Plan mode: have Claude produce a plan, get the data owner's approval, then execute it.<div class="pt">Plan mode: fazer o Claude produzir um plano, obter a aprovação do dono do dado e então executá-lo.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="c">C. Direct execution with a careful prompt, then have the data owner review the merged commit.<div class="pt">Execução direta com um prompt cuidadoso, e depois pedir ao dono do dado para revisar o commit já mergeado.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="d">D. An Explore subagent to map the script's callers, then direct execution of the one-line edit.<div class="pt">Um Explore subagent para mapear quem chama o script, e depois execução direta da edição de uma linha.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Escopo não é o único critério: o risco (produção, exclusão irreversível) e a exigência de aprovação <strong>antes</strong> do efeito apontam para plan mode, mesmo numa mudança de uma linha. O plano é o ponto em que o dono do dado aprova o que vai acontecer; só depois a mudança é aplicada (sem humano no terminal, <code>claude -p --permission-mode plan</code> faz a mesma etapa). A decide só pelo escopo e ignora os outros dois critérios. C coloca a aprovação depois do merge — e a política pede aprovação antes de rodar, quando ainda dá para impedir a exclusão. D resolve um problema que não existe: o difícil aqui não é descobrir onde mexer, é aprovar o efeito antes de ele acontecer.<span class="ts">Domínio 3 · TS 3.4 — Plan mode vs execução direta</span></div>
 </div>
 
 <div class="concluir">

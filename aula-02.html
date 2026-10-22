@@ -184,6 +184,21 @@ prompt (papel e formato de saída), e não escrevendo "não use a web" na descri
   <em>Na prova, responda como o guia: o allowedTools do coordinator precisa incluir "Task".</em>
 </div>
 
+<h3>Diagnóstico: subagent mal configurado</h3>
+<p>O objetivo oficial pede que você <strong>diagnostique</strong> spawning mal configurado. São três classes de causa,
+e cada uma tem um sintoma próprio. Ler o sintoma antes das alternativas resolve a questão:</p>
+<table class="gloss">
+  <tr><th>Sintoma</th><th>Causa</th><th>Correção</th></tr>
+  <tr><td>O coordinator não delega nada e faz tudo sozinho, com qualquer subagent</td><td class="en">permissão de tool faltando</td><td class="uso"><code>"Task"</code> no <code>allowedTools</code> do coordinator (no produto atual, <code>Agent</code>)</td></tr>
+  <tr><td>Os outros subagents funcionam, mas um deles nunca é chamado; ele não aparece na lista de agentes disponíveis</td><td class="en">wiring coordinator→subagent ausente</td><td class="uso">registrar a AgentDefinition na opção <code>agents</code> do coordinator; escrever a definição sem passá-la não basta</td></tr>
+  <tr><td>O coordinator chama o subagent errado, ou alterna entre dois para a mesma tarefa</td><td class="en">description vaga ou sobreposta</td><td class="uso">descriptions específicas e sem sobreposição: o que cada um faz e quando usar</td></tr>
+  <tr><td>O subagent certo é chamado, mas sai do papel (o sintetizador começa a pesquisar na web)</td><td class="en">tools não restritas</td><td class="uso">declarar <code>tools</code> com só as do papel; sem o campo, ele herda todas as tools disponíveis para subagents</td></tr>
+</table>
+<p>Na AgentDefinition, os campos obrigatórios são <code>description</code> e <code>prompt</code>; <code>tools</code> é
+opcional, e é justamente por ser opcional que a omissão passa despercebida. Regra de bolso: <em>subagent que nunca é
+chamado → permissão (se nenhum é chamado) ou wiring (se só ele falta); chamado na hora errada → description;
+chamado na hora certa mas fazendo outra coisa → tools e system prompt.</em></p>
+
 <h2>3. Contexto isolado: subagents NÃO herdam histórico</h2>
 <p>Esta é a regra mais testada do TS 1.3: <strong>subagents operam com contexto isolado</strong>. Eles não herdam
 automaticamente o histórico da conversa do coordinator <em>nem</em> compartilham memória entre invocações. Tudo que um
@@ -242,6 +257,20 @@ começar sem material; deixar que ela chame os outros subagents direto quebra o 
 <strong>Regra de bolso:</strong> <em>independentes na mesma resposta; dependentes no turno seguinte, com os
 resultados no prompt.</em></p>
 
+<h3>Qual padrão de orquestração escolher</h3>
+<p>O objetivo oficial pede para escolher entre três estruturas pelo que o sistema precisa garantir:
+<strong>cobertura</strong> da pesquisa, <strong>latência</strong> e <strong>confiabilidade</strong>. Elas se combinam
+(um coordinator pode disparar workers em paralelo), mas cada uma otimiza uma coisa:</p>
+<table class="gloss">
+  <tr><th>Padrão</th><th>Cobertura</th><th>Latência</th><th>Confiabilidade</th><th>Escolha quando</th></tr>
+  <tr><td class="en">coordinator-worker</td><td>a maior: o coordinator decompõe, acha gaps e re-delega</td><td>média a alta: há turnos extras do coordinator</td><td>erro centralizado e observável no hub</td><td class="uso">o escopo não é conhecido de antemão e a cobertura importa</td></tr>
+  <tr><td class="en">parallel execution</td><td>depende da partição: escopos distintos, sem sobreposição</td><td>a menor: as subtarefas rodam ao mesmo tempo</td><td>uma falha não pode derrubar as outras; resultado parcial vem anotado</td><td class="uso">as subtarefas são independentes e o prazo aperta</td></tr>
+  <tr><td class="en">sequential pipeline</td><td>fixa, definida no desenho</td><td>a maior: soma dos estágios</td><td>a mais previsível: ordem garantida e cada estágio testável; erro de um estágio chega ao seguinte se não for validado</td><td class="uso">cada estágio precisa da saída do anterior e o processo tem de ser sempre o mesmo</td></tr>
+</table>
+<p>Regra de bolso: <em>escopo aberto → coordinator-worker; subtarefas independentes com pressa → paralelo; estágios
+dependentes que não podem ser pulados → pipeline. O caso oposto também vale: pipeline fixo para pesquisa aberta perde
+cobertura, e coordinator dinâmico para um processo que exige sempre os mesmos passos pode pular um deles.</em></p>
+
 <h3>Prompts do coordinator: metas, não procedimentos</h3>
 <p>Último ponto do blueprint: escreva prompts de coordinator que especificam <strong>objetivos de pesquisa e critérios
 de qualidade</strong> ("cubra todos os setores relevantes; toda claim precisa de fonte"), não instruções procedurais
@@ -272,6 +301,8 @@ divergentes a partir de uma baseline de análise compartilhada (aprofundado na a
   <tr><td class="en">research goals and quality criteria</td><td>objetivos de pesquisa e critérios de qualidade</td><td class="uso">"specify goals rather than step-by-step procedural instructions"</td></tr>
   <tr><td class="en">independent subtasks</td><td>subtarefas independentes (paralelizáveis)</td><td class="uso">"emit multiple Task calls in a single coordinator response"</td></tr>
   <tr><td class="en">tool restrictions</td><td>restrição de tools por papel do subagent</td><td class="uso">"restrict each subagent's tool set to those relevant to its role"</td></tr>
+  <tr><td class="en">misconfigured subagent spawning</td><td>spawn de subagents mal configurado</td><td class="uso">"diagnose missing tool permissions, incorrect AgentDefinition parameters, or absent wiring"</td></tr>
+  <tr><td class="en">sequential pipeline</td><td>pipeline sequencial (estágios fixos em ordem)</td><td class="uso">"select the orchestration pattern that best satisfies coverage, latency, and reliability"</td></tr>
 </table>
 
 <div class="card pegadinha">
@@ -414,6 +445,48 @@ divergentes a partir de uma baseline de análise compartilhada (aprofundado na a
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: D e E.</strong> D: paralelismo vale para subtarefas <em>independentes</em> — 1, 2 e 3 saem na mesma resposta; a 4 depende das três e vai num turno seguinte, com os resultados explícitos no prompt (o subagent não herda o que os outros acharam). E: na AgentDefinition, quem delimita o papel são as <strong>tools</strong> (só leitura de documentos) e o <strong>system prompt</strong> (papel e formato de saída). A dispara a comparação antes de existir o que comparar. B confunde os campos: a description serve para o coordinator escolher <em>quando</em> usar o subagent; ela não restringe nada. C quebra o hub-and-spoke: comunicação entre subagents passa pelo coordinator.<span class="ts">Domínio 1 · TS 1.3 — Invocação de subagents e passagem de contexto</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="1.3" data-dom="1">
+  <div class="qnum">Questão 10 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">You add a patent_analyzer AgentDefinition to your research system and write a clear description for it. The coordinator's allowedTools include "Task", and it still delegates to the web and document subagents as before. Patent questions, however, are always handled by the coordinator itself, and the logs show no Task call that names patent_analyzer, not even a failed one. What is the most likely cause?</div>
+  <div class="pt-block pt">Você adiciona uma AgentDefinition patent_analyzer ao sistema de pesquisa e escreve uma description clara para ela. O allowedTools do coordinator inclui "Task", e ele continua delegando aos subagents de web e de documentos como antes. Perguntas sobre patentes, porém, são sempre tratadas pelo próprio coordinator, e os logs não mostram nenhuma chamada Task para o patent_analyzer, nem mesmo uma que falhou. Qual é a causa mais provável?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q10" value="a">A. patent_analyzer's own tools lack "Task", so the coordinator cannot hand any work over to it.<div class="pt">As tools do próprio patent_analyzer não incluem "Task", então o coordinator não consegue passar trabalho a ele.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="b">B. The definition was written but never registered in the agents option passed to the coordinator.<div class="pt">A definição foi escrita, mas nunca registrada na opção agents passada ao coordinator.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="c">C. The coordinator's prompt lacks an explicit rule saying that patent questions go to patent_analyzer.<div class="pt">O prompt do coordinator não tem uma regra explícita dizendo que perguntas de patente vão para o patent_analyzer.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="d">D. Its prompt field is too short, so the SDK skips the definition when it builds the agent list.<div class="pt">O campo prompt dela é curto demais, então o SDK pula a definição ao montar a lista de agentes.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> O sintoma separa as causas: os outros subagents funcionam, então a permissão de spawn está certa; o que falta é só este, e ele nunca chega a ser chamado, nem com falha. É o wiring ausente: a AgentDefinition existe no código, mas não foi passada na opção <code>agents</code> do coordinator. A confunde os lados: quem precisa da permissão de spawn é o coordinator, não o subagent chamado. C ataca a seleção, mas o coordinator não pode escolher um subagent que não está na lista dele; com a description clara, registrar resolve sem regra procedural. D inventa um comportamento: <code>prompt</code> é obrigatório, mas não há tamanho mínimo que faça o SDK ignorar a definição.<span class="ts">Domínio 1 · TS 1.3 — Invocação de subagents e passagem de contexto</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="1.3" data-dom="1">
+  <div class="qnum">Questão 11 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">Two subagents are registered: doc_analyzer, described as "Analyzes documents and sources", and synthesizer, described as "Analyzes sources and findings to produce summaries". Both are invoked successfully, but for the same kind of request the coordinator sometimes sends raw PDFs to synthesizer and sometimes to doc_analyzer. What should you change first?</div>
+  <div class="pt-block pt">Há dois subagents registrados: doc_analyzer, descrito como "Analisa documentos e fontes", e synthesizer, descrito como "Analisa fontes e achados para produzir resumos". Os dois são invocados com sucesso, mas, para o mesmo tipo de pedido, o coordinator às vezes manda PDFs brutos ao synthesizer e às vezes ao doc_analyzer. O que você deve mudar primeiro?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q11" value="a">A. Rewrite both descriptions so that each states its distinct input and when to use it, with no overlap.<div class="pt">Reescrever as duas descriptions para cada uma dizer sua entrada distinta e quando usá-la, sem sobreposição.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="b">B. Remove the document-reading tools from synthesizer, so that PDF requests fail and get rerouted.<div class="pt">Tirar as tools de leitura de documentos do synthesizer, para os pedidos com PDF falharem e serem re-roteados.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="c">C. Merge the two subagents into one that both analyzes documents and writes the final summaries.<div class="pt">Juntar os dois subagents num só, que analise os documentos e também escreva os resumos finais.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="d">D. Add step-by-step routing to the coordinator prompt: always call doc_analyzer first, then synthesizer.<div class="pt">Pôr roteamento passo a passo no prompt do coordinator: sempre chamar o doc_analyzer primeiro, depois o synthesizer.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> A <code>description</code> é o critério com que o coordinator escolhe o subagent. As duas dizem "analisa fontes", então para o modelo elas se sobrepõem, e a escolha oscila. A correção mais barata e na causa é separar as descriptions: o doc_analyzer recebe documentos brutos; o synthesizer recebe achados já estruturados e produz o resumo. B não corrige a escolha, só transforma a escolha errada em falha. C apaga a especialização e recria o problema de um agente com papel amplo demais. D troca critério por procedimento fixo: resolve este fluxo, engessa os outros e deixa as descriptions sobrepostas no lugar.<span class="ts">Domínio 1 · TS 1.3 — Invocação de subagents e passagem de contexto</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="1.2" data-dom="1">
+  <div class="qnum">Questão 12 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">A weekly regulatory briefing always follows the same steps: collect the week's filings, extract the figures, verify each figure against its filing, then write the briefing. Each step needs the complete output of the previous one, auditors require every step to run, and the briefing is due in 24 hours. Today a coordinator decides each week what to delegate, and it has twice skipped verification. Which structure fits best?</div>
+  <div class="pt-block pt">Um briefing regulatório semanal segue sempre os mesmos passos: coletar os documentos da semana, extrair os números, verificar cada número contra o documento de origem e escrever o briefing. Cada passo precisa da saída completa do anterior, os auditores exigem que todos os passos rodem e o prazo é de 24 horas. Hoje um coordinator decide a cada semana o que delegar, e já pulou a verificação duas vezes. Qual estrutura serve melhor?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q12" value="a">A. Keep the coordinator and add a line to its prompt stating that verification is mandatory every week.<div class="pt">Manter o coordinator e pôr uma linha no prompt dele dizendo que a verificação é obrigatória toda semana.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="b">B. Run the four steps as parallel subagents in one response to cut latency, then merge their outputs.<div class="pt">Rodar os quatro passos como subagents paralelos numa resposta, para cortar latência, e juntar as saídas.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="c">C. Add a second coordinator that reviews the first one's delegation plan before any subagent runs.<div class="pt">Pôr um segundo coordinator que revisa o plano de delegação do primeiro antes de qualquer subagent rodar.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="d">D. Use a fixed sequential pipeline in code, where each stage receives the previous stage's output.<div class="pt">Usar um pipeline sequencial fixo em código, em que cada estágio recebe a saída do estágio anterior.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> Os requisitos apontam para o pipeline: estágios dependentes em ordem fixa, todos obrigatórios, e latência sem importância (24 h). Com a ordem no código, a verificação não pode ser pulada, e cada estágio pode ser testado e auditado. A deixa uma regra que não pode falhar dependendo do prompt, e ela já falhou duas vezes. B ignora a dependência: a verificação não tem o que verificar antes da extração, e latência não é o requisito. C acrescenta outra camada de julgamento do modelo sobre um processo que não precisa de julgamento nenhum. O caso oposto também vale: numa pesquisa aberta, com escopo desconhecido, o pipeline fixo perderia cobertura, e aí o coordinator-worker é o certo.<span class="ts">Domínio 1 · TS 1.2 — Orquestração coordinator-subagents</span></div>
 </div>
 
 <div class="concluir">

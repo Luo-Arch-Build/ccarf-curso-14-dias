@@ -96,7 +96,8 @@
   Task Statement 3.5 (exemplos input/output, iteração guiada por testes, interview pattern,
   issues interagentes vs independentes) e a integração do Claude Code em pipelines de CI/CD do
   Task Statement 3.6 (modo não-interativo com <code>-p</code>, output estruturado parseável,
-  revisão por instância independente e re-reviews sem comentários duplicados).
+  permission modes, limites de turnos e de custo, tools restritas para o revisor, as duas integrações
+  oficiais de review, revisão por instância independente e re-reviews sem comentários duplicados).
 </div>
 
 <h2>1. Refinamento iterativo (Task Statement 3.5)</h2>
@@ -186,17 +187,70 @@ claude -p "Analyze this pull request for security issues"</code></pre>
 sem regex em cima de texto livre.</p>
 <p>Note a divisão de trabalho: <code>--output-format json</code> faz a saída ser JSON parseável; o <code>--json-schema</code> é o que fixa a <strong>estrutura</strong> (chaves, tipos, campos obrigatórios). Descrever o formato no prompt reduz a variação, mas continua probabilístico. Regra de bolso: <em>se um script consome a saída, a estrutura é imposta por schema, não pedida em texto.</em></p>
 
+<h3>2.3 Permission modes, limites de turnos e de custo, tools do revisor</h3>
+<p>O <code>-p</code> resolve o travamento, mas não diz <em>o que</em> o Claude pode fazer sem ninguém olhando.
+O Exam Guide não lista essas flags, mas os objetivos oficiais da prova (a lista que vem no score report) cobram
+<em>"non-interactive flags, permission modes, and cost and turn limits that prevent runaway executions"</em> e
+<em>"restrict unnecessary tool access"</em>. Trate como matéria de prova. São três travas, uma por pergunta:</p>
+<table class="gloss">
+  <tr><th>Pergunta</th><th>Flag</th><th>O que faz</th></tr>
+  <tr><td>O que roda sem aprovação?</td><td><code>--permission-mode</code></td><td>Aceita <code>default</code>, <code>acceptEdits</code>, <code>plan</code>, <code>auto</code>, <code>dontAsk</code> e <code>bypassPermissions</code>.</td></tr>
+  <tr><td>Até onde ele pode ir?</td><td><code>--max-turns</code> · <code>--max-budget-usd</code></td><td>Limite de turnos agênticos (ao atingir, encerra com erro) e de gasto estimado com a API. Os dois só no modo <code>-p</code>.</td></tr>
+  <tr><td>Quais tools existem?</td><td><code>--tools</code> · <code>--disallowedTools</code></td><td><code>--tools</code> restringe as tools nativas disponíveis; <code>--disallowedTools</code> remove tools da sessão.</td></tr>
+</table>
+<p><strong>Os modos que importam no CI:</strong></p>
+<ul>
+  <li><code>dontAsk</code>: nega automaticamente toda tool call que pediria permissão; roda só o que não pediria
+      permissão (leituras no diretório de trabalho) e o pré-aprovado (regras <code>allow</code> ou <code>--allowedTools</code>). É o modo que a documentação indica para
+      CI travado: nada fica esperando um humano e nada fora da lista roda.</li>
+  <li><code>bypassPermissions</code>: pula as checagens de permissão. Só em ambiente isolado (container, VM, dev
+      container sem internet). Num runner com segredos e acesso à rede, é o distrator.</li>
+  <li><code>plan</code>: o Claude analisa e propõe, sem editar. Também funciona com <code>-p</code> (ver aula 07).</li>
+  <li><code>acceptEdits</code>: aceita sem perguntar edições de arquivo e comandos comuns de sistema de arquivos (<code>mkdir</code>, <code>mv</code>, <code>rm</code>…) dentro do diretório de trabalho. Serve para o job que gera código, não para o revisor.</li>
+</ul>
+<pre><code># Revisor de PR travado: só lê, nunca espera aprovação, não entra em loop
+claude -p "Review this diff against the standards in CLAUDE.md" \
+  --permission-mode dontAsk \
+  --tools "Read,Grep,Glob" \
+  --max-turns 15 --max-budget-usd 2 \
+  --output-format json --json-schema "$SCHEMA"</code></pre>
+<p>Cuidado com o nome parecido: <code>--allowedTools</code> <strong>não restringe</strong>. Ele só pré-aprova
+(as tools listadas rodam sem pedir permissão) e todas as outras continuam disponíveis. Quem tira tools é
+<code>--tools</code> ou <code>--disallowedTools</code>. Dois detalhes: <code>--tools</code> limita só as tools
+<strong>nativas</strong> (MCP tools saem com <code>--disallowedTools "mcp__*"</code>), e tirar só Edit e Write não basta
+se o <code>Bash</code> continua disponível — <code>sed -i</code>, <code>mv</code> e <code>rm</code> também mudam arquivos.</p>
+<p>Regra de bolso: <em>revisor que não pode editar → deixe só as tools de leitura (<code>--tools "Read,Grep,Glob"</code>)
+ou tire tudo que escreve, <strong>inclusive o Bash</strong> (<code>--disallowedTools</code>);
+<code>--allowedTools</code> é para o caso oposto, deixar rodar sem perguntar uma tool que você <strong>quer</strong> que rode.
+Job que pode entrar em loop (corrigir até o teste passar) → <code>--max-turns</code> e <code>--max-budget-usd</code>; se o job
+começa a parar por limite antes de terminar o trabalho legítimo, o limite está apertado para a tarefa: ajuste-o ou divida
+a tarefa, não tire a trava.</em></p>
+
+<h3>2.4 As duas integrações oficiais de review</h3>
+<p>Além de chamar <code>claude -p</code> no seu próprio script, há duas integrações prontas, e são produtos diferentes:</p>
+<ul>
+  <li><strong>GitHub Actions</strong> (<code>anthropics/claude-code-action</code>, instalada com <code>/install-github-app</code>
+      ou manualmente): roda o Claude Code no seu workflow. Os padrões do projeto vêm do <code>CLAUDE.md</code>, que ele lê a
+      cada execução; flags da CLI (tools, limites, modelo) vão no input <code>claude_args</code>.</li>
+  <li><strong>Code Review</strong> gerenciado: a Anthropic revisa os PRs por você. O review é ajustado pelo
+      <code>CLAUDE.md</code> e pelo <code>REVIEW.md</code>; o <code>REVIEW.md</code> é lido da branch base ou da default, <strong>nunca</strong> das mudanças do próprio PR (um PR não
+      consegue afrouxar as regras que o revisam). Não faz push de commits: comenta no PR.</li>
+</ul>
+<p>Regra de bolso: <em>quer controlar o workflow, as flags e os limites → Action com <code>claude_args</code>; quer review
+pronto sem manter pipeline → Code Review, com as regras no <code>REVIEW.md</code>. Nos dois, as convenções do projeto
+moram em arquivo do repositório, não no prompt do job (2.5).</em></p>
+
 <div class="card" style="border-left: 3px solid var(--accent2);">
-  <strong>🧭 Fora do guia, mas útil no CI real</strong> <span style="color:var(--muted);font-size:12.5px">(documentação do Claude Code conferida em 20/10/2026)</span>
+  <strong>🧭 Prova × produto atual</strong> <span style="color:var(--muted);font-size:12.5px">(documentação do Claude Code conferida em 22/10/2026)</span>
   <ul>
     <li>Com <code>--json-schema</code>, o resultado validado vem no campo <code>structured_output</code> do JSON de saída (só no modo <code>-p</code>).</li>
-    <li><strong>Revisor que não pode editar o repositório:</strong> restrinja as tools nativas com <code>--tools</code> (por exemplo, só leitura) ou remova as de edição com <code>--disallowedTools</code>. <code>--allowedTools</code> <strong>não restringe</strong>: só pré-aprova, para não pedir permissão.</li>
-    <li><strong>Trava contra execução descontrolada:</strong> <code>--max-turns</code> limita os turnos agênticos e <code>--max-budget-usd</code> encerra a execução num gasto estimado (os dois só no modo <code>-p</code>).</li>
+    <li><code>manual</code> é aceito como alias de <code>default</code> em <code>--permission-mode</code> (v2.1.200+).</li>
+    <li>No Agent SDK, a parada por orçamento aparece como resultado com subtype <code>error_max_budget_usd</code>.</li>
   </ul>
-  <em>Nada disso está no guia; a prova cobra -p, --output-format json e --json-schema.</em>
+  <em>Detalhes de produto: a prova cobra o papel de cada flag (seção 2.3), não esses nomes de campo.</em>
 </div>
 
-<h3>2.3 CLAUDE.md provê contexto ao Claude invocado no CI</h3>
+<h3>2.5 CLAUDE.md provê contexto ao Claude invocado no CI</h3>
 <p>O Claude Code rodando no runner lê o <code>CLAUDE.md</code> do repositório como sempre. É lá que
 você documenta <strong>padrões de teste, convenções de fixtures, critérios de review e o que é um
 teste valioso</strong> — sem isso, a geração de testes no CI produz testes triviais de baixo valor.
@@ -204,14 +258,14 @@ O CLAUDE.md é o mecanismo de contexto de projeto tanto na sua máquina quanto n
 (nem recomendado) duplicar essas instruções dentro do prompt do pipeline.</p>
 <p>Por isso, convenções coladas no prompt de cada job são um anti-padrão: valem só para aquele job, viram cópias que divergem e não chegam ao próximo pipeline que alguém criar. No CLAUDE.md, toda invocação no repositório recebe o mesmo contexto. Documente lá também as <strong>fixtures disponíveis</strong> e o que torna um teste <strong>valioso</strong> (comportamento, edge cases, regressões) — sem esse critério, a geração produz testes triviais, que só verificam que a função não lança exceção. Regra de bolso: <em>contexto de projeto para o CI mora no CLAUDE.md, não no YAML do job.</em></p>
 
-<h3>2.4 Self-review bias: a sessão que gerou o código é pior revisora dele</h3>
+<h3>2.6 Self-review bias: a sessão que gerou o código é pior revisora dele</h3>
 <p>A mesma sessão que escreveu o código já "decidiu" que aquela abordagem é correta — o contexto
 dela está contaminado pelo raciocínio que produziu o código. Resultado: review raso, tendência a
 aprovar as próprias escolhas. A correção arquitetural: <strong>revisar numa instância independente</strong>,
 que vê só o diff e os critérios de review, sem o histórico de geração. Em CI isso é natural: o job de
 review é uma invocação nova de <code>claude -p</code>, não a continuação da sessão do autor.</p>
 
-<h3>2.5 Re-rodando reviews após novos commits: só issues novos/não-resolvidos</h3>
+<h3>2.7 Re-rodando reviews após novos commits: só issues novos/não-resolvidos</h3>
 <p>Cenário clássico: o review roda a cada push. Sem cuidado, cada execução reposta os mesmos
 findings e o PR acumula comentários duplicados — devs passam a ignorar o bot. A solução:
 <strong>incluir os findings anteriores no contexto</strong> da nova execução e instruir explicitamente:
@@ -236,6 +290,12 @@ no contexto, para o Claude não sugerir cenários que a suíte já cobre.</p>
   <tr><td class="en">-p / --print flag</td><td>flag que imprime o resultado e encerra</td><td class="uso">"use the --print flag to prevent interactive input hangs in CI"</td></tr>
   <tr><td class="en">--output-format json</td><td>flag de formato de saída em JSON</td><td class="uso">"produce machine-parseable output with --output-format json"</td></tr>
   <tr><td class="en">--json-schema</td><td>flag que força o output a um schema JSON</td><td class="uso">"enforce structured findings using --json-schema"</td></tr>
+  <tr><td class="en">permission mode</td><td>modo de permissão (o que roda sem aprovação)</td><td class="uso">"configure permission modes for automated CI/CD pipelines"</td></tr>
+  <tr><td class="en">dontAsk</td><td>modo que nega o que pediria permissão, exceto o pré-aprovado</td><td class="uso">"run the locked-down CI job with --permission-mode dontAsk"</td></tr>
+  <tr><td class="en">bypassPermissions</td><td>modo que pula as checagens (só ambiente isolado)</td><td class="uso">"use bypassPermissions only in isolated containers or VMs"</td></tr>
+  <tr><td class="en">cost and turn limits</td><td>limites de custo e de turnos (<code>--max-budget-usd</code>, <code>--max-turns</code>)</td><td class="uso">"cost and turn limits that prevent runaway executions"</td></tr>
+  <tr><td class="en">runaway execution</td><td>execução descontrolada (loop que não para)</td><td class="uso">"prevent runaway executions in non-interactive runs"</td></tr>
+  <tr><td class="en">restrict tool access</td><td>restringir as tools (<code>--tools</code>, <code>--disallowedTools</code>)</td><td class="uso">"restrict unnecessary tool access for the review job"</td></tr>
   <tr><td class="en">inline PR comments</td><td>comentários inline no pull request</td><td class="uso">"structured findings posted as inline PR comments"</td></tr>
   <tr><td class="en">independent review instance</td><td>instância de revisão independente</td><td class="uso">"an independent review instance rather than the session that generated the code"</td></tr>
   <tr><td class="en">prior review findings</td><td>findings de reviews anteriores</td><td class="uso">"include prior review findings and report only new or unaddressed issues"</td></tr>
@@ -247,13 +307,18 @@ no contexto, para o Claude não sugerir cenários que a suíte já cobre.</p>
 
 <div class="card pegadinha">
   <h3>⚠️ Pegadinha do dia</h3>
-  <p>Nas questões de CI/CD, os distratores quase sempre são <strong>features que não existem</strong>
+  <p>Nas questões de CI/CD, os distratores são de dois tipos. O primeiro: <strong>features que não existem</strong>
   (<code>CLAUDE_HEADLESS=true</code>, <code>--batch</code>, <code>--ci-mode</code>) ou gambiarras de shell
-  (<code>&lt; /dev/null</code>, <code>timeout 60 claude ...</code>) que não resolvem a causa raiz. A resposta
-  certa usa as flags documentadas: <code>-p</code>/<code>--print</code>, <code>--output-format json</code>,
-  <code>--json-schema</code>. Regra de bolso: <em>flag ou variável de ambiente que não está na documentação do Claude Code é
-  distrator; quando o job trava esperando input, a correção é a flag oficial de modo não-interativo
-  (<code>-p</code>/<code>--print</code>); quando o problema é a estrutura da saída, <code>--output-format json</code> + <code>--json-schema</code>.</em></p>
+  (<code>&lt; /dev/null</code>, <code>timeout 60 claude ...</code>) que não resolvem a causa raiz. O segundo, mais traiçoeiro:
+  <strong>flag real no papel errado</strong> — <code>bypassPermissions</code> num runner com segredos, <code>--allowedTools</code>
+  para "restringir" o revisor, instrução no prompt no lugar de <code>--max-turns</code>. As flags documentadas que a prova
+  cobra: <code>-p</code>/<code>--print</code>, <code>--output-format json</code>, <code>--json-schema</code>,
+  <code>--permission-mode</code>, <code>--max-turns</code>, <code>--max-budget-usd</code>, <code>--tools</code>/<code>--disallowedTools</code>.
+  Regra de bolso: <em>flag ou variável de ambiente que não está na documentação do Claude Code é distrator; flag que existe
+  só é resposta se faz o papel pedido — job trava esperando input → <code>-p</code>; estrutura da saída →
+  <code>--output-format json</code> + <code>--json-schema</code>; job sem humano que não pode pedir aprovação →
+  <code>dontAsk</code>; loop ou gasto sem teto → <code>--max-turns</code>/<code>--max-budget-usd</code>; revisor só leitura →
+  <code>--tools</code>/<code>--disallowedTools</code>.</em></p>
 </div>
 
 <h2>4. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
@@ -385,6 +450,48 @@ no contexto, para o Claude não sugerir cenários que a suíte já cobre.</p>
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: B e D.</strong> O CLAUDE.md é o mecanismo que o guia indica para dar contexto de projeto ao Claude Code invocado no CI: toda invocação no repositório o carrega, então as convenções deixam de existir em três cópias que divergem. E é lá que se documentam as fixtures disponíveis, os padrões de teste e o que torna um teste valioso — o que corta testes triviais e fixtures recriadas. A mistura os jobs numa sessão só: o contexto de uma etapa vaza para a outra, e a review passa a avaliar código gerado na mesma sessão. C gera mais ruído para filtrar depois, sem dar à geração o critério que falta. E mantém a causa: cópias no prompt de cada job continuam divergindo, agora com menos detalhe.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="3.6" data-dom="3">
+  <div class="qnum">Questão 10 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">A nightly job runs claude -p to fix failing tests until the suite passes. Last night one flaky test kept failing, the agent kept iterating for hours, and the job ran up a large API bill before the runner's 6-hour timeout killed it. What is the most appropriate safeguard?</div>
+  <div class="pt-block pt">Um job noturno roda claude -p para corrigir testes que falham até a suíte passar. Ontem à noite um teste instável continuou falhando, o agente ficou iterando por horas e o job gerou uma conta alta de API antes de o timeout de 6 horas do runner matá-lo. Qual é a salvaguarda mais adequada?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q10" value="a">A. Add to the prompt an instruction to give up after a few attempts if the tests keep failing.<div class="pt">Acrescentar ao prompt uma instrução para desistir depois de algumas tentativas se os testes continuarem falhando.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="b">B. Cut the runner timeout to 30 minutes so the platform kills the job sooner when the agent loops.<div class="pt">Reduzir o timeout do runner para 30 minutos, para a plataforma matar o job mais cedo quando o agente entra em loop.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="c">C. Pass --max-turns and --max-budget-usd so the run itself stops at a set turn or spend limit.<div class="pt">Passar --max-turns e --max-budget-usd para a própria execução parar num limite definido de turnos ou de gasto.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="d">D. Run the job with --permission-mode plan so the agent only proposes fixes and never applies them.<div class="pt">Rodar o job com --permission-mode plan, para o agente só propor correções e nunca aplicá-las.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> É o caso que o objetivo oficial descreve: <em>"cost and turn limits that prevent runaway executions"</em>. <code>--max-turns</code> limita os turnos agênticos e encerra com erro ao atingir; <code>--max-budget-usd</code> para a execução num gasto estimado. Os dois são do modo <code>-p</code> e ficam declarados na invocação, e o job falha de forma visível em vez de queimar dinheiro. A é instrução em prosa: um agente convencido de que está quase lá continua tentando. B é gambiarra de plataforma: mata o processo por relógio, sem relação com o gasto, e corta também execuções legítimas mais longas. D muda o propósito do job, que existe para aplicar as correções.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="3.6" data-dom="3">
+  <div class="qnum">Questão 11 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">A lint-triage job runs claude -p on a shared CI runner that holds deployment secrets and has network access. The job may read files and run the approved npm run lint command; any other action must be refused instead of waiting for an approval that no one is there to give. Which configuration fits?</div>
+  <div class="pt-block pt">Um job de triagem de lint roda claude -p num runner de CI compartilhado que guarda segredos de deploy e tem acesso à rede. O job pode ler arquivos e rodar o comando aprovado npm run lint; qualquer outra ação deve ser recusada, em vez de esperar uma aprovação que ninguém está ali para dar. Qual configuração atende?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q11" value="a">A. --permission-mode dontAsk, with npm run lint pre-approved through an allow rule.<div class="pt">--permission-mode dontAsk, com npm run lint pré-aprovado por uma regra allow.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="b">B. --permission-mode bypassPermissions, so no tool call ever stops the job to wait for approval.<div class="pt">--permission-mode bypassPermissions, para nenhuma tool call parar o job esperando aprovação.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="c">C. --permission-mode acceptEdits, so file edits go through while each command still asks first.<div class="pt">--permission-mode acceptEdits, para as edições de arquivo passarem enquanto cada comando continua pedindo antes.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="d">D. --allowedTools "Bash", so the lint run and any other command proceed without stopping to ask.<div class="pt">--allowedTools "Bash", para o lint e qualquer outro comando seguirem sem parar para perguntar.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> <code>dontAsk</code> nega automaticamente toda tool call que pediria permissão e deixa rodar só o que está pré-aprovado — é o modo que a documentação indica para CI travado. Ler arquivos não pede permissão; o <code>npm run lint</code> entra por uma regra <code>allow</code> (ou <code>--allowedTools</code>); o resto é recusado na hora, sem travar o job. B pula todas as checagens: só serve em container ou VM isolados, e este runner tem segredos e rede — é exatamente o risco. C libera edições, que o job não deve fazer, e deixa os comandos esperando uma aprovação que nunca vem. D pré-aprova qualquer comando Bash, o contrário de "qualquer outra ação deve ser recusada".<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="3.6" data-dom="3">
+  <div class="qnum">Questão 12 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">Your PR-review job reuses the flags of the test-generation job, including --permission-mode acceptEdits, and adds --allowedTools "Read,Grep,Glob" to keep the reviewer read-only. In a recent run, the reviewer edited a file to fix a problem it had found. Which change actually prevents the reviewer from editing?</div>
+  <div class="pt-block pt">Seu job de review de PR reaproveita as flags do job de geração de testes, inclusive --permission-mode acceptEdits, e acrescenta --allowedTools "Read,Grep,Glob" para deixar o revisor só com leitura. Numa execução recente, o revisor editou um arquivo para corrigir um problema que tinha encontrado. Qual mudança de fato impede o revisor de editar?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q12" value="a">A. Add a firm instruction to the review prompt that the reviewer must never modify any file.<div class="pt">Acrescentar ao prompt de review uma instrução firme de que o revisor nunca deve modificar nenhum arquivo.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="b">B. Describe the reviewer's permitted tools in a CLAUDE.md section that every CI job loads.<div class="pt">Descrever as tools permitidas ao revisor numa seção do CLAUDE.md que todo job de CI carrega.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="c">C. Extend the --allowedTools list so that it names every read-only tool the reviewer may need.<div class="pt">Ampliar a lista de --allowedTools para nomear toda tool de leitura de que o revisor possa precisar.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="d">D. Use --tools "Read,Grep,Glob" so that only the read-only built-in tools remain available.<div class="pt">Usar --tools "Read,Grep,Glob", para só as tools nativas de leitura continuarem disponíveis.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> <code>--allowedTools</code> não restringe: só pré-aprova as tools listadas, e as outras continuam disponíveis — com o <code>acceptEdits</code> herdado, o Edit rodou sem perguntar. Quem limita o conjunto é <code>--tools</code>: só Read, Grep e Glob existem na sessão. Com <code>--disallowedTools</code> também dá, desde que saia tudo que escreve — tirar só Edit e Write deixa o <code>Bash</code>, e com o <code>acceptEdits</code> herdado um <code>sed -i</code> ou <code>mv</code> roda sem perguntar. É o <em>"restrict unnecessary tool access"</em> dos objetivos oficiais. A é instrução probabilística para uma regra que não pode falhar. B confunde contexto com permissão: o CLAUDE.md orienta, não tira tools. C usa a mesma flag e tem o mesmo efeito: aprova mais, não restringe nada.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
 </div>
 
 <div class="concluir">

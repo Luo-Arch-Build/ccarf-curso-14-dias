@@ -162,6 +162,34 @@ não é trabalho do prompt:</p>
         "delivered_at": raw["delivered_at"],
     }</code></pre>
 
+<h3>As quatro técnicas: sumarização, janela deslizante, estado estruturado e retenção seletiva</h3>
+<p>O objetivo oficial cita quatro técnicas para manter a qualidade quando a conversa passa do limite prático de
+tokens. As duas primeiras você já viu acima (o bloco de case facts é o <em>structured state object</em>). Elas não
+competem; um agente de suporte sério usa as quatro juntas:</p>
+<table class="gloss">
+  <tr><th>Técnica (EN)</th><th>O que faz</th><th>Onde falha</th></tr>
+  <tr><td class="en">summarization</td><td>troca trechos antigos do histórico por um resumo</td><td class="uso">resumo de resumo apaga valores, datas e acordos</td></tr>
+  <tr><td class="en">structured state object</td><td>bloco de fatos (case facts) fora do histórico, enviado em toda chamada</td><td class="uso">só guarda o que alguém extraiu para ele</td></tr>
+  <tr><td class="en">sliding window</td><td>mantém inteiros só os últimos N turnos; os anteriores saem do contexto</td><td class="uso">o que foi dito antes da janela e não foi para o bloco se perde de vez</td></tr>
+  <tr><td class="en">selective retention</td><td>decide por tipo de conteúdo o que fica, o que é resumido e o que sai</td><td class="uso">depende de classificar certo o que é crítico</td></tr>
+</table>
+<p><strong>Janela deslizante.</strong> O prompt leva o bloco de fatos fixo + os últimos N turnos completos. É
+simples e previsível: o custo por chamada fica estável, e o modelo vê o diálogo recente na íntegra, sem a perda de
+detalhe de um resumo. O ponto fraco é o começo da conversa. Se o cliente disse no turno 3 "só posso receber depois do
+dia 20" e isso não foi para o bloco, no turno 30 o fato já saiu da janela, e o agente agenda a entrega para o dia 15.
+Por isso a janela só é segura junto com a extração de fatos para o bloco no momento em que eles aparecem.</p>
+<p><strong>Retenção seletiva.</strong> Em vez de tratar o histórico como uma coisa só, classifique:</p>
+<ul>
+  <li><strong>Nunca sai do contexto</strong> (vai para o bloco de fatos): IDs, valores, datas, acordos e compromissos
+      feitos, restrições e expectativas declaradas pelo cliente.</li>
+  <li><strong>Pode ser resumido</strong>: a discussão que levou a uma decisão, já registrada no bloco.</li>
+  <li><strong>Pode sair</strong>: tool results antigos já usados (o <code>lookup_order</code> de 40 campos de dez
+      turnos atrás), saídas verbosas de exploração, tentativas que falharam e já foram resolvidas.</li>
+</ul>
+<p>Regra de bolso: <em>o que o agente pode ter de honrar mais tarde vai para o bloco de fatos no turno em que aparece;
+o resto pode resumir ou sair. O caso oposto: aumentar a janela ou o contexto só adia a perda, e jogar fora tool
+results antigos é seguro só depois de os dados que importam deles estarem no bloco.</em></p>
+
 <h2>2. Escalonamento e resolução de ambiguidade (Task Statement 5.2)</h2>
 <p>A prova cobra a <strong>calibração</strong>: escalar demais derruba o first-contact resolution; escalar
 de menos gera violação de política. Os gatilhos legítimos de escalonamento são três:</p>
@@ -267,6 +295,8 @@ um "resumo de progresso" em prosa na última mensagem não é estado que o coord
   <tr><td class="en">context budget</td><td>orçamento de contexto do agente downstream</td><td class="uso">"downstream agents have limited context budgets"</td></tr>
   <tr><td class="en">relevance score</td><td>score de relevância de cada fato</td><td class="uso">"return key facts, citations and relevance scores instead of verbose content"</td></tr>
   <tr><td class="en">phase summary</td><td>resumo da fase anterior injetado no prompt</td><td class="uso">"summarize key findings before spawning sub-agents for the next phase"</td></tr>
+  <tr><td class="en">sliding window</td><td>janela deslizante (só os últimos N turnos inteiros)</td><td class="uso">"apply sliding windows and selective retention as conversations exceed practical token limits"</td></tr>
+  <tr><td class="en">selective retention</td><td>retenção seletiva (o que fica, o que resume, o que sai)</td><td class="uso">"retain transactional facts while dropping stale tool results"</td></tr>
 </table>
 
 <div class="card pegadinha">
@@ -398,6 +428,20 @@ um "resumo de progresso" em prosa na última mensagem não é estado que o coord
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: B e D.</strong> TS 5.1: quando o downstream tem orçamento de contexto curto, os agentes upstream devolvem dado estruturado — fatos-chave, citações, score de relevância — em vez de conteúdo verboso e cadeia de raciocínio (B), e incluem metadados — data, localização na fonte, contexto metodológico — para a síntese interpretar cada número corretamente (D). A corta às cegas: o finding importante pode estar depois do token 1.500. C pede concisão em prosa: instrução vaga, sem estrutura nem garantia. E faz o oposto do necessário: a cadeia de raciocínio é justamente o volume que estoura o orçamento. <span class="ts">Domínio 5 · TS 5.1 — Contexto em interações longas</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="5.1" data-dom="5">
+  <div class="qnum">Questão 9 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">Your support agent sends a case-facts block (order ID, amount, agreed refund) plus only the last 12 turns of the conversation. In turn 3, a customer said they can only receive the replacement after the 20th. In turn 31, the agent schedules delivery for the 15th. What is the best fix?</div>
+  <div class="pt-block pt">Seu agente de suporte envia um bloco de case facts (ID do pedido, valor, reembolso acordado) e só os últimos 12 turnos da conversa. No turno 3, um cliente disse que só pode receber a reposição depois do dia 20. No turno 31, o agente agenda a entrega para o dia 15. Qual é a melhor correção?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q9" value="a">A. Widen the window to the last 40 turns, so that statements from early in the conversation stay visible.<div class="pt">Ampliar a janela para os últimos 40 turnos, para as falas do começo da conversa continuarem visíveis.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="b">B. Replace the window with a running summary of the full history, so that nothing is ever dropped.<div class="pt">Trocar a janela por um resumo contínuo do histórico inteiro, para nada nunca ser descartado.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="c">C. Instruct the agent to always ask about delivery constraints right before it schedules any delivery.<div class="pt">Instruir o agente a sempre perguntar sobre restrições de entrega logo antes de agendar qualquer entrega.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="d">D. Extract customer-stated constraints into the case-facts block in the turn in which they appear.<div class="pt">Extrair as restrições declaradas pelo cliente para o bloco de case facts no turno em que aparecem.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> A janela deslizante fez o que promete: o turno 3 saiu do contexto. A falha é de retenção seletiva: uma restrição que o agente teria de honrar não foi para o bloco de fatos, que é a única parte que nunca sai. A só adia o problema: a conversa seguinte, com 50 turnos, perde o mesmo fato, e o custo por chamada sobe. B troca uma perda por outra: resumos sucessivos são justamente o que transforma "depois do dia 20" em "o cliente tem preferências de entrega". C faz o cliente repetir algo que já disse e não protege os outros fatos que saem da janela, como um acordo feito no começo.<span class="ts">Domínio 5 · TS 5.1 — Contexto em interações longas</span></div>
 </div>
 
 <div class="concluir">

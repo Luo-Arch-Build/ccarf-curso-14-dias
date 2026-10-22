@@ -68,20 +68,20 @@
 <script>
 (function () {
   var aulas = [
-    ['aula-01.html', 'A prova e o loop agêntico', 'Domínio 1 · stop_reason, tool_use vs end_turn, anti-padrões de loop'],
-    ['aula-02.html', 'Orquestração multi-agent: coordinator e subagents', 'Domínio 1 · hub-and-spoke, seleção e particionamento de subagents, Task tool, contexto explícito, objetivo × procedimento, paralelismo'],
-    ['aula-03.html', 'Enforcement, hooks e gerenciamento de sessões', 'Domínio 1 · prerequisite gates, PostToolUse, multi-concern, handoff estruturado, prompt chaining, --resume, fork_session'],
+    ['aula-01.html', 'A prova e o loop agêntico', 'Domínio 1 · stop_reason (todos os valores), tool_use vs end_turn, várias tool calls numa resposta, anti-padrões de loop'],
+    ['aula-02.html', 'Orquestração multi-agent: coordinator e subagents', 'Domínio 1 · hub-and-spoke, seleção e particionamento de subagents, Task tool, contexto explícito, objetivo × procedimento, paralelismo, padrões de orquestração, diagnóstico de subagent mal configurado'],
+    ['aula-03.html', 'Enforcement, hooks e gerenciamento de sessões', 'Domínio 1 · prerequisite gates, PreToolUse × PostToolUse, multi-concern, handoff estruturado, prompt chaining, --resume, fork_session'],
     ['aula-04.html', 'Design de tools: descrições, distribuição e tool_choice', 'Domínio 2 · descrições, 4-5 tools por agente, tool restrita (load_document), tool_choice auto/any/forced'],
-    ['aula-05.html', 'Erros estruturados, MCP servers e tools nativas', 'Domínio 2 · isError, errorCategory, .mcp.json vs ~/.claude.json, MCP resources, servers da comunidade, Grep × Glob, exploração incremental'],
-    ['aula-06.html', 'CLAUDE.md: hierarquia, @import e rules com glob', 'Domínio 3 · user/project/directory, .claude/rules/ com paths glob, /memory'],
-    ['aula-07.html', 'Slash commands, skills e plan mode', 'Domínio 3 · .claude/commands/, SKILL.md frontmatter, context: fork, plan mode, Explore subagent, mapa necessidade → mecanismo'],
-    ['aula-08.html', 'Refinamento iterativo e Claude Code em CI/CD', 'Domínio 3 · exemplos I/O, test-driven iteration, interview pattern, -p, --output-format json + --json-schema, CLAUDE.md no CI'],
-    ['aula-09.html', 'Critérios explícitos e few-shot prompting', 'Domínio 4 · critérios categóricos, falsos positivos, 2-4 exemplos few-shot'],
-    ['aula-10.html', 'Structured output: tool_use, JSON schemas e validação-retry', 'Domínio 4 · schemas, nullable, enum other+unclear, normalização no prompt, retry-with-error-feedback, detected_pattern'],
-    ['aula-11.html', 'Message Batches API e review multi-pass', 'Domínio 4 · 50% economia/24h sem SLA, custom_id, instância independente de review, confiança calibrada'],
-    ['aula-12.html', 'Gestão de contexto e escalonamento', 'Domínio 5 · case facts, lost-in-the-middle, escalonamento, scratchpads, crash recovery com manifest, resumo de fase'],
-    ['aula-13.html', 'Propagação de erros, human review e proveniência', 'Domínio 5 · erro estruturado, confiança por campo calibrada, stratified sampling, claim-source, estabelecido × contestado'],
-    ['aula-14.html', 'Simulado final e estratégia de prova', 'Modo prova · banco inédito de 30 questões, 4 cenários sorteados, cronômetro, % por domínio + checklist da véspera']
+    ['aula-05.html', 'Erros estruturados, MCP servers e tools nativas', 'Domínio 2 · isError, errorCategory, .mcp.json vs ~/.claude.json, MCP resources, servers da comunidade, /mcp, Grep × Glob, exploração incremental'],
+    ['aula-06.html', 'CLAUDE.md: hierarquia, @import e rules com glob', 'Domínio 3 · user/project/directory, .claude/rules/ com paths glob, /memory, permissões e hooks em settings.json'],
+    ['aula-07.html', 'Slash commands, skills e plan mode', 'Domínio 3 · .claude/commands/, SKILL.md frontmatter, context: fork, plan mode por escopo, risco e aprovação, Explore subagent, mapa necessidade → mecanismo (incl. deny em settings)'],
+    ['aula-08.html', 'Refinamento iterativo e Claude Code em CI/CD', 'Domínio 3 · exemplos I/O, test-driven iteration, interview pattern, -p, --output-format json + --json-schema, --permission-mode, --max-turns/--max-budget-usd, --tools, Action × Code Review, CLAUDE.md no CI'],
+    ['aula-09.html', 'Critérios explícitos e few-shot prompting', 'Domínio 4 · critérios categóricos, falsos positivos, critérios como contexto persistente, 2-4 exemplos few-shot'],
+    ['aula-10.html', 'Structured output: tool_use, JSON schemas e validação-retry', 'Domínio 4 · prompt × prefill × tool use, truncamento (dividir, não inflar max_tokens), schemas, nullable, enum other+unclear, normalização no prompt, retry-with-error-feedback, detected_pattern'],
+    ['aula-11.html', 'Message Batches API e review multi-pass', 'Domínio 4 · 50% economia/24h sem SLA, custom_id, instância independente de review, passes por tipo de problema, confiança calibrada'],
+    ['aula-12.html', 'Gestão de contexto e escalonamento', 'Domínio 5 · case facts, janela deslizante e retenção seletiva, lost-in-the-middle, escalonamento, scratchpads, crash recovery com manifest, resumo de fase'],
+    ['aula-13.html', 'Propagação de erros, human review e proveniência', 'Domínio 5 · erro estruturado, roteamento por confiança calibrada × amostragem que mede, claim-source, estabelecido × contestado'],
+    ['aula-14.html', 'Simulado final e estratégia de prova', 'Modo prova · banco inédito de 60 questões, 4 cenários sorteados, 5 questões por cenário com preferência pelas não vistas, cronômetro, % por domínio + checklist da véspera']
   ];
   var lista = document.getElementById('lista');
   var doneCount = 0;
