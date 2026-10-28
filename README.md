@@ -16,7 +16,10 @@ Curso de estudo para a prova **Claude Certified Architect – Foundations (CCAR-
   fim. Também há o modo banco completo (60 questões, 120 min).
 - Cards **"Prova × produto atual"** onde o produto mudou desde o guia. Na prova, vale o guia e os
   objetivos oficiais.
-- O progresso fica salvo no navegador.
+- **Aula narrada**: cada aula tem um player no rodapé que lê o conteúdo (voz neural pt-BR, que pronuncia
+  o inglês das questões como inglês) e rola a página junto, destacando o parágrafo que está sendo lido.
+  Rolar com a mão solta o acompanhamento; com o áudio tocando, clicar num parágrafo leva a narração até ele.
+- O progresso fica salvo no navegador, inclusive onde você parou na narração de cada aula.
 
 ## Como usar
 
@@ -24,6 +27,23 @@ Curso de estudo para a prova **Claude Certified Architect – Foundations (CCAR-
 - **Offline:** baixe o repositório e abra `index.html` no navegador. Não precisa de servidor.
 
 Uma aula por dia; das aulas 11 em diante, as traduções já abrem ocultas.
+
+## Narração
+
+Os MP3s ficam na release [`narracao`](https://github.com/Luo-Arch-Build/ccarf-curso-14-dias/releases/tag/narracao),
+fora do git. Para tocar offline, baixe-os para uma pasta `audio/` ao lado do `index.html`. As marcações de tempo
+(`narracao/aula-XX.js`) ficam no repositório.
+
+Ao editar o texto de uma aula, a narração dela fica desatualizada. Para conferir e gerar de novo:
+
+```bash
+uv run --with edge-tts --with html5lib python tools/narrar.py --conferir      # lista as desatualizadas
+uv run --with edge-tts --with html5lib python tools/narrar.py aula-03.html    # gera audio/ e narracao/
+gh release upload narracao audio/aula-03.mp3 --clobber                        # publica o MP3 novo
+```
+
+A voz vem do serviço do Microsoft Edge via [`edge-tts`](https://github.com/rany2/edge-tts), que é gratuito,
+mas não oficial: pode mudar ou parar sem aviso.
 
 ## Fonte e limites
 
