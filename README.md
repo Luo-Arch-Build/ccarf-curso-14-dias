@@ -8,7 +8,7 @@ Curso de estudo para a prova **Claude Certified Architect – Foundations (CCAR-
 
 - **14 aulas**, uma por dia (~60 min): conceito em português, glossário inglês → português, a
   "pegadinha do dia" e questões no formato da prova, em inglês, com tradução que dá para ocultar.
-- **110 questões** nas aulas 1 a 13, com correção na hora e gabarito comentado. Cada questão mostra o
+- **135 questões** nas aulas 1 a 13, com correção na hora e gabarito comentado. Cada questão mostra o
   cenário oficial da prova e, depois de respondida, o objetivo do guia (Task Statement) que ela cobra.
 - **Simulado em modo prova** (aula 14): banco de 60 questões inéditas, 10 por cenário. Cada tentativa
   sorteia 4 dos 6 cenários e 5 questões de cada um (20 questões, 40 min), dando preferência às que você
@@ -53,7 +53,7 @@ mas não oficial: pode mudar ou parar sem aviso.
   (permission modes e limites de turnos e de custo no CI, dividir a tarefa em vez de aumentar
   `max_tokens`, prefill, janela deslizante, passes de review por tipo de problema, entre outros).
 - **Material independente**: não é oficial nem endossado pela Anthropic, e não contém questões da prova.
-- Os fatos de produto foram conferidos na documentação em 22/10/2026. O produto muda: confira perto da
+- Os fatos de produto foram conferidos na documentação em 29/10/2026. O produto muda: confira perto da
   data da prova.
 - A prova é aplicada em inglês ou japonês; as questões daqui estão em inglês.
 

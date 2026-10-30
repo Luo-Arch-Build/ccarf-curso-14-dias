@@ -160,6 +160,57 @@ prompt mais detalhado" — você não consegue detalhar o que não sabe que exis
 </ul>
 <p>A pergunta de prova é sempre: <em>os fixes se tocam?</em> Se sim, mesma mensagem.</p>
 
+<h3>1.5 Exercício construtivo: escreva o feedback da próxima iteração</h3>
+<div class="card">
+  <p>Claude gerou <code>normalizeCustomer</code>, mas a última execução produziu os resultados abaixo.
+  Há também um typo no log (<code>"normalizng customer"</code>), sem relação com a transformação.
+  <strong>Escreva a mensagem de feedback que você enviaria</strong>; não responda apenas qual técnica usar.</p>
+  <pre><code>Input:    { "name": "  MARIA   silva  " }
+Expected: { "name": "Maria Silva" }
+Obtained: { "name": "maria silva" }
+
+Input:    { "name": "   " }
+Expected: { "name": null }
+Obtained: { "name": "" }
+
+Input:    { "name": null }
+Expected: { "name": null }
+Obtained: { "name": "null" }</code></pre>
+  <ol>
+    <li>Reescreva o feedback com contexto e <strong>input, expected e obtained</strong>, usando estes 3 pares (o segundo e o terceiro são bordas).</li>
+    <li>Agrupe capitalização e normalização de vazio/<code>null</code> <strong>na mesma mensagem</strong>.</li>
+    <li>Separe o typo do log para uma iteração independente e justifique as duas decisões pelo efeito de uma correção sobre a outra.</li>
+  </ol>
+  <details>
+    <summary><strong>Confira uma resposta possível</strong></summary>
+    <pre><code>Context: normalizeCustomer must normalize names without turning missing
+values into strings.
+
+Interacting issues — fix these together:
+1. Case normalization is lost.
+Input:    { "name": "  MARIA   silva  " }
+Expected: { "name": "Maria Silva" }
+Obtained: { "name": "maria silva" }
+
+2. Empty and null inputs do not follow the same missing-value contract.
+Input:    { "name": "   " }
+Expected: { "name": null }
+Obtained: { "name": "" }
+
+Input:    { "name": null }
+Expected: { "name": null }
+Obtained: { "name": "null" }
+
+Independent issue — handle in a separate iteration:
+The log says "normalizng customer"; change it to "normalizing customer".
+
+Grouping rationale: case conversion, whitespace trimming and missing-value
+handling share the same normalization pipeline, and their order can change
+the final name. The log typo does not alter that pipeline or its tests.</code></pre>
+    <p>A justificativa é parte da resposta: as duas primeiras correções podem se invalidar se forem feitas isoladamente; o typo pode ser corrigido depois sem mudar nenhum dos pares entrada/saída.</p>
+  </details>
+</div>
+
 <h2>2. Claude Code em CI/CD (Task Statement 3.6)</h2>
 
 <h3>2.1 Modo não-interativo: a flag <code>-p</code> / <code>--print</code></h3>
@@ -183,9 +234,10 @@ claude -p "Analyze this pull request for security issues"</code></pre>
       "file":{"type":"string"},"line":{"type":"integer"},
       "severity":{"type":"string"},"issue":{"type":"string"},
       "suggested_fix":{"type":"string"}},"required":["file","line","severity","issue"]}}}}'</code></pre>
-<p>Com isso o job faz <code>jq</code>/parse determinístico e posta cada finding na linha certa do PR —
-sem regex em cima de texto livre.</p>
-<p>Note a divisão de trabalho: <code>--output-format json</code> faz a saída ser JSON parseável; o <code>--json-schema</code> é o que fixa a <strong>estrutura</strong> (chaves, tipos, campos obrigatórios). Descrever o formato no prompt reduz a variação, mas continua probabilístico. Regra de bolso: <em>se um script consome a saída, a estrutura é imposta por schema, não pedida em texto.</em></p>
+<p>Com isso o job pode fazer <code>jq</code>/parse determinístico e postar cada finding na linha certa do PR —
+sem regex em cima de texto livre. O resultado validado fica em <code>structured_output</code>.</p>
+<p>O schema restringe a estrutura <strong>quando uma saída estruturada válida é produzida</strong>, mas não garante sua presença: se a execução terminar sem uma saída válida, o campo <code>structured_output</code> pode estar ausente. Antes de consumir findings, o pipeline deve verificar o resultado e a presença/o tipo desse campo e <strong>falhar explicitamente</strong> se a verificação não passar. Ausência de output não significa "zero findings".</p>
+<p>Note a divisão de trabalho: <code>--output-format json</code> faz a saída ser JSON parseável; o <code>--json-schema</code> é o que fixa a <strong>estrutura</strong> (chaves, tipos, campos obrigatórios) do structured output válido. Descrever o formato no prompt reduz a variação, mas continua probabilístico. Regra de bolso: <em>se um script consome a saída, a estrutura é imposta por schema, não pedida em texto; a presença do resultado é verificada pelo pipeline.</em></p>
 
 <h3>2.3 Permission modes, limites de turnos e de custo, tools do revisor</h3>
 <p>O <code>-p</code> resolve o travamento, mas não diz <em>o que</em> o Claude pode fazer sem ninguém olhando.
@@ -195,32 +247,29 @@ O Exam Guide não lista essas flags, mas os objetivos oficiais da prova (a lista
 <table class="gloss">
   <tr><th>Pergunta</th><th>Flag</th><th>O que faz</th></tr>
   <tr><td>O que roda sem aprovação?</td><td><code>--permission-mode</code></td><td>Aceita <code>default</code>, <code>acceptEdits</code>, <code>plan</code>, <code>auto</code>, <code>dontAsk</code> e <code>bypassPermissions</code>.</td></tr>
-  <tr><td>Até onde ele pode ir?</td><td><code>--max-turns</code> · <code>--max-budget-usd</code></td><td>Limite de turnos agênticos (ao atingir, encerra com erro) e de gasto estimado com a API. Os dois só no modo <code>-p</code>.</td></tr>
-  <tr><td>Quais tools existem?</td><td><code>--tools</code> · <code>--disallowedTools</code></td><td><code>--tools</code> restringe as tools nativas disponíveis; <code>--disallowedTools</code> remove tools da sessão.</td></tr>
+  <tr><td>Até onde ele pode ir?</td><td><code>--max-turns</code> · <code>--max-budget-usd</code></td><td>Limite de turnos agênticos (ao atingir, encerra com erro) e de gasto estimado no cliente. O orçamento ajuda a conter runaway, mas não é um teto contábil rígido: a estimativa pode divergir da fatura. Os dois só no modo <code>-p</code>.</td></tr>
+  <tr><td>Quais tools existem?</td><td><code>--tools</code> · <code>--disallowedTools</code></td><td><code>--tools</code> restringe as tools nativas disponíveis; <code>--disallowedTools</code> remove tools da sessão, inclusive MCP quando especificado.</td></tr>
 </table>
 <p><strong>Os modos que importam no CI:</strong></p>
 <ul>
-  <li><code>dontAsk</code>: nega automaticamente toda tool call que pediria permissão; roda só o que não pediria
-      permissão (leituras no diretório de trabalho) e o pré-aprovado (regras <code>allow</code> ou <code>--allowedTools</code>). É o modo que a documentação indica para
-      CI travado: nada fica esperando um humano e nada fora da lista roda.</li>
+  <li><code>dontAsk</code>: nega automaticamente toda tool call que <strong>exigiria aprovação</strong>. Ações que já não pedem permissão continuam rodando, como leituras no diretório de trabalho e comandos read-only; regras <code>allow</code>, <code>--allowedTools</code> e aprovações por <code>PreToolUse</code> também têm efeito próprio, e um mod instalado ainda pode aprovar algumas chamadas. Portanto, <code>dontAsk</code> evita espera por prompt, mas <strong>não é uma allowlist absoluta</strong>: tools e regras continuam definindo a superfície disponível.</li>
   <li><code>bypassPermissions</code>: pula as checagens de permissão. Só em ambiente isolado (container, VM, dev
       container sem internet). Num runner com segredos e acesso à rede, é o distrator.</li>
   <li><code>plan</code>: o Claude analisa e propõe, sem editar. Também funciona com <code>-p</code> (ver aula 07).</li>
   <li><code>acceptEdits</code>: aceita sem perguntar edições de arquivo e comandos comuns de sistema de arquivos (<code>mkdir</code>, <code>mv</code>, <code>rm</code>…) dentro do diretório de trabalho. Serve para o job que gera código, não para o revisor.</li>
 </ul>
-<pre><code># Revisor de PR travado: só lê, nunca espera aprovação, não entra em loop
+<pre><code># Revisor de PR: nativas só de leitura, sem tools MCP, sem prompt e com limites
 claude -p "Review this diff against the standards in CLAUDE.md" \
   --permission-mode dontAsk \
   --tools "Read,Grep,Glob" \
+  --disallowedTools "mcp__*" \
   --max-turns 15 --max-budget-usd 2 \
   --output-format json --json-schema "$SCHEMA"</code></pre>
 <p>Cuidado com o nome parecido: <code>--allowedTools</code> <strong>não restringe</strong>. Ele só pré-aprova
 (as tools listadas rodam sem pedir permissão) e todas as outras continuam disponíveis. Quem tira tools é
 <code>--tools</code> ou <code>--disallowedTools</code>. Dois detalhes: <code>--tools</code> limita só as tools
-<strong>nativas</strong> (MCP tools saem com <code>--disallowedTools "mcp__*"</code>), e tirar só Edit e Write não basta
-se o <code>Bash</code> continua disponível — <code>sed -i</code>, <code>mv</code> e <code>rm</code> também mudam arquivos.</p>
-<p>Regra de bolso: <em>revisor que não pode editar → deixe só as tools de leitura (<code>--tools "Read,Grep,Glob"</code>)
-ou tire tudo que escreve, <strong>inclusive o Bash</strong> (<code>--disallowedTools</code>);
+<strong>nativas</strong>; como este revisor não precisa de MCP, <code>--disallowedTools "mcp__*"</code> trata separadamente essas tools. E tirar só Edit e Write não basta se o <code>Bash</code> continua disponível — <code>sed -i</code>, <code>mv</code> e <code>rm</code> também mudam arquivos.</p>
+<p>Regra de bolso: <em>para um revisor sem tools de escrita, restrinja as nativas a <code>--tools "Read,Grep,Glob"</code> <strong>e trate o MCP</strong> (aqui, negando <code>mcp__*</code>); só com essa condição o conjunto de tools expostas é read-only. Isso não substitui isolamento do runner nem proteção de segredos.
 <code>--allowedTools</code> é para o caso oposto, deixar rodar sem perguntar uma tool que você <strong>quer</strong> que rode.
 Job que pode entrar em loop (corrigir até o teste passar) → <code>--max-turns</code> e <code>--max-budget-usd</code>; se o job
 começa a parar por limite antes de terminar o trabalho legítimo, o limite está apertado para a tarefa: ajuste-o ou divida
@@ -241,22 +290,32 @@ pronto sem manter pipeline → Code Review, com as regras no <code>REVIEW.md</co
 moram em arquivo do repositório, não no prompt do job (2.5).</em></p>
 
 <div class="card" style="border-left: 3px solid var(--accent2);">
-  <strong>🧭 Prova × produto atual</strong> <span style="color:var(--muted);font-size:12.5px">(documentação do Claude Code conferida em 22/10/2026)</span>
+  <strong>🧭 Prova × produto atual</strong> <span style="color:var(--muted);font-size:12.5px">(documentação do Claude Code conferida em 29/10/2026)</span>
   <ul>
-    <li>Com <code>--json-schema</code>, o resultado validado vem no campo <code>structured_output</code> do JSON de saída (só no modo <code>-p</code>).</li>
+    <li>Com <code>--json-schema</code>, um resultado válido vem no campo <code>structured_output</code> do JSON de saída (só no modo <code>-p</code>); se a execução não produzir saída válida, o campo pode não existir.</li>
     <li><code>manual</code> é aceito como alias de <code>default</code> em <code>--permission-mode</code> (v2.1.200+).</li>
     <li>No Agent SDK, a parada por orçamento aparece como resultado com subtype <code>error_max_budget_usd</code>.</li>
+    <li><code>total_cost_usd</code> e o orçamento de <code>--max-budget-usd</code> usam estimativas calculadas no cliente, que podem divergir da cobrança real.</li>
   </ul>
   <em>Detalhes de produto: a prova cobra o papel de cada flag (seção 2.3), não esses nomes de campo.</em>
 </div>
 
-<h3>2.5 CLAUDE.md provê contexto ao Claude invocado no CI</h3>
-<p>O Claude Code rodando no runner lê o <code>CLAUDE.md</code> do repositório como sempre. É lá que
-você documenta <strong>padrões de teste, convenções de fixtures, critérios de review e o que é um
-teste valioso</strong> — sem isso, a geração de testes no CI produz testes triviais de baixo valor.
-O CLAUDE.md é o mecanismo de contexto de projeto tanto na sua máquina quanto no CI; não é preciso
-(nem recomendado) duplicar essas instruções dentro do prompt do pipeline.</p>
-<p>Por isso, convenções coladas no prompt de cada job são um anti-padrão: valem só para aquele job, viram cópias que divergem e não chegam ao próximo pipeline que alguém criar. No CLAUDE.md, toda invocação no repositório recebe o mesmo contexto. Documente lá também as <strong>fixtures disponíveis</strong> e o que torna um teste <strong>valioso</strong> (comportamento, edge cases, regressões) — sem esse critério, a geração produz testes triviais, que só verificam que a função não lança exceção. Regra de bolso: <em>contexto de projeto para o CI mora no CLAUDE.md, não no YAML do job.</em></p>
+<h3>2.5 CLAUDE.md no CI: descoberta normal × modo bare</h3>
+<p><strong>Sem <code>--bare</code></strong>, <code>claude -p</code> descobre e carrega configuração como uma sessão
+interativa: <code>CLAUDE.md</code>, auto memory, hooks, Skills, comandos, subagents, plugins e MCP servers do ambiente.
+Num runner, isso não é neutro: a documentação alerta que <code>-p</code> não mostra o diálogo de workspace trust nem
+aprovação por server. Não execute conteúdo de um repositório não confiável presumindo que o modo não-interativo o neutraliza.</p>
+<p><strong>Com <code>--bare</code></strong>, a inicialização ignora essa descoberta automática, reduzindo variação entre
+máquinas e evitando hooks/plugins/MCP herdados. É o modo recomendado pela documentação para scripts e runners que precisam
+de comportamento reproduzível. O contexto necessário passa a ser explícito: por exemplo,
+<code>--append-system-prompt-file "CLAUDE.md"</code> para incluir as convenções revisadas do projeto e
+<code>--mcp-config</code> somente se um server realmente for necessário. <strong>Não confunda <code>-p</code> com
+<code>--bare</code>: o primeiro torna a execução não-interativa; o segundo controla a descoberta de configuração.</strong></p>
+<p>O CLAUDE.md continua sendo o mecanismo de contexto de projeto para padrões de teste, fixtures, critérios de review e
+o que é um teste valioso. Isso evita cópias divergentes das convenções no prompt de cada job. Sem <code>--bare</code>, ele
+é descoberto normalmente; com <code>--bare</code>, inclua-o deliberadamente pelo arquivo. Em ambos os casos, valide o
+resultado e não trate contexto como enforcement. Regra de bolso: <em>convenções compartilhadas moram no CLAUDE.md;
+em CI reproduzível e com superfície mínima, use <code>--bare</code> e forneça esse contexto explicitamente.</em></p>
 
 <h3>2.6 Self-review bias: a sessão que gerou o código é pior revisora dele</h3>
 <p>A mesma sessão que escreveu o código já "decidiu" que aquela abordagem é correta — o contexto
@@ -278,6 +337,58 @@ remain unaddressed. Do not repeat findings that were fixed." \
 <p>O mesmo princípio vale para <strong>geração de testes</strong>: inclua os arquivos de teste existentes
 no contexto, para o Claude não sugerir cenários que a suíte já cobre.</p>
 
+<h3>2.8 Exercício construtivo: repare a invocação e o gate do pipeline</h3>
+<div class="card">
+  <p>Um runner compartilhado, com rede e segredos, já gravou o diff em <code>pr.diff</code>. O review deve apenas ler e reportar; não deve editar nem usar MCP. Este job está inseguro e incompleto:</p>
+  <pre><code>claude "Review pr.diff and fix every finding" \
+  --permission-mode bypassPermissions \
+  --allowedTools "Read,Grep,Glob" \
+  --max-turns 40 \
+  --output-format json --json-schema "$SCHEMA" |
+jq -r '.structured_output.findings // []'</code></pre>
+  <p><strong>Reescreva a invocação e o consumo do resultado</strong> atendendo a todos os requisitos:</p>
+  <ul>
+    <li>modo não-interativo com <code>-p</code> e permission mode que negue o que exigiria aprovação;</li>
+    <li>somente <code>Read,Grep,Glob</code> como tools nativas e nenhuma tool MCP;</li>
+    <li><code>--max-turns</code> e <code>--max-budget-usd</code> para conter execução descontrolada;</li>
+    <li>JSON com schema de <code>findings</code> e uma verificação que <strong>falhe o job</strong> se houver erro ou se <code>structured_output</code> estiver ausente/inválido.</li>
+  </ul>
+  <p>Justifique cada correção pelo problema que ela resolve. Não trate <code>--allowedTools</code> como restrição nem ausência de output como lista vazia.</p>
+  <details>
+    <summary><strong>Confira uma solução completa</strong></summary>
+    <pre><code>set -euo pipefail
+
+SCHEMA='{"type":"object","properties":{"findings":{"type":"array","items":{"type":"object","properties":{"file":{"type":"string"},"line":{"type":"integer"},"severity":{"type":"string"},"issue":{"type":"string"},"suggested_fix":{"type":"string"}},"required":["file","line","severity","issue"],"additionalProperties":false}}},"required":["findings"],"additionalProperties":false}'
+
+claude --bare -p "Review pr.diff against CLAUDE.md. Report findings only; do not edit files." \
+  --append-system-prompt-file "CLAUDE.md" \
+  --permission-mode dontAsk \
+  --tools "Read,Grep,Glob" \
+  --disallowedTools "mcp__*" \
+  --max-turns 12 \
+  --max-budget-usd 1.50 \
+  --output-format json \
+  --json-schema "$SCHEMA" > review.json
+
+if ! jq -e '
+  (.is_error == false) and
+  (.structured_output | type == "object") and
+  (.structured_output.findings | type == "array")
+' review.json > /dev/null; then
+  echo "Review failed or returned no valid structured_output" >&amp;2
+  exit 1
+fi
+
+jq -c '.structured_output.findings[]' review.json</code></pre>
+    <ol>
+      <li><code>-p</code> executa uma vez e encerra, sem esperar input interativo. <code>--bare</code> impede a descoberta de hooks, Skills, plugins, MCP e outras configurações do host, e <code>--append-system-prompt-file "CLAUDE.md"</code> fornece deliberadamente as convenções revisadas que o bare não carrega automaticamente. O prompt também deixa de pedir correções: o papel deste job é reportar.</li>
+      <li><code>dontAsk</code> nega chamadas que cairiam em aprovação; não é, sozinho, uma allowlist. Por isso <code>--tools</code> reduz as <strong>nativas</strong> ao mínimo read-only. <code>--disallowedTools "mcp__*"</code> deixa explícita a política de nenhum MCP mesmo com <code>--bare</code>, e nenhum <code>--mcp-config</code> é fornecido. Não há <code>allowedTools</code> pré-aprovando ações desnecessárias.</li>
+      <li><code>--max-turns 12</code> limita iterações; <code>--max-budget-usd 1.50</code> interrompe com base no gasto <strong>estimado no cliente</strong>. É contenção de runaway, não garantia contábil do valor final da fatura.</li>
+      <li><code>--output-format json</code> produz o envelope parseável e <code>--json-schema</code> restringe o structured output válido. O <code>jq -e</code> exige sucesso e um objeto com <code>findings</code> array; se o campo estiver ausente ou a execução tiver erro, o job falha antes de publicar. Um array vazio legítimo continua sendo um resultado válido, diferente de campo ausente.</li>
+    </ol>
+  </details>
+</div>
+
 <h2>3. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
 <table class="gloss">
   <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
@@ -288,14 +399,16 @@ no contexto, para o Claude não sugerir cenários que a suíte já cobre.</p>
   <tr><td class="en">interacting issues</td><td>problemas que interagem entre si</td><td class="uso">"address multiple interacting issues in a single detailed message"</td></tr>
   <tr><td class="en">non-interactive mode</td><td>modo não-interativo</td><td class="uso">"the -p flag runs Claude Code in non-interactive mode"</td></tr>
   <tr><td class="en">-p / --print flag</td><td>flag que imprime o resultado e encerra</td><td class="uso">"use the --print flag to prevent interactive input hangs in CI"</td></tr>
+  <tr><td class="en">--bare</td><td>modo sem descoberta automática de configuração do host; contexto e integrações são fornecidos explicitamente</td><td class="uso">"use --bare for reproducible CI and pass CLAUDE.md deliberately with --append-system-prompt-file"</td></tr>
   <tr><td class="en">--output-format json</td><td>flag de formato de saída em JSON</td><td class="uso">"produce machine-parseable output with --output-format json"</td></tr>
-  <tr><td class="en">--json-schema</td><td>flag que força o output a um schema JSON</td><td class="uso">"enforce structured findings using --json-schema"</td></tr>
+  <tr><td class="en">--json-schema</td><td>flag que restringe o structured output válido a um schema; não garante sua presença</td><td class="uso">"enforce structured findings using --json-schema"</td></tr>
+  <tr><td class="en">structured_output</td><td>campo com o resultado validado; pode faltar se a execução não gerar saída válida</td><td class="uso">"check structured_output and fail explicitly before consuming findings"</td></tr>
   <tr><td class="en">permission mode</td><td>modo de permissão (o que roda sem aprovação)</td><td class="uso">"configure permission modes for automated CI/CD pipelines"</td></tr>
-  <tr><td class="en">dontAsk</td><td>modo que nega o que pediria permissão, exceto o pré-aprovado</td><td class="uso">"run the locked-down CI job with --permission-mode dontAsk"</td></tr>
+  <tr><td class="en">dontAsk</td><td>nega o que exigiria aprovação; preserva ações sem prompt e aprovações por regras/hooks/mods</td><td class="uso">"run the locked-down CI job with --permission-mode dontAsk"</td></tr>
   <tr><td class="en">bypassPermissions</td><td>modo que pula as checagens (só ambiente isolado)</td><td class="uso">"use bypassPermissions only in isolated containers or VMs"</td></tr>
-  <tr><td class="en">cost and turn limits</td><td>limites de custo e de turnos (<code>--max-budget-usd</code>, <code>--max-turns</code>)</td><td class="uso">"cost and turn limits that prevent runaway executions"</td></tr>
+  <tr><td class="en">cost and turn limits</td><td>limites de turnos e de custo estimado no cliente; não teto contábil rígido</td><td class="uso">"cost and turn limits that prevent runaway executions"</td></tr>
   <tr><td class="en">runaway execution</td><td>execução descontrolada (loop que não para)</td><td class="uso">"prevent runaway executions in non-interactive runs"</td></tr>
-  <tr><td class="en">restrict tool access</td><td>restringir as tools (<code>--tools</code>, <code>--disallowedTools</code>)</td><td class="uso">"restrict unnecessary tool access for the review job"</td></tr>
+  <tr><td class="en">restrict tool access</td><td>restringir nativas com <code>--tools</code> e tratar MCP separadamente com <code>--disallowedTools</code></td><td class="uso">"restrict unnecessary tool access for the review job"</td></tr>
   <tr><td class="en">inline PR comments</td><td>comentários inline no pull request</td><td class="uso">"structured findings posted as inline PR comments"</td></tr>
   <tr><td class="en">independent review instance</td><td>instância de revisão independente</td><td class="uso">"an independent review instance rather than the session that generated the code"</td></tr>
   <tr><td class="en">prior review findings</td><td>findings de reviews anteriores</td><td class="uso">"include prior review findings and report only new or unaddressed issues"</td></tr>
@@ -316,8 +429,9 @@ no contexto, para o Claude não sugerir cenários que a suíte já cobre.</p>
   <code>--permission-mode</code>, <code>--max-turns</code>, <code>--max-budget-usd</code>, <code>--tools</code>/<code>--disallowedTools</code>.
   Regra de bolso: <em>flag ou variável de ambiente que não está na documentação do Claude Code é distrator; flag que existe
   só é resposta se faz o papel pedido — job trava esperando input → <code>-p</code>; estrutura da saída →
-  <code>--output-format json</code> + <code>--json-schema</code>; job sem humano que não pode pedir aprovação →
-  <code>dontAsk</code>; loop ou gasto sem teto → <code>--max-turns</code>/<code>--max-budget-usd</code>; revisor só leitura →
+  <code>--output-format json</code> + <code>--json-schema</code>; ausência de <code>structured_output</code> → verificar e falhar;
+  job sem humano que não pode pedir aprovação → <code>dontAsk</code>; loop ou gasto estimado sem limite →
+  <code>--max-turns</code>/<code>--max-budget-usd</code>; revisor só leitura → restringir nativas e tratar MCP com
   <code>--tools</code>/<code>--disallowedTools</code>.</em></p>
 </div>
 
@@ -425,16 +539,16 @@ no contexto, para o Claude não sugerir cenários que a suíte já cobre.</p>
 
 <div class="q" data-correct="b" data-ts="3.6" data-dom="3">
   <div class="qnum">Questão 8 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
-  <div class="stem">Your CI job already runs claude -p with --output-format json and feeds the findings to the team's review dashboard, which rejects any finding whose fields don't match exactly. The JSON always parses, but the keys drift between runs ("file" vs "path", "line" vs "location"), so findings get dropped. What makes the structure reliable on every run?</div>
-  <div class="pt-block pt">Seu job de CI já roda claude -p com --output-format json e envia os findings ao dashboard de review do time, que rejeita qualquer finding cujos campos não batam exatamente. O JSON sempre é parseável, mas as chaves variam entre execuções ("file" vs "path", "line" vs "location"), e findings são descartados. O que torna a estrutura confiável em toda execução?</div>
+  <div class="stem">Your CI job already runs claude -p with --output-format json and feeds the findings to the team's review dashboard, which rejects any finding whose fields don't match exactly. The JSON always parses, but the keys drift between runs ("file" vs "path", "line" vs "location"), so findings get dropped. What constrains the fields when structured output is produced?</div>
+  <div class="pt-block pt">Seu job de CI já roda claude -p com --output-format json e envia os findings ao dashboard de review do time, que rejeita qualquer finding cujos campos não batam exatamente. O JSON sempre é parseável, mas as chaves variam entre execuções ("file" vs "path", "line" vs "location"), e findings são descartados. O que restringe os campos quando um structured output é produzido?</div>
   <div class="opts">
     <label class="opt"><input type="radio" name="q8" value="a">A. List the dashboard's key names in the prompt and tell Claude to use exactly those names in every run.<div class="pt">Listar no prompt os nomes de chave do dashboard e mandar o Claude usar exatamente esses nomes em toda execução.</div></label>
-    <label class="opt"><input type="radio" name="q8" value="b">B. Keep --output-format json and add --json-schema with the required fields, which fixes the output structure.<div class="pt">Manter --output-format json e adicionar --json-schema com os campos obrigatórios, o que fixa a estrutura da saída.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="b">B. Keep --output-format json and add --json-schema with the required fields, which fixes the structure of valid structured output.<div class="pt">Manter --output-format json e adicionar --json-schema com os campos obrigatórios, o que fixa a estrutura do structured output válido.</div></label>
     <label class="opt"><input type="radio" name="q8" value="c">C. Add a jq step that maps every key variant seen so far onto the dashboard's fields before the upload.<div class="pt">Adicionar uma etapa de jq que mapeia toda variação de chave vista até agora para os campos do dashboard antes do upload.</div></label>
     <label class="opt"><input type="radio" name="q8" value="d">D. Switch to plain-text output and have the dashboard script extract the findings with regular expressions.<div class="pt">Trocar para saída em texto puro e fazer o script do dashboard extrair os findings com expressões regulares.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: B.</strong> <code>--output-format json</code> garante saída JSON parseável — não que ela traga sempre as mesmas chaves. Quem fixa a estrutura (campos, tipos, obrigatórios) é o <code>--json-schema</code>: é a combinação que o guia indica para findings consumidos por automação, como comentários inline no PR. A é instrução em prosa: reduz a variação, mas segue probabilística — e o dashboard rejeita qualquer desvio. C é remendo reativo: mapeia as variações já vistas e quebra na próxima. D anda para trás: troca saída estruturada por texto livre e regex, a fonte clássica de parse frágil.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
+  <div class="feedback"><strong>Gabarito: B.</strong> <code>--output-format json</code> garante saída JSON parseável — não que ela traga sempre as mesmas chaves. Quem fixa a estrutura (campos, tipos, obrigatórios) do resultado estruturado válido é o <code>--json-schema</code>. Isso não assegura que <code>structured_output</code> exista: o pipeline ainda precisa verificar o campo e falhar se a execução não o produzir. A é instrução em prosa: reduz a variação, mas segue probabilística — e o dashboard rejeita qualquer desvio. C é remendo reativo: mapeia as variações já vistas e quebra na próxima. D anda para trás: troca saída estruturada por texto livre e regex, a fonte clássica de parse frágil.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
 </div>
 
 <div class="q" data-correct="b,d" data-ts="3.6" data-dom="3">
@@ -443,13 +557,13 @@ no contexto, para o Claude não sugerir cenários que a suíte já cobre.</p>
   <div class="pt-block pt">Três jobs de CI chamam o Claude Code: review de PR, geração de testes e uma auditoria noturna. O prompt de cada job carrega sua própria cópia das convenções do time, as cópias divergiram, e os testes gerados continuam verificando comportamento trivial e recriando fixtures que o repo já tem. Quais DUAS mudanças resolvem esses problemas?</div>
   <div class="opts">
     <label class="opt"><input type="checkbox" name="q9" value="a">A. Run the three jobs as steps of one long session, so they all share the same conventions and context.<div class="pt">Rodar os três jobs como etapas de uma única sessão longa, para todos compartilharem as mesmas convenções e o mesmo contexto.</div></label>
-    <label class="opt"><input type="checkbox" name="q9" value="b">B. Move the conventions from the job prompts into the project CLAUDE.md, which every invocation in the repo loads.<div class="pt">Tirar as convenções dos prompts dos jobs e levá-las para o CLAUDE.md do projeto, que toda invocação no repo carrega.</div></label>
+    <label class="opt"><input type="checkbox" name="q9" value="b">B. Move the conventions from the job prompts into the project CLAUDE.md; let jobs load it normally, or include the file explicitly when using --bare.<div class="pt">Tirar as convenções dos prompts dos jobs e levá-las para o CLAUDE.md do projeto; deixar os jobs carregá-lo normalmente ou incluir o arquivo explicitamente ao usar --bare.</div></label>
     <label class="opt"><input type="checkbox" name="q9" value="c">C. Have the test-generation job produce twice as many tests and filter out the trivial ones in a later step.<div class="pt">Fazer o job de geração de testes produzir o dobro de testes e filtrar os triviais numa etapa posterior.</div></label>
     <label class="opt"><input type="checkbox" name="q9" value="d">D. Document in CLAUDE.md the fixtures that already exist and what makes a test valuable in this codebase.<div class="pt">Documentar no CLAUDE.md as fixtures que já existem e o que torna um teste valioso neste codebase.</div></label>
     <label class="opt"><input type="checkbox" name="q9" value="e">E. Shorten the conventions in each job prompt to a few key bullets, so the copies are easier to keep in sync.<div class="pt">Encurtar as convenções no prompt de cada job para poucos tópicos-chave, para as cópias ficarem mais fáceis de sincronizar.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: B e D.</strong> O CLAUDE.md é o mecanismo que o guia indica para dar contexto de projeto ao Claude Code invocado no CI: toda invocação no repositório o carrega, então as convenções deixam de existir em três cópias que divergem. E é lá que se documentam as fixtures disponíveis, os padrões de teste e o que torna um teste valioso — o que corta testes triviais e fixtures recriadas. A mistura os jobs numa sessão só: o contexto de uma etapa vaza para a outra, e a review passa a avaliar código gerado na mesma sessão. C gera mais ruído para filtrar depois, sem dar à geração o critério que falta. E mantém a causa: cópias no prompt de cada job continuam divergindo, agora com menos detalhe.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
+  <div class="feedback"><strong>Gabarito: B e D.</strong> O CLAUDE.md centraliza o contexto de projeto e elimina as cópias divergentes. Sem <code>--bare</code>, <code>claude -p</code> o descobre normalmente; com <code>--bare</code>, o job o inclui deliberadamente, por exemplo com <code>--append-system-prompt-file "CLAUDE.md"</code>. Fixtures e critérios de teste valioso também ficam documentados ali, cortando testes triviais e recriação desnecessária. A mistura os jobs numa sessão só: o contexto de uma etapa vaza para a outra, e a review passa a avaliar código gerado na mesma sessão. C gera mais ruído para filtrar depois, sem dar à geração o critério que falta. E mantém a causa: cópias no prompt de cada job continuam divergindo, agora com menos detalhe.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
 </div>
 
 <div class="q" data-correct="c" data-ts="3.6" data-dom="3">
@@ -459,39 +573,53 @@ no contexto, para o Claude não sugerir cenários que a suíte já cobre.</p>
   <div class="opts">
     <label class="opt"><input type="radio" name="q10" value="a">A. Add to the prompt an instruction to give up after a few attempts if the tests keep failing.<div class="pt">Acrescentar ao prompt uma instrução para desistir depois de algumas tentativas se os testes continuarem falhando.</div></label>
     <label class="opt"><input type="radio" name="q10" value="b">B. Cut the runner timeout to 30 minutes so the platform kills the job sooner when the agent loops.<div class="pt">Reduzir o timeout do runner para 30 minutos, para a plataforma matar o job mais cedo quando o agente entra em loop.</div></label>
-    <label class="opt"><input type="radio" name="q10" value="c">C. Pass --max-turns and --max-budget-usd so the run itself stops at a set turn or spend limit.<div class="pt">Passar --max-turns e --max-budget-usd para a própria execução parar num limite definido de turnos ou de gasto.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="c">C. Pass --max-turns and --max-budget-usd so the run itself stops at a set turn or estimated-spend limit.<div class="pt">Passar --max-turns e --max-budget-usd para a própria execução parar num limite definido de turnos ou de gasto estimado.</div></label>
     <label class="opt"><input type="radio" name="q10" value="d">D. Run the job with --permission-mode plan so the agent only proposes fixes and never applies them.<div class="pt">Rodar o job com --permission-mode plan, para o agente só propor correções e nunca aplicá-las.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: C.</strong> É o caso que o objetivo oficial descreve: <em>"cost and turn limits that prevent runaway executions"</em>. <code>--max-turns</code> limita os turnos agênticos e encerra com erro ao atingir; <code>--max-budget-usd</code> para a execução num gasto estimado. Os dois são do modo <code>-p</code> e ficam declarados na invocação, e o job falha de forma visível em vez de queimar dinheiro. A é instrução em prosa: um agente convencido de que está quase lá continua tentando. B é gambiarra de plataforma: mata o processo por relógio, sem relação com o gasto, e corta também execuções legítimas mais longas. D muda o propósito do job, que existe para aplicar as correções.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
+  <div class="feedback"><strong>Gabarito: C.</strong> É o caso que o objetivo oficial descreve: <em>"cost and turn limits that prevent runaway executions"</em>. <code>--max-turns</code> limita os turnos agênticos e encerra com erro ao atingir; <code>--max-budget-usd</code> para a execução com base no gasto <strong>estimado no cliente</strong>. Essa estimativa contém runaway, mas não é um teto contábil rígido e pode divergir da fatura. Os dois são do modo <code>-p</code> e ficam declarados na invocação, e o job falha de forma visível em vez de continuar consumindo recursos. A é instrução em prosa: um agente convencido de que está quase lá continua tentando. B é gambiarra de plataforma: mata o processo por relógio, sem relação com o gasto, e corta também execuções legítimas mais longas. D muda o propósito do job, que existe para aplicar as correções.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
 </div>
 
 <div class="q" data-correct="a" data-ts="3.6" data-dom="3">
   <div class="qnum">Questão 11 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
-  <div class="stem">A lint-triage job runs claude -p on a shared CI runner that holds deployment secrets and has network access. The job may read files and run the approved npm run lint command; any other action must be refused instead of waiting for an approval that no one is there to give. Which configuration fits?</div>
-  <div class="pt-block pt">Um job de triagem de lint roda claude -p num runner de CI compartilhado que guarda segredos de deploy e tem acesso à rede. O job pode ler arquivos e rodar o comando aprovado npm run lint; qualquer outra ação deve ser recusada, em vez de esperar uma aprovação que ninguém está ali para dar. Qual configuração atende?</div>
+  <div class="stem">A lint-triage job runs claude -p on a shared CI runner that holds deployment secrets and has network access. Ordinary workspace reads and the approved npm run lint command must run. Any tool call that would require approval must instead be denied, because no one is available to answer. Which configuration fits?</div>
+  <div class="pt-block pt">Um job de triagem de lint roda claude -p num runner de CI compartilhado que guarda segredos de deploy e tem acesso à rede. Leituras comuns no workspace e o comando aprovado npm run lint devem rodar. Qualquer tool call que exigir aprovação deve ser negada, porque não há ninguém disponível para responder. Qual configuração atende?</div>
   <div class="opts">
     <label class="opt"><input type="radio" name="q11" value="a">A. --permission-mode dontAsk, with npm run lint pre-approved through an allow rule.<div class="pt">--permission-mode dontAsk, com npm run lint pré-aprovado por uma regra allow.</div></label>
-    <label class="opt"><input type="radio" name="q11" value="b">B. --permission-mode bypassPermissions, so no tool call ever stops the job to wait for approval.<div class="pt">--permission-mode bypassPermissions, para nenhuma tool call parar o job esperando aprovação.</div></label>
-    <label class="opt"><input type="radio" name="q11" value="c">C. --permission-mode acceptEdits, so file edits go through while each command still asks first.<div class="pt">--permission-mode acceptEdits, para as edições de arquivo passarem enquanto cada comando continua pedindo antes.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="b">B. --permission-mode bypassPermissions, so tool calls bypass the permission checks.<div class="pt">--permission-mode bypassPermissions, para as tool calls pularem as checagens de permissão.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="c">C. --permission-mode acceptEdits, so file edits are auto-approved even though this job does not need them.<div class="pt">--permission-mode acceptEdits, para edições de arquivo serem auto-aprovadas mesmo sem este job precisar delas.</div></label>
     <label class="opt"><input type="radio" name="q11" value="d">D. --allowedTools "Bash", so the lint run and any other command proceed without stopping to ask.<div class="pt">--allowedTools "Bash", para o lint e qualquer outro comando seguirem sem parar para perguntar.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: A.</strong> <code>dontAsk</code> nega automaticamente toda tool call que pediria permissão e deixa rodar só o que está pré-aprovado — é o modo que a documentação indica para CI travado. Ler arquivos não pede permissão; o <code>npm run lint</code> entra por uma regra <code>allow</code> (ou <code>--allowedTools</code>); o resto é recusado na hora, sem travar o job. B pula todas as checagens: só serve em container ou VM isolados, e este runner tem segredos e rede — é exatamente o risco. C libera edições, que o job não deve fazer, e deixa os comandos esperando uma aprovação que nunca vem. D pré-aprova qualquer comando Bash, o contrário de "qualquer outra ação deve ser recusada".<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
+  <div class="feedback"><strong>Gabarito: A.</strong> <code>dontAsk</code> nega automaticamente toda tool call que <strong>exigiria aprovação</strong>; ele não transforma em deny tudo que não está pré-aprovado. Ler arquivos no workspace já não pede permissão e continua funcionando; o <code>npm run lint</code> entra por uma regra <code>allow</code> (ou <code>--allowedTools</code>); chamadas que cairiam em prompt são recusadas sem esperar um humano. Pré-aprovações e hooks/mods são camadas distintas e devem ser auditados se existirem. B pula checagens: só serve em ambiente isolado, e este runner tem segredos e rede — é exatamente o risco. C libera edições desnecessárias e não estabelece a política pedida para chamadas que exigem aprovação. D pré-aprova qualquer comando Bash, muito além do lint aprovado.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
 </div>
 
 <div class="q" data-correct="d" data-ts="3.6" data-dom="3">
   <div class="qnum">Questão 12 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
-  <div class="stem">Your PR-review job reuses the flags of the test-generation job, including --permission-mode acceptEdits, and adds --allowedTools "Read,Grep,Glob" to keep the reviewer read-only. In a recent run, the reviewer edited a file to fix a problem it had found. Which change actually prevents the reviewer from editing?</div>
-  <div class="pt-block pt">Seu job de review de PR reaproveita as flags do job de geração de testes, inclusive --permission-mode acceptEdits, e acrescenta --allowedTools "Read,Grep,Glob" para deixar o revisor só com leitura. Numa execução recente, o revisor editou um arquivo para corrigir um problema que tinha encontrado. Qual mudança de fato impede o revisor de editar?</div>
+  <div class="stem">Your PR-review job reuses the test-generation flags, including --permission-mode acceptEdits, and adds --allowedTools "Read,Grep,Glob" to keep the reviewer read-only. The runner also loads an MCP server with a write-capable tool, and the reviewer has edited a file. Which change restricts both the built-in and MCP tools exposed to this read-only reviewer?</div>
+  <div class="pt-block pt">Seu job de review de PR reaproveita as flags da geração de testes, inclusive --permission-mode acceptEdits, e acrescenta --allowedTools "Read,Grep,Glob" para deixar o revisor só com leitura. O runner também carrega um servidor MCP com uma tool capaz de escrever, e o revisor já editou um arquivo. Qual mudança restringe as tools nativas e MCP expostas a este revisor read-only?</div>
   <div class="opts">
     <label class="opt"><input type="radio" name="q12" value="a">A. Add a firm instruction to the review prompt that the reviewer must never modify any file.<div class="pt">Acrescentar ao prompt de review uma instrução firme de que o revisor nunca deve modificar nenhum arquivo.</div></label>
-    <label class="opt"><input type="radio" name="q12" value="b">B. Describe the reviewer's permitted tools in a CLAUDE.md section that every CI job loads.<div class="pt">Descrever as tools permitidas ao revisor numa seção do CLAUDE.md que todo job de CI carrega.</div></label>
-    <label class="opt"><input type="radio" name="q12" value="c">C. Extend the --allowedTools list so that it names every read-only tool the reviewer may need.<div class="pt">Ampliar a lista de --allowedTools para nomear toda tool de leitura de que o revisor possa precisar.</div></label>
-    <label class="opt"><input type="radio" name="q12" value="d">D. Use --tools "Read,Grep,Glob" so that only the read-only built-in tools remain available.<div class="pt">Usar --tools "Read,Grep,Glob", para só as tools nativas de leitura continuarem disponíveis.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="b">B. Describe the reviewer's permitted tools in CLAUDE.md and rely on those instructions to enforce the restriction.<div class="pt">Descrever as tools permitidas ao revisor no CLAUDE.md e confiar nessas instruções para impor a restrição.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="c">C. Use --tools "Read,Grep,Glob" and leave the MCP configuration unchanged.<div class="pt">Usar --tools "Read,Grep,Glob" e deixar a configuração de MCP inalterada.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="d">D. Switch to --permission-mode dontAsk, use --tools "Read,Grep,Glob", and add --disallowedTools "mcp__*" because this reviewer needs no MCP.<div class="pt">Trocar para --permission-mode dontAsk, usar --tools "Read,Grep,Glob" e adicionar --disallowedTools "mcp__*", porque este revisor não precisa de MCP.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: D.</strong> <code>--allowedTools</code> não restringe: só pré-aprova as tools listadas, e as outras continuam disponíveis — com o <code>acceptEdits</code> herdado, o Edit rodou sem perguntar. Quem limita o conjunto é <code>--tools</code>: só Read, Grep e Glob existem na sessão. Com <code>--disallowedTools</code> também dá, desde que saia tudo que escreve — tirar só Edit e Write deixa o <code>Bash</code>, e com o <code>acceptEdits</code> herdado um <code>sed -i</code> ou <code>mv</code> roda sem perguntar. É o <em>"restrict unnecessary tool access"</em> dos objetivos oficiais. A é instrução probabilística para uma regra que não pode falhar. B confunde contexto com permissão: o CLAUDE.md orienta, não tira tools. C usa a mesma flag e tem o mesmo efeito: aprova mais, não restringe nada.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
+  <div class="feedback"><strong>Gabarito: D.</strong> <code>--allowedTools</code> não restringe: só pré-aprova o que está listado. <code>--tools</code> limita apenas as tools <strong>nativas</strong>; por isso C deixa a tool MCP de escrita fora do alcance dessa restrição. D remove o modo que auto-aprova edições, mantém só Read/Grep/Glob entre as nativas e nega as tools MCP, já que o revisor não precisa delas. Nessas condições, as tools expostas são read-only; <code>dontAsk</code> trata prompts, mas não substitui nenhuma dessas restrições nem o isolamento do runner e dos segredos. A é instrução probabilística. B confunde contexto com permissão: o CLAUDE.md orienta, não tira tools.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="3.6" data-dom="3">
+  <div class="qnum">Questão 13 · múltipla escolha <span class="cenario">Claude Code for Continuous Integration</span></div>
+  <div class="stem">A review step uses --output-format json and --json-schema. One run ends without valid structured output, so the JSON response has no structured_output field. The next step evaluates .structured_output.findings // [] and reports a successful "no findings" review. What should the pipeline do instead?</div>
+  <div class="pt-block pt">Uma etapa de review usa --output-format json e --json-schema. Uma execução termina sem structured output válido, então a resposta JSON não tem o campo structured_output. A etapa seguinte avalia .structured_output.findings // [] e reporta um review bem-sucedido de "nenhum finding". O que o pipeline deve fazer?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q13" value="a">A. Keep the fallback, because a missing field is equivalent to an empty findings array.<div class="pt">Manter o fallback, porque campo ausente equivale a um array findings vazio.</div></label>
+    <label class="opt"><input type="radio" name="q13" value="b">B. Check the execution result and require structured_output with a findings array; fail the job before posting if it is missing or invalid.<div class="pt">Verificar o resultado da execução e exigir structured_output com um array findings; falhar o job antes de publicar se estiver ausente ou inválido.</div></label>
+    <label class="opt"><input type="radio" name="q13" value="c">C. Ignore structured_output and treat any non-empty result text as a successful review.<div class="pt">Ignorar structured_output e tratar qualquer texto result não vazio como review bem-sucedido.</div></label>
+    <label class="opt"><input type="radio" name="q13" value="d">D. Remove --json-schema so the dashboard accepts whichever fields the run happens to return.<div class="pt">Remover --json-schema para o dashboard aceitar quaisquer campos que a execução retornar.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> O schema restringe uma saída estruturada válida, mas não garante que ela exista em toda execução. Campo ausente é uma falha de produção/validação do resultado, não evidência de que não há findings. O pipeline deve verificar sucesso, presença e forma de <code>structured_output</code> antes de publicar e falhar explicitamente caso contrário. A transforma falha em falso negativo; C descarta o contrato estruturado; D remove justamente a restrição de estrutura.<span class="ts">Domínio 3 · TS 3.6 — Claude Code em CI/CD</span></div>
 </div>
 
 <div class="concluir">

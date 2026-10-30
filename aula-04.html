@@ -161,10 +161,12 @@ numérica. Além disso, agentes com tools fora da especialização tendem a
 <ul>
   <li><strong>Scoped tool access</strong>: cada subagente recebe apenas as tools do seu papel.</li>
   <li><strong>Substituir tools genéricas por versões restritas</strong>: trocar <code>fetch_url</code> (abre
-      qualquer URL) por <code>load_document</code>, que valida se o destino é um documento e recusa o resto. A
-      restrição passa a morar no <em>contrato</em> da tool: o agente não consegue usá-la fora do papel dele, por
-      mais que o raciocínio o leve para lá. Regra de bolso: <em>se um agente usa uma tool genérica fora da
-      especialização dele, estreite a tool — não peça por favor no prompt.</em></li>
+      qualquer URL) por <code>load_document</code>, cujo <strong>handler valida</strong> se o destino é um documento
+      permitido e <strong>rejeita</strong> o resto. A restrição determinística passa a morar no <em>contrato executado</em>
+      da tool: o agente não consegue usá-la fora do papel dele, por mais que o raciocínio o leve para lá. Nome,
+      descrição e input schema ajudam a orientar e validar a forma da chamada, mas, isoladamente, não impõem essa
+      política semântica de destino. Regra de bolso: <em>se um agente usa uma tool genérica fora da especialização
+      dele, estreite a tool e faça o handler aplicar a restrição — não peça por favor no prompt.</em></li>
   <li><strong>Cross-role de alta frequência, com escopo</strong>: se o synthesis agent precisa checar fatos
       simples (datas, nomes, estatísticas) com frequência, dê a ele uma <code>verify_fact</code> <em>escopada</em> —
       e continue roteando verificações complexas para o web-search agent via coordinator. É o princípio do
@@ -181,19 +183,113 @@ tool_choice: {"type": "any"}
 // forced: o modelo É OBRIGADO a chamar ESTA tool específica
 tool_choice: {"type": "tool", "name": "extract_metadata"}</code></pre>
 <ul>
-  <li>Use <code>"any"</code> quando você precisa <strong>garantir uma chamada de tool</strong> — ex.: extração
-      estruturada onde resposta em texto livre quebraria o pipeline.</li>
-  <li>Use <strong>forced</strong> quando uma tool específica precisa rodar <strong>primeiro</strong> — ex.: forçar
-      <code>extract_metadata</code> antes das tools de enrichment, e processar os passos seguintes em turnos
-      posteriores.</li>
-  <li>Ponto-chave de prova: quando o requisito é garantir que o modelo <strong>chame uma tool</strong> — alguma
-      (<code>"any"</code>) ou uma específica naquele turno (forced) —, a solução é <code>tool_choice</code>, não frase imperativa
-      no system prompt ("ALWAYS call a tool"), que continua probabilística. Já <strong>ordem obrigatória entre tools</strong>
-      ao longo do workflow e regra de negócio (process_refund só depois de get_customer devolver um ID verificado;
-      refund acima do limite) pedem enforcement programático: hook ou prerequisite gate (aula 03, TS 1.4/1.5).</li>
+  <li>Use <code>"auto"</code> quando a tool for <strong>opcional</strong> e uma resposta com o contexto já
+      disponível também for aceitável.</li>
+  <li>Use <code>"any"</code> quando você precisa <strong>garantir uma chamada de tool</strong>, mas mais de uma
+      tool disponível seria adequada — ex.: um importador pode chamar qualquer parser compatível, enquanto resposta
+      em texto livre quebraria o pipeline.</li>
+  <li>Use <strong>forced</strong> quando a resposta daquele turno precisa solicitar <strong>uma tool específica</strong>
+      — ex.: <code>extract_metadata</code> na primeira requisição. Os passos seguintes continuam dependendo de
+      execução e validação pela aplicação.</li>
+  <li>Ponto-chave de prova: quando o requisito é garantir que o modelo <strong>emita um tool_use</strong> — para
+      alguma tool (<code>"any"</code>) ou uma específica naquele turno (forced) —, a solução é <code>tool_choice</code>,
+      não frase imperativa no system prompt ("ALWAYS call a tool"), que continua probabilística. Já <strong>ordem
+      obrigatória entre execuções de tools</strong> ao longo do workflow e regra de negócio (process_refund só depois
+      de get_customer devolver um ID verificado; refund acima do limite) pedem um <strong>prerequisite gate no código
+      da aplicação/orquestrador</strong> (aula 03, TS 1.4/1.5).</li>
 </ul>
 
-<h2>4. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
+<h2>4. Client tools: da emissão do tool_use à ordem executada</h2>
+<p>Com <strong>client tools</strong>, o modelo solicita a chamada, mas <strong>quem executa o handler é a sua
+aplicação</strong>. Um <code>tool_use</code> não é uma execução concluída, e um <code>tool_result</code> não deve ser
+tratado como prova de sucesso sem validação.</p>
+<ol>
+  <li><strong><code>tool_use</code>:</strong> a Messages API devolve um bloco com <code>id</code>, <code>name</code>
+      e <code>input</code>. Com forced selection, essa resposta solicita a tool escolhida em vez de texto ou outra tool.</li>
+  <li><strong>Aplicação executa:</strong> seu código despacha o <code>tool_use</code> para o handler correspondente,
+      captura exceções/timeout e normaliza o outcome. O modelo não executa esse código.</li>
+  <li><strong><code>tool_result</code>:</strong> a aplicação preserva a mensagem assistant com o <code>tool_use</code>
+      e acrescenta o resultado com o mesmo <code>tool_use_id</code> para a próxima requisição; falha pode ser indicada
+      com <code>is_error</code> e/ou um outcome estruturado.</li>
+  <li><strong>Validação:</strong> antes de liberar a etapa seguinte, o orquestrador confere o status real do handler,
+      o formato do resultado e os <strong>dados pré-requisitos</strong> de negócio — por exemplo, extração concluída
+      e um <code>document_id</code> presente e válido.</li>
+  <li><strong>Próxima etapa:</strong> somente após esse gate o workflow marca a etapa como concluída e habilita/expõe
+      <code>enrich_document</code> em um turno posterior.</li>
+</ol>
+<p><strong>Caminho de falha:</strong> exceção, timeout, <code>is_error</code>, resultado inválido ou
+<code>document_id</code> ausente mantêm o enrichment <strong>bloqueado</strong>. A aplicação devolve/registra o
+<code>tool_result</code> de falha quando couber e segue retry, recuperação ou escalonamento; ela só reavalia a liberação
+depois de uma nova execução válida. Não se deve avançar apenas porque o modelo emitiu a tool certa.</p>
+<pre><code>// Pseudocódigo: a próxima etapa começa bloqueada
+state.enrichment_enabled = False
+response = messages.create(...,
+  tool_choice={"type": "tool", "name": "extract_metadata"})
+call = require_tool_use(response, name="extract_metadata")
+outcome = application.execute(call)       // exceções viram status="error"
+messages.append_tool_result(call, outcome) // tool_use_id + content/is_error
+
+if outcome.status != "success":
+    return recover_or_retry(outcome)      // enrichment permanece bloqueado
+
+metadata = outcome.data
+if not valid_metadata(metadata) or not metadata.get("document_id"):
+    return recover_or_retry("missing prerequisite: document_id")
+
+state.metadata = metadata
+state.enrichment_enabled = True
+return run_enrichment_turn()              // só exposta depois do gate</code></pre>
+<p><strong>Duas garantias diferentes:</strong> <code>tool_choice</code> controla a <strong>emissão da solicitação</strong>
+na resposta do modelo; o prerequisite gate garante a <strong>ordem efetivamente executada pelo workflow</strong>.
+Forced selection sozinha não prova sucesso nem impede que a aplicação execute outra etapa fora de ordem. Hooks do
+Claude Code pertencem aos eventos e permissões desse produto; <strong>não são um mecanismo genérico da Messages API</strong>.
+Em uma aplicação com client tools, o gate pertence ao código que recebe as respostas e executa os handlers.</p>
+
+<h2>5. Exercício integrado: papel → tools → turnos → gate</h2>
+<div class="card">
+  <p><strong>Scenario (EN).</strong> You are designing a research and document pipeline with a coordinator and three
+  subagents: web search, document analysis, and synthesis. Available tools include <code>search_web</code>,
+  <code>load_document</code>, <code>extract_metadata</code>, <code>enrich_document</code>, <code>verify_fact</code>
+  (simple checks only), <code>parse_pdf</code>, <code>parse_csv</code>, and generic <code>fetch_url</code>. Complex
+  investigations belong to search; enrichment requires a valid <code>document_id</code> from successful extraction.</p>
+  <div class="pt-block pt"><strong>Cenário.</strong> Você está desenhando um pipeline de pesquisa e documentos com um
+  coordinator e três subagents: web search, análise de documentos e síntese. As tools disponíveis incluem
+  <code>search_web</code>, <code>load_document</code>, <code>extract_metadata</code>, <code>enrich_document</code>,
+  <code>verify_fact</code> (somente checagens simples), <code>parse_pdf</code>, <code>parse_csv</code> e a genérica
+  <code>fetch_url</code>. Investigações complexas pertencem ao search; enrichment exige um <code>document_id</code>
+  válido obtido por extração bem-sucedida.</div>
+  <ol>
+    <li><strong>Role → tool matrix.</strong> Produce a matrix for search, document analysis, and synthesis with allowed
+      tools, explicitly excluded tools, and a least-privilege justification. Keep enrichment gated and route complex
+      fact-checking through the coordinator.
+      <div class="pt">Produza uma matriz para search, análise de documentos e síntese com tools permitidas, tools
+      explicitamente excluídas e justificativa de least privilege. Mantenha enrichment sob gate e roteie checagens
+      complexas pelo coordinator.</div></li>
+    <li><strong>tool_choice per turn.</strong> Choose and justify each setting: (A) synthesis may answer from supplied
+      evidence or optionally call <code>verify_fact</code>; (B) an import must call either <code>parse_pdf</code> or
+      <code>parse_csv</code>, never return conversational text; (C) a new document must request exactly
+      <code>extract_metadata</code> first, with enrichment only after validation.
+      <div class="pt">Escolha e justifique cada configuração: (A) síntese pode responder com as evidências fornecidas
+      ou, opcionalmente, chamar <code>verify_fact</code>; (B) uma importação deve chamar <code>parse_pdf</code> ou
+      <code>parse_csv</code>, nunca devolver texto conversacional; (C) um documento novo deve solicitar exatamente
+      <code>extract_metadata</code> primeiro, com enrichment somente após validação.</div></li>
+    <li><strong>Prerequisite gate.</strong> Write pseudocode for the complete client-tool loop. Include one success
+      branch and separate failure branches for handler error and missing <code>document_id</code>. Show the
+      <code>tool_result</code>, keep enrichment disabled on both failures, and define retry/recovery.
+      <div class="pt">Escreva pseudocódigo para o loop completo de client tool. Inclua um ramo de sucesso e ramos de
+      falha separados para erro do handler e <code>document_id</code> ausente. Mostre o <code>tool_result</code>,
+      mantenha enrichment desabilitado nas duas falhas e defina retry/recuperação.</div></li>
+  </ol>
+  <p><strong>Critérios de autocorreção:</strong> a matriz mínima esperada é search → <code>search_web</code>;
+  document analysis → <code>load_document</code>, <code>extract_metadata</code> e <code>enrich_document</code> (esta
+  última só após o gate); synthesis → <code>verify_fact</code> escopada, com investigação complexa via coordinator.
+  A genérica <code>fetch_url</code> não deve ser distribuída sem necessidade e enforcement no handler. Nos turnos,
+  A = <code>"auto"</code>, B = <code>"any"</code> (as duas tools de parser são aceitáveis), C = forced
+  <code>extract_metadata</code> + gate da aplicação. O pseudocódigo precisa validar sucesso <strong>e</strong> dados,
+  não apenas a emissão do <code>tool_use</code>.</p>
+</div>
+
+<h2>6. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
 <table class="gloss">
   <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
   <tr><td class="en">tool description</td><td>descrição da tool</td><td class="uso">"tool descriptions are the primary mechanism for tool selection"</td></tr>
@@ -205,10 +301,13 @@ tool_choice: {"type": "tool", "name": "extract_metadata"}</code></pre>
   <tr><td class="en">scoped tool access</td><td>acesso a tools restrito ao papel do agente</td><td class="uso">"restrict each subagent's tool set to those relevant to its role"</td></tr>
   <tr><td class="en">least privilege</td><td>menor privilégio</td><td class="uso">"give the synthesis agent only what it needs"</td></tr>
   <tr><td class="en">cross-role tool</td><td>tool compartilhada entre papéis (com escopo)</td><td class="uso">"a scoped verify_fact tool for the synthesis agent"</td></tr>
-  <tr><td class="en">constrained alternative</td><td>alternativa restrita: tool de contrato estreito no lugar de uma genérica</td><td class="uso">"replace fetch_url with load_document that validates document URLs"</td></tr>
+  <tr><td class="en">constrained alternative</td><td>alternativa restrita: contrato estreito aplicado pelo handler</td><td class="uso">"replace fetch_url with load_document whose handler validates and rejects targets"</td></tr>
   <tr><td class="en">tool_choice</td><td>configuração de escolha de tool</td><td class="uso">"tool_choice options: auto, any, and forced selection"</td></tr>
-  <tr><td class="en">"auto" / "any"</td><td>modelo pode responder texto / modelo deve chamar alguma tool</td><td class="uso">"set tool_choice 'any' to guarantee a tool call"</td></tr>
-  <tr><td class="en">forced tool selection</td><td>seleção forçada de uma tool específica</td><td class="uso">"force extract_metadata with {'type': 'tool', 'name': ...}"</td></tr>
+  <tr><td class="en">"auto" / "any"</td><td>tool opcional e texto permitido / alguma tool obrigatória</td><td class="uso">"use auto for optional calls; use any when a call is required and multiple available tools are acceptable"</td></tr>
+  <tr><td class="en">forced tool selection</td><td>seleção forçada de uma tool específica</td><td class="uso">"guarantee the requested tool_use, not successful execution or workflow order"</td></tr>
+  <tr><td class="en">tool_use</td><td>solicitação de chamada emitida pelo modelo</td><td class="uso">"the application executes the client tool requested in tool_use"</td></tr>
+  <tr><td class="en">tool_result</td><td>resultado devolvido pela aplicação ao modelo</td><td class="uso">"match tool_use_id and validate success and prerequisite data"</td></tr>
+  <tr><td class="en">prerequisite gate</td><td>barreira que só libera a próxima etapa após validar pré-requisitos</td><td class="uso">"keep enrichment blocked on tool failure or missing document_id"</td></tr>
 </table>
 
 <div class="card pegadinha">
@@ -216,15 +315,16 @@ tool_choice: {"type": "tool", "name": "extract_metadata"}</code></pre>
   <p>Questões de misrouting quase sempre oferecem os mesmos três distratores: <strong>few-shot examples no
   system prompt</strong> (remendo caro quando a causa é a descrição mínima), <strong>routing layer por keywords</strong>
   (over-engineering que ignora a capacidade de linguagem do modelo) e <strong>fundir as tools numa genérica
-  única</strong> (esforço grande demais para um primeiro passo). E quando o requisito é determinístico
-  ("the model MUST call a tool"), o distrator clássico é a frase imperativa no prompt — a resposta é
-  <code>tool_choice</code>. Regra de bolso: <em>descrição mínima ou sobreposta se conserta na descrição (primeiro
-  passo); instrução por palavra-chave no system prompt se conserta reescrevendo-a por intenção; pedido
-  genuinamente ambíguo, com descrições já boas, pede 2–4 few-shot com o raciocínio da escolha (TS 4.2, aula 09);
-  garantia de chamada se impõe com tool_choice.</em></p>
+  única</strong> (esforço grande demais para um primeiro passo). Quando o requisito é determinístico
+  ("the model MUST call a tool"), o distrator clássico é a frase imperativa no prompt — <code>tool_choice</code>
+  garante a emissão exigida, mas não a ordem executada nem o sucesso. Regra de bolso: <em>descrição mínima ou
+  sobreposta se conserta na descrição (primeiro passo); instrução por palavra-chave no system prompt se conserta
+  reescrevendo-a por intenção; pedido genuinamente ambíguo, com descrições já boas, pede 2–4 few-shot com o
+  raciocínio da escolha (TS 4.2, aula 09); emissão de tool_use se impõe com tool_choice; sequência real e
+  pré-requisitos se impõem com gate na aplicação; restrição de load_document exige handler que valida e rejeita.</em></p>
 </div>
 
-<h2>5. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
+<h2>7. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
 <div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
 
 <div class="q" data-correct="b" data-ts="2.1" data-dom="2">
@@ -291,11 +391,11 @@ tool_choice: {"type": "tool", "name": "extract_metadata"}</code></pre>
   <div class="opts">
     <label class="opt"><input type="radio" name="q5" value="a">A. Keep tool_choice on "auto" and strengthen the system prompt wording, since clear instructions are reliable enough in practice.<div class="pt">Manter tool_choice em "auto" e reforçar o texto do system prompt, já que instruções claras são confiáveis o bastante na prática.</div></label>
     <label class="opt"><input type="radio" name="q5" value="b">B. Set tool_choice to "any" so the model must call some tool, and rely on the descriptions to make it pick extract_metadata.<div class="pt">Definir tool_choice como "any" para o modelo ser obrigado a chamar alguma tool, e confiar nas descrições para ele escolher extract_metadata.</div></label>
-    <label class="opt"><input type="radio" name="q5" value="c">C. Force {"type": "tool", "name": "extract_metadata"} on the first request, then run the enrichment steps in follow-up turns.<div class="pt">Forçar {"type": "tool", "name": "extract_metadata"} na primeira requisição e rodar os passos de enrichment nos turnos seguintes.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. Force {"type": "tool", "name": "extract_metadata"} on the first request; have the application execute it and return tool_result; then enable enrichment in follow-up turns only after a gate validates successful extraction and required metadata, keeping enrichment blocked on failure.<div class="pt">Forçar {"type": "tool", "name": "extract_metadata"} na primeira requisição; fazer a aplicação executá-la e devolver tool_result; então habilitar enrichment nos turnos seguintes somente depois de um gate validar a extração bem-sucedida e os metadados exigidos, mantendo enrichment bloqueado em caso de falha.</div></label>
     <label class="opt"><input type="radio" name="q5" value="d">D. Remove every tool except extract_metadata from the agent permanently, so that a wrong first choice becomes impossible.<div class="pt">Remover permanentemente do agente todas as tools exceto extract_metadata, para que uma primeira escolha errada fique impossível.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: C.</strong> Requisito determinístico ("sempre esta tool primeiro, nunca texto") pede forced tool selection — garantia da API, não probabilidade de prompt; os passos seguintes rodam em turnos posteriores com tool_choice normal. A é exatamente o remendo via prompt que o guide marca como insuficiente quando se exige garantia. B garante <em>alguma</em> tool, mas não <em>qual</em> — a ordem continuaria probabilística. D é over-engineering destrutivo que quebraria os turnos de enrichment.<span class="ts">Domínio 2 · TS 2.3 — Distribuição de tools e tool_choice</span></div>
+  <div class="feedback"><strong>Gabarito: C.</strong> A exigência completa combina duas garantias: forced selection impõe o <code>tool_use</code> de <code>extract_metadata</code> na primeira resposta, e o prerequisite gate impõe a ordem executada, liberando enrichment somente após sucesso e dados válidos. Forced selection sozinha não garantiria execução nem sucesso. A é o remendo probabilístico via prompt. B garante a emissão de <em>algum</em> tool_use, mas não <em>qual</em>, e não inclui o gate. D remove capacidades necessárias aos turnos posteriores e ainda não valida os pré-requisitos.<span class="ts">Domínio 2 · TS 2.3 — Distribuição de tools e tool_choice</span></div>
 </div>
 
 <div class="q" data-correct="d" data-ts="2.3" data-dom="2">
@@ -306,10 +406,53 @@ tool_choice: {"type": "tool", "name": "extract_metadata"}</code></pre>
     <label class="opt"><input type="radio" name="q6" value="a">A. Add a system prompt rule telling the subagent to use fetch_url only for the document links passed in by the coordinator.<div class="pt">Adicionar uma regra no system prompt dizendo ao subagent para usar fetch_url só nos links de documento repassados pelo coordinator.</div></label>
     <label class="opt"><input type="radio" name="q6" value="b">B. Keep fetch_url, and add a reviewer subagent that approves every URL the analysis subagent wants to open before the fetch.<div class="pt">Manter fetch_url e adicionar um subagent revisor que aprova cada URL que o subagent de análise quer abrir antes do fetch.</div></label>
     <label class="opt"><input type="radio" name="q6" value="c">C. Remove fetch_url and have the coordinator paste the full text of every document into the analysis subagent's prompt.<div class="pt">Remover fetch_url e fazer o coordinator colar o texto completo de cada documento no prompt do subagent de análise.</div></label>
-    <label class="opt"><input type="radio" name="q6" value="d">D. Replace fetch_url with a load_document tool that validates document URLs and rejects any other kind of target.<div class="pt">Substituir fetch_url por uma tool load_document que valida URLs de documento e recusa qualquer outro tipo de destino.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. Replace fetch_url with a load_document tool whose handler validates document URLs and rejects any other kind of target.<div class="pt">Substituir fetch_url por uma tool load_document cujo handler valida URLs de documento e recusa qualquer outro tipo de destino.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: D.</strong> O TS 2.3 pede exatamente isso: trocar a tool genérica por uma alternativa restrita. <code>load_document</code> só aceita URL de documento — a restrição mora no contrato da tool (determinística), não na boa vontade do modelo, e o subagent volta ao seu papel (buscar é trabalho do search agent). A é instrução de prompt: reduz o desvio, mas a tool continua aberta para qualquer URL. B é over-engineering: um agente a mais para vigiar uma tool que nem deveria ter esse escopo, com latência extra a cada fetch. C tira a capacidade de carregar documentos e despeja conteúdo inteiro no prompt, inflando o contexto do subagent sem necessidade.<span class="ts">Domínio 2 · TS 2.3 — Distribuição de tools e tool_choice</span></div>
+  <div class="feedback"><strong>Gabarito: D.</strong> O TS 2.3 pede trocar a tool genérica por uma alternativa restrita. O contrato só é determinístico porque o <strong>handler</strong> de <code>load_document</code> valida o destino e rejeita alvos fora do escopo; nome, descrição ou schema isoladamente não bastam para essa política semântica. A é instrução de prompt: reduz o desvio, mas a tool continua aberta para qualquer URL. B adiciona um agente e latência para vigiar uma tool ampla demais. C tira a capacidade de carregar documentos e despeja conteúdo inteiro no prompt, inflando o contexto sem necessidade.<span class="ts">Domínio 2 · TS 2.3 — Distribuição de tools e tool_choice</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="2.3" data-dom="2">
+  <div class="qnum">Questão 7 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">A coordinator delegates web research, document analysis, and synthesis. Document enrichment must remain blocked until metadata extraction succeeds. Synthesis needs only simple fact checks; complex investigations belong to search. Which role → tool matrix best applies least privilege while preserving the workflow?</div>
+  <div class="pt-block pt">Um coordinator delega pesquisa web, análise de documentos e síntese. Enrichment de documentos deve permanecer bloqueado até a extração de metadados ser bem-sucedida. Síntese precisa apenas de checagens simples de fatos; investigações complexas pertencem ao search. Qual matriz papel → tools aplica melhor least privilege preservando o workflow?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q7" value="a">A. Search, document analysis, and synthesis all receive search_web, fetch_url, load_document, extract_metadata, enrich_document, and verify_fact so each can finish tasks independently.<div class="pt">Search, análise de documentos e síntese recebem search_web, fetch_url, load_document, extract_metadata, enrich_document e verify_fact para que cada um termine tarefas independentemente.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="b">B. Search receives search_web; document analysis receives load_document, extract_metadata, and gated enrich_document; synthesis receives scoped verify_fact, with complex checks routed by the coordinator.<div class="pt">Search recebe search_web; análise de documentos recebe load_document, extract_metadata e enrich_document sob gate; síntese recebe verify_fact escopada, com checagens complexas roteadas pelo coordinator.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="c">C. Search receives load_document; document analysis receives search_web; synthesis receives enrich_document, allowing each role to cover a different stage.<div class="pt">Search recebe load_document; análise de documentos recebe search_web; síntese recebe enrich_document, permitindo que cada papel cubra uma etapa diferente.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="d">D. Search receives search_web; document analysis receives load_document plus generic fetch_url; synthesis receives generic fetch_url so it can perform any verification directly.<div class="pt">Search recebe search_web; análise de documentos recebe load_document mais a genérica fetch_url; síntese recebe a genérica fetch_url para poder fazer qualquer verificação diretamente.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> A matriz dá a cada papel apenas as tools necessárias, mantém enrichment condicionado ao gate e conserva investigação complexa no search via coordinator. A elimina o scoped access e facilita misuse. C inverte os papéis e ainda permite à síntese executar uma etapa que depende de pré-requisitos. D reintroduz a tool genérica fora da especialização, sem necessidade e sem restrição de handler.<span class="ts">Domínio 2 · TS 2.3 — Distribuição de tools por papel</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="2.3" data-dom="2">
+  <div class="qnum">Questão 8 · múltipla escolha <span class="cenario">Tool Choice per Turn</span></div>
+  <div class="stem">Three turns have different requirements. Turn A may answer from supplied evidence or optionally call verify_fact. Turn B must call either parse_pdf or parse_csv, and conversational text is invalid. Turn C must request exactly extract_metadata first, and enrichment may run only after successful extraction with valid required data. Which configuration fits all three?</div>
+  <div class="pt-block pt">Três turnos têm requisitos diferentes. O turno A pode responder com evidências fornecidas ou, opcionalmente, chamar verify_fact. O turno B deve chamar parse_pdf ou parse_csv, e texto conversacional é inválido. O turno C deve solicitar exatamente extract_metadata primeiro, e enrichment só pode rodar após extração bem-sucedida com dados obrigatórios válidos. Qual configuração atende aos três?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q8" value="a">A. Turn A: "auto"; Turn B: "any"; Turn C: forced extract_metadata plus an application prerequisite gate before enrichment.<div class="pt">Turno A: "auto"; turno B: "any"; turno C: forced extract_metadata mais um prerequisite gate na aplicação antes de enrichment.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="b">B. Turn A: "any"; Turn B: "auto"; Turn C: forced extract_metadata with enrichment enabled immediately after the tool_use is emitted.<div class="pt">Turno A: "any"; turno B: "auto"; turno C: forced extract_metadata com enrichment habilitado imediatamente após a emissão do tool_use.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="c">C. Turn A: forced verify_fact; Turn B: "any"; Turn C: "auto" with a strong prompt requesting extract_metadata first.<div class="pt">Turno A: forced verify_fact; turno B: "any"; turno C: "auto" com um prompt forte pedindo extract_metadata primeiro.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="d">D. Turn A: "auto"; Turn B: forced parse_pdf; Turn C: forced extract_metadata plus immediate enrichment when status is "success", even if required data is absent.<div class="pt">Turno A: "auto"; turno B: forced parse_pdf; turno C: forced extract_metadata mais enrichment imediato quando o status for "success", mesmo se dados obrigatórios estiverem ausentes.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> <code>"auto"</code> é adequado em A porque tool e texto são aceitáveis; <code>"any"</code> é adequado em B porque uma tool é obrigatória e ambos os parsers servem; C exige forced para a tool específica <strong>e</strong> gate para sucesso, dados e ordem real. B força chamada desnecessária em A, permite texto inválido em B e confunde emissão com execução em C. C torna a tool obrigatória em A e deixa o requisito de C probabilístico. D exclui indevidamente <code>parse_csv</code> e libera enrichment sem os pré-requisitos.<span class="ts">Domínio 2 · TS 2.3 — tool_choice e sequenciamento por turno</span></div>
+</div>
+
+<div class="q" data-correct="b,d" data-ts="2.3" data-dom="2">
+  <div class="qnum">Questão 9 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Prerequisite Gate Failure</span></div>
+  <div class="stem">The application has executed extract_metadata and constructed tool_result. In run A, the handler reports an execution error. In run B, it reports status "success" but the required document_id is absent. Which TWO orchestration behaviors are correct?</div>
+  <div class="pt-block pt">A aplicação executou extract_metadata e construiu tool_result. Na execução A, o handler informa erro de execução. Na execução B, informa status "success", mas o document_id obrigatório está ausente. Quais DOIS comportamentos de orquestração são corretos?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q9" value="a">A. In run A, enable enrichment because forced selection already proved that the correct tool ran successfully.<div class="pt">Na execução A, habilitar enrichment porque forced selection já provou que a tool correta rodou com sucesso.</div></label>
+    <label class="opt"><input type="checkbox" name="q9" value="b">B. In run A, keep enrichment blocked, preserve the failure in tool_result, and enter the defined retry or recovery path.<div class="pt">Na execução A, manter enrichment bloqueado, preservar a falha em tool_result e entrar no caminho definido de retry ou recuperação.</div></label>
+    <label class="opt"><input type="checkbox" name="q9" value="c">C. In run B, enable enrichment because status "success" is sufficient even when a required output field is missing.<div class="pt">Na execução B, habilitar enrichment porque status "success" é suficiente mesmo quando um campo obrigatório do output está ausente.</div></label>
+    <label class="opt"><input type="checkbox" name="q9" value="d">D. In run B, treat the missing document_id as an unmet prerequisite, keep enrichment blocked, and retry extraction or recover without advancing the workflow.<div class="pt">Na execução B, tratar o document_id ausente como pré-requisito não atendido, manter enrichment bloqueado e repetir a extração ou recuperar sem avançar o workflow.</div></label>
+    <label class="opt"><input type="checkbox" name="q9" value="e">E. In both runs, set tool_choice to "any" and let the model choose an enrichment tool to repair the state.<div class="pt">Nas duas execuções, definir tool_choice como "any" e deixar o modelo escolher uma tool de enrichment para reparar o estado.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B e D.</strong> O gate precisa validar duas coisas independentes: execução bem-sucedida e presença/validade dos dados exigidos. Em A, a falha do handler bloqueia a próxima etapa e aciona recuperação. Em B, <code>"success"</code> sem <code>document_id</code> também não satisfaz o contrato. A confunde emissão forçada com sucesso; C ignora o pré-requisito de dados; E usa seleção de tool para contornar, em vez de aplicar, a ordem do workflow.<span class="ts">Domínio 2 · TS 2.3 — prerequisite gate e caminho de falha</span></div>
 </div>
 
 <div class="concluir">

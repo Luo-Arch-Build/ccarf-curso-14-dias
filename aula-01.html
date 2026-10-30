@@ -92,7 +92,8 @@
 </header>
 
 <div class="card objetivo">
-  <strong>🎯 Objetivo do dia.</strong> Entender o formato exato da prova CCAR-F e dominar o
+  <strong>🎯 Objetivo do dia.</strong> Entender o formato exato da prova CCAR-F, executar um agente mínimo com o
+  <strong>Claude Agent SDK</strong> (<code>query()</code>, options e stream de mensagens) e dominar o
   <em>agentic loop</em> — o ciclo de vida de um agente que decide sozinho qual tool chamar,
   guiado pelo <code>stop_reason</code>. É a fundação do domínio mais pesado do exame.
 </div>
@@ -116,7 +117,74 @@ over-engineering. Guarde isso: ele reaparece em todas as aulas.</p>
 Mas um candidato que já fez a prova relatou ter visto só questões de resposta única. Um relato não prova nada:
 treine os dois formatos, mas não conte com a múltipla resposta aparecendo, nem estranhe se ela não vier.</p>
 
-<h2>2. O agentic loop (Task Statement 1.1)</h2>
+<h2>2. Agent SDK na prática: instalar, executar e consumir mensagens</h2>
+<p>Antes de desenhar o loop manualmente, saiba reconhecer a superfície do <strong>Claude Agent SDK</strong>: ele hospeda
+o agente na sua aplicação Python ou TypeScript e expõe <code>query()</code> como ponto de entrada. O
+<a href="https://code.claude.com/docs/en/agent-sdk/quickstart">quickstart oficial</a> usa o mesmo fluxo desta seção.</p>
+
+<h3>Setup mínimo em Python</h3>
+<pre><code>python3 -m venv .venv
+source .venv/bin/activate
+pip install claude-agent-sdk
+export ANTHROPIC_API_KEY="your-api-key"</code></pre>
+<ul>
+  <li>A SDK lê <code>ANTHROPIC_API_KEY</code> do ambiente do processo; <strong>não carrega <code>.env</code>
+      automaticamente</strong>. Carregue o arquivo você mesmo, se optar por usá-lo.</li>
+  <li>Na maioria das instalações, o pacote já traz o binário nativo do Claude Code; não é necessária uma segunda
+      instalação. O quickstart cobre as exceções de plataforma e de instalação sem optional dependencies.</li>
+  <li>Em TypeScript, o pacote correspondente é <code>@anthropic-ai/claude-agent-sdk</code>. Abaixo usamos Python para
+      manter o mesmo idioma dos demais exemplos do curso.</li>
+</ul>
+
+<h3>Um agente completo com <code>query()</code></h3>
+<pre><code>import asyncio
+from claude_agent_sdk import query, ClaudeAgentOptions, AssistantMessage, ResultMessage
+
+async def main():
+    async for message in query(
+        prompt="Review utils.py for bugs that would cause crashes. Fix any issues you find.",
+        options=ClaudeAgentOptions(
+            allowed_tools=["Read", "Edit", "Glob"],
+            permission_mode="acceptEdits",
+        ),
+    ):
+        if isinstance(message, AssistantMessage):
+            for block in message.content:
+                if hasattr(block, "text"):
+                    print(block.text)
+                elif hasattr(block, "name"):
+                    print(f"Tool: {block.name}")
+        elif isinstance(message, ResultMessage):
+            print(f"Done: {message.subtype}")
+
+asyncio.run(main())</code></pre>
+<p>Execute com <code>python agent.py</code>. Os quatro pontos que você precisa saber ler:</p>
+<ol>
+  <li><strong><code>query()</code> retorna um iterador assíncrono</strong>, por isso o consumo é com <code>async for</code>.
+      A SDK gerencia orquestração, execução das built-in tools, contexto e retries; sua aplicação consome as mensagens.</li>
+  <li><strong><code>ClaudeAgentOptions</code> configura o agente.</strong> No exemplo, <code>allowed_tools</code>
+      pré-aprova Read/Edit/Glob e <code>permission_mode="acceptEdits"</code> permite as edições sem perguntar. Outras
+      opções incluem <code>system_prompt</code>, <code>disallowed_tools</code> e MCP servers.</li>
+  <li><strong><code>AssistantMessage</code> representa o trabalho em andamento</strong>: texto e blocos de tool.
+      <strong><code>ResultMessage</code> representa o resultado final</strong>; <code>subtype</code> informa o desfecho.</li>
+  <li><strong>Pré-aprovar não é o mesmo que restringir disponibilidade.</strong> Para um revisor read-only, mantenha
+      Read/Grep/Glob, use <code>dontAsk</code> e coloque Edit/Write/Bash em <code>disallowed_tools</code>. Não dependa de
+      <code>acceptEdits</code> nem de uma frase no prompt para impedir escrita.</li>
+</ol>
+
+<h3>Agent SDK × Messages API × CLI</h3>
+<table class="gloss">
+  <tr><th>Superfície</th><th>Como você a usa</th><th>Quem controla o loop e as tools</th></tr>
+  <tr><td class="en">Claude Agent SDK</td><td>Agente embutido na sua aplicação Python/TypeScript; <code>query()</code> produz um stream de mensagens.</td><td>A SDK gerencia o loop e executa as built-in tools; você configura, integra servidores e consome o resultado.</td></tr>
+  <tr><td class="en">Messages API</td><td>Requests HTTP com <code>client.messages.create</code>, incluindo mensagens e schemas de tools.</td><td>Sua aplicação controla o loop, executa as client tools e devolve <code>tool_result</code> com os IDs corretos.</td></tr>
+  <tr><td class="en">Claude Code CLI</td><td>Comandos no terminal; <code>claude -p</code> executa uma vez sem interface interativa.</td><td>O Claude Code gerencia o loop; seus scripts escolhem flags, permissions, contexto e consumo do output.</td></tr>
+</table>
+<p><strong>Exercício dirigido:</strong> monte o agente acima, execute-o sobre um arquivo com dois bugs e observe as
+mensagens até <code>Done</code>. Depois altere o prompt para apenas revisar, sem editar, e ajuste tools e permission mode
+para esse novo papel. A entrega deve explicar por que a segunda configuração impede escrita em vez de apenas pedir que o
+modelo não escreva.</p>
+
+<h2>3. O agentic loop (Task Statement 1.1)</h2>
 <p>Um agente não é "uma chamada à API". É um <strong>loop</strong>: o modelo raciocina, pede uma tool,
 recebe o resultado, raciocina de novo — até decidir que terminou. O ciclo de vida:</p>
 <ol>
@@ -187,10 +255,15 @@ tudo junto; quando uma depende do resultado da outra, ela vem naturalmente no tu
 certo.</em></p>
 
 <h3>O ponto conceitual que a prova cobra</h3>
-<p>A decisão de <em>qual</em> tool chamar e <em>quando parar</em> é <strong>model-driven</strong>: o próprio Claude
-raciocina sobre o contexto e escolhe o próximo passo. Isso é o oposto de uma <strong>decision tree</strong>
-pré-configurada (fluxo fixo de tools). A arquitetura agêntica delega o roteamento ao modelo — seu trabalho
-como arquiteto é dar a ele boas tools, bom contexto e boas barreiras.</p>
+<p>A decisão de <em>qual</em> tool chamar e <em>quando parar</em> é <strong>model-driven</strong>, mas cada agente
+escolhe <strong>apenas dentro do conjunto de tools efetivamente exposto ao seu papel</strong>. Em sistemas com vários
+papéis, o <strong>coordinator/runtime</strong> distribui as capacidades mínimas necessárias a cada responsabilidade;
+o modelo seleciona entre essas opções, sem definir o próprio perímetro de acesso.</p>
+<p>Isso é o oposto de uma <strong>decision tree</strong> pré-configurada (fluxo fixo de tools). A arquitetura agêntica
+delega ao modelo a <strong>seleção entre tools disponíveis</strong>, não um roteiro fixo nem a autorização para usar
+qualquer tool. <strong>Seleção model-driven, paralelismo e controle de acesso são eixos distintos</strong>: executar
+chamadas independentes em paralelo não amplia permissões, e restringir o conjunto exposto não elimina a escolha do
+modelo. Seu trabalho como arquiteto é dar a cada agente boas tools, bom contexto e boas barreiras.</p>
 
 <h3>Anti-padrões (a prova ADORA cobrar isso)</h3>
 <ul>
@@ -204,9 +277,14 @@ como arquiteto é dar a ele boas tools, bom contexto e boas barreiras.</p>
       e não consegue raciocinar sobre o próximo passo</li>
 </ul>
 
-<h2>3. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
+<h2>4. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
 <table class="gloss">
   <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
+  <tr><td class="en">Agent SDK</td><td>SDK para embutir e operar agents na sua aplicação</td><td class="uso">"build an agent with the Claude Agent SDK"</td></tr>
+  <tr><td class="en">query()</td><td>ponto de entrada que retorna um iterador assíncrono de mensagens</td><td class="uso">"consume messages from query() with async for"</td></tr>
+  <tr><td class="en">ClaudeAgentOptions</td><td>configuração de tools, permission mode, system prompt e demais opções do agente</td><td class="uso">"configure allowed_tools and permission_mode in ClaudeAgentOptions"</td></tr>
+  <tr><td class="en">AssistantMessage / ResultMessage</td><td>mensagem de trabalho em andamento / resultado final</td><td class="uso">"handle AssistantMessage blocks and finish on ResultMessage"</td></tr>
+  <tr><td class="en">allowed_tools / disallowed_tools</td><td>pré-aprovação de tools / remoção de tools da disponibilidade</td><td class="uso">"pre-approval alone does not restrict the available tool set"</td></tr>
   <tr><td class="en">agentic loop</td><td>loop agêntico (ciclo raciocinar→tool→resultado)</td><td class="uso">"the agentic loop continues while stop_reason is tool_use"</td></tr>
   <tr><td class="en">stop_reason</td><td>motivo de parada da resposta</td><td class="uso">"terminate the loop when stop_reason is end_turn"</td></tr>
   <tr><td class="en">parallel tool calls</td><td>várias tool calls na mesma resposta</td><td class="uso">"emit multiple tool calls within a single response turn"</td></tr>
@@ -229,9 +307,13 @@ como arquiteto é dar a ele boas tools, bom contexto e boas barreiras.</p>
   que já buscou e repete o pedido. O cap é só rede de segurança.
   Regra de bolso: <em>controle de fluxo do agente é responsabilidade do seu código, guiado pelo stop_reason — nunca
   inferido do texto que o modelo escreveu.</em></p>
+  <p>Na parte de SDK, as trocas comuns são confundir <code>query()</code> com uma chamada síncrona única, esperar que
+  <code>.env</code> carregue sozinho ou tratar <code>allowed_tools</code> como allowlist completa. Para o resultado,
+  distingua <code>ResultMessage</code> das mensagens intermediárias; para segurança, remova capacidades com
+  <code>disallowed_tools</code> em vez de apenas reforçar o prompt.</p>
 </div>
 
-<h2>4. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
+<h2>5. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
 <div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
 
 <div class="q" data-correct="b" data-ts="1.1" data-dom="1">
@@ -317,6 +399,48 @@ como arquiteto é dar a ele boas tools, bom contexto e boas barreiras.</p>
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: C.</strong> Todos os <code>tool_result</code> de uma resposta vão numa <strong>única</strong> mensagem <code>user</code>, cada um com seu <code>tool_use_id</code>. Separados, o histórico mostra uma chamada por vez, e o modelo passa a imitar esse padrão; a documentação da API cita esse erro de formatação como a causa mais comum de o modelo parar de paralelizar. A mexe na seleção da tool, não no formato das chamadas: uma descrição mais curta pode piorar a escolha, mas não ensina a pedir uma busca por turno. B ataca o sintoma errado: cortar turnos antigos não muda o padrão que os turnos recentes mostram, e são eles, com um resultado por mensagem, que o modelo imita. D inverte o default: o paralelismo vem ligado, e o agente já paralelizava no começo; <code>disable_parallel_tool_use</code> serve para <em>desligar</em>.<span class="ts">Domínio 1 · TS 1.1 — Loop agêntico</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="1.1" data-dom="1">
+  <div class="qnum">Questão 7 · múltipla escolha <span class="cenario">Developer Productivity with Claude</span></div>
+  <div class="stem">A Python agent uses the Claude Agent SDK to review and fix utils.py. Which pattern correctly consumes query() and recognizes the final outcome?</div>
+  <div class="pt-block pt">Um agente Python usa o Claude Agent SDK para revisar e corrigir utils.py. Qual padrão consome corretamente query() e reconhece o resultado final?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q7" value="a">A. Await query() once, then inspect response.stop_reason to decide whether built-in tools need another manual request.<div class="pt">Aguardar query() uma vez e inspecionar response.stop_reason para decidir se as built-in tools precisam de outra requisição manual.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="b">B. Iterate with async for over the messages returned by query(), handle AssistantMessage blocks while work progresses, and read ResultMessage.subtype for the final outcome.<div class="pt">Iterar com async for sobre as mensagens retornadas por query(), tratar blocos de AssistantMessage durante o trabalho e ler ResultMessage.subtype para o desfecho.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="c">C. Use a synchronous for loop over query(), and execute every built-in tool in that loop before appending a user message with the results.<div class="pt">Usar um for síncrono sobre query() e executar toda built-in tool nesse loop antes de acrescentar uma mensagem user com os resultados.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="d">D. Call query() repeatedly while a response has stop_reason "tool_use", because query() returns the same raw API response as client.messages.create.<div class="pt">Chamar query() repetidamente enquanto a resposta tiver stop_reason "tool_use", pois query() retorna a mesma resposta crua de client.messages.create.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> <code>query()</code> retorna um iterador assíncrono de mensagens, não uma única resposta HTTP. A SDK gerencia o loop e as built-in tools; a aplicação consome <code>AssistantMessage</code> durante o trabalho e <code>ResultMessage</code> no desfecho. A e D tratam a SDK como a Messages API; C usa iteração síncrona e desloca para a aplicação uma execução que a SDK gerencia.<span class="ts">Domínio 1 · TS 1.1 — Agent SDK: query e stream</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="1.1" data-dom="1">
+  <div class="qnum">Questão 8 · múltipla escolha <span class="cenario">Developer Productivity with Claude</span></div>
+  <div class="stem">The quickstart configuration has allowed_tools ["Read", "Edit", "Glob"] and permission_mode "acceptEdits" so the agent can fix code. You now reuse it only to report bugs; it must never modify files or run shell commands. Which configuration best enforces the new role?</div>
+  <div class="pt-block pt">A configuração do quickstart tem allowed_tools ["Read", "Edit", "Glob"] e permission_mode "acceptEdits" para o agente corrigir código. Agora você o reutiliza apenas para relatar bugs; ele nunca deve modificar arquivos nem rodar comandos shell. Qual configuração impõe melhor o novo papel?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q8" value="a">A. Keep Read and Glob in allowed_tools, set disallowed_tools ["Edit", "Write", "Bash"], and use permission_mode "dontAsk".<div class="pt">Manter Read e Glob em allowed_tools, definir disallowed_tools ["Edit", "Write", "Bash"] e usar permission_mode "dontAsk".</div></label>
+    <label class="opt"><input type="radio" name="q8" value="b">B. Remove Edit from allowed_tools but keep acceptEdits, because pre-approval and availability are the same restriction.<div class="pt">Remover Edit de allowed_tools, mas manter acceptEdits, pois pré-aprovação e disponibilidade são a mesma restrição.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="c">C. Keep the original options and add a system prompt saying that edits and shell commands are strictly forbidden.<div class="pt">Manter as opções originais e acrescentar um system prompt dizendo que edições e comandos shell são estritamente proibidos.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="d">D. Use bypassPermissions with a read-only prompt, so the SDK can finish without asking for approval.<div class="pt">Usar bypassPermissions com um prompt read-only, para a SDK terminar sem pedir aprovação.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> <code>allowed_tools</code> pré-aprova, mas não é a allowlist completa. <code>disallowed_tools</code> remove as capacidades de escrita, e <code>dontAsk</code> nega chamadas que exigiriam aprovação. B confunde retirar uma pré-aprovação com remover disponibilidade; C é apenas orientação; D elimina checagens sem restringir o conjunto de tools.<span class="ts">Domínio 1 · TS 1.1 — Agent SDK: tools e permission mode</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="1.1" data-dom="1">
+  <div class="qnum">Questão 9 · múltipla escolha <span class="cenario">Customer Support Resolution Agent</span></div>
+  <div class="stem">After moving a support agent from the Agent SDK to a direct Messages API implementation, your teammate assumes that a tool_use response means the API has already executed get_customer. What does the application need to do next?</div>
+  <div class="pt-block pt">Depois de migrar um agente de suporte do Agent SDK para uma implementação direta com a Messages API, um colega presume que uma resposta tool_use significa que a API já executou get_customer. O que a aplicação precisa fazer em seguida?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q9" value="a">A. Iterate with async for until the SDK emits ResultMessage, because the Messages API uses the same high-level message stream.<div class="pt">Iterar com async for até a SDK emitir ResultMessage, pois a Messages API usa o mesmo stream de alto nível.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="b">B. Add get_customer to allowed_tools and wait for Anthropic to return its result in a ResultMessage.<div class="pt">Adicionar get_customer a allowed_tools e esperar a Anthropic devolver o resultado numa ResultMessage.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="c">C. Read the model's explanatory text and use it as proof that get_customer completed successfully.<div class="pt">Ler o texto explicativo do modelo e usá-lo como prova de que get_customer terminou com sucesso.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="d">D. Execute the client tool in the application, preserve the assistant tool_use block, and send a tool_result with the matching tool_use_id in the next request.<div class="pt">Executar a client tool na aplicação, preservar o bloco assistant tool_use e enviar tool_result com o tool_use_id correspondente na próxima requisição.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> Na Messages API, <code>tool_use</code> é uma solicitação, não uma execução concluída. A aplicação executa a client tool e devolve <code>tool_result</code> com o ID correspondente. A e B confundem a API de baixo nível com o loop hospedado da Agent SDK; C transforma narrativa em evidência de execução.<span class="ts">Domínio 1 · TS 1.1 — Agent SDK × Messages API</span></div>
 </div>
 
 <div class="concluir">

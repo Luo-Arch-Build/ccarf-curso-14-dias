@@ -166,30 +166,72 @@ segmentos ruins</strong>: pode ser 99,5% em notas fiscais padrão e 71% em contr
 Antes de automatizar (reduzir revisão humana), meça a acurácia <strong>por tipo de documento e
 por campo</strong>.</p>
 
-<h3>O fluxo correto de revisão humana</h3>
+<h3>Da confiança bruta à decisão calibrada</h3>
 <ol>
-  <li><strong>Confidence por campo</strong>: o modelo emite um score de confiança <em>por campo extraído</em>,
-      não um número global por documento.</li>
-  <li><strong>Calibração com validation set rotulado</strong>: os scores brutos do modelo não são
-      probabilidades reais. Use um conjunto de validação rotulado para calibrar os thresholds de
-      roteamento (ex.: "abaixo de 0,82 no campo <code>valor_total</code> → fila humana").</li>
-  <li><strong>Roteamento</strong>: quem decide o que vai para revisão humana é a <strong>confiança calibrada
-      por campo</strong>, as <strong>características do documento</strong> (tipo, escaneado ou manuscrito, segmento
-      com acurácia baixa) e a <strong>ambiguidade do campo</strong> (valor ilegível, fontes contraditórias no
-      próprio documento) — priorizando a capacidade limitada dos revisores onde o modelo é fraco.</li>
-  <li><strong>Stratified random sampling</strong>: mesmo as extrações <em>high-confidence</em> (que vão
-      direto, sem revisão) precisam de amostragem aleatória estratificada contínua — por tipo de
-      documento e campo — para <strong>medir</strong> a taxa de erro real e <strong>detectar padrões de erro novos</strong>
-      que o threshold não captura.</li>
+  <li><strong>Confidence por campo</strong>: o modelo emite um score <em>por campo extraído</em>, não um
+      número global por documento. O score bruto ainda não é uma probabilidade calibrada.</li>
+  <li><strong>Calibração com validation set rotulado</strong>: valide o desempenho e calibre os thresholds
+      <strong>por campo × segmento/documento</strong> (ex.: "abaixo de 0,82 em <code>valor_total</code> de
+      contrato manuscrito → fila humana"). Não empreste a um segmento não validado a confiança medida em outro.</li>
+  <li><strong>Roteamento por gatilhos alternativos</strong>: baixa confiança calibrada, segmento não validado,
+      ambiguidade/contradição e alto impacto são condições ligadas por <strong>OR</strong>, não por AND.
+      Um score alto não cancela os demais gatilhos.</li>
+  <li><strong>Stratified random sampling separado</strong>: os campos auto-aprovados continuam elegíveis a uma
+      amostra aleatória estratificada própria, por campo e segmento/documento, enviada a humanos para
+      <strong>auditoria</strong>, medição do erro real e detecção de padrões novos.</li>
 </ol>
 
-<p><strong>Rotear × medir: são duas funções diferentes.</strong> A amostragem aleatória <strong>mede</strong>: é o
-controle de qualidade dos auto-aprovados, e por ser aleatória ela olha justamente o que a confiança não
-apontou. Ela <strong>não roteia</strong>: mandar para a fila uma fatia aleatória de tudo gasta a capacidade dos
-revisores com extrações certas e deixa passar os erros concentrados num tipo de documento ou num campo.
-Regra de bolso: <em>a fila de revisão é alimentada por confiança calibrada, tipo de documento e ambiguidade
-do campo — não por sorteio; e o sorteio estratificado continua existindo, numa fatia pequena, para medir os
-auto-aprovados e recalibrar os thresholds.</em></p>
+<h3>Matriz de decisão: campo × segmento/documento</h3>
+<p>Basta <strong>um</strong> gatilho para direcionar o campo à revisão. Sem gatilho ativo e com desempenho
+validado naquele recorte, o campo pode ser auto-aprovado — sem sair da população da amostra de auditoria.</p>
+<table class="gloss">
+  <tr><th>Campo × segmento/documento</th><th>Gatilhos alternativos (OR)</th><th>Decisão e escopo</th></tr>
+  <tr>
+    <td><code>valor_total</code> × contrato manuscrito</td>
+    <td>Baixa confiança calibrada; segmento ainda não validado; dois valores contraditórios, mesmo com score 0,97; pagamento irreversível de alto impacto.</td>
+    <td>Bloquear a ação enquanto houver gatilho. Revisor de extração confere o valor e o recorte; especialista de domínio atua se houver interpretação ambígua; responsável por autorização aprova o pagamento.</td>
+  </tr>
+  <tr>
+    <td><code>data_vigencia</code> × contrato manuscrito</td>
+    <td>Baixa confiança calibrada; data ilegível ou contraditória; segmento não validado; obrigação de alto impacto.</td>
+    <td>Revisar a data e o trecho mínimo que a contextualiza; acionar especialista apenas se a dúvida for de domínio.</td>
+  </tr>
+  <tr>
+    <td><code>tax_id</code> × fatura escaneada com várias moedas</td>
+    <td>Baixa confiança calibrada; identificador parcialmente ilegível; segmento com desempenho ruim ou ainda não validado.</td>
+    <td>Revisor de extração confere <code>tax_id</code> e seu recorte, sem reabrir indiscriminadamente todos os campos da fatura.</td>
+  </tr>
+  <tr>
+    <td><code>cnpj</code> × nota fiscal padrão validada</td>
+    <td>Baixa confiança calibrada; contradição; mudança para estrato não validado; consequência de alto impacto.</td>
+    <td>Se nenhum gatilho estiver ativo, auto-aprovar e manter o campo na amostra estratificada separada de auditoria humana.</td>
+  </tr>
+</table>
+
+<h3>Papéis humanos e escopo da revisão</h3>
+<ul>
+  <li><strong>Revisor de extração</strong>: compara o valor extraído ao documento, verificando transcrição,
+      legibilidade e evidência no recorte. É a porta de entrada para erro de leitura ou extração.</li>
+  <li><strong>Especialista de domínio</strong>: resolve ambiguidades semânticas, jurídicas ou financeiras e
+      contradições que exigem interpretação; não precisa reconferir mecanicamente todos os campos.</li>
+  <li><strong>Responsável por autorização</strong>: decide se a ação de alto impacto ou irreversível pode prosseguir
+      depois da revisão. Revisar extração não equivale a autorizar pagamento, cancelamento ou comunicação externa.</li>
+</ul>
+<p>Por padrão, revise <strong>o campo e o recorte necessário</strong>, com o mínimo de contexto para decidir.
+O documento inteiro só entra quando a dúvida exigir contexto adicional — não como revisão indiscriminada de todo item.</p>
+<p><strong>Consequência do erro.</strong> Alto impacto e irreversibilidade entram nesta matriz como
+<strong>reforço arquitetural recomendado</strong> para priorizar revisão e exigir autorização proporcional.
+Essa consequência não deve ser atribuída como requisito literal do texto público da TS 5.5.</p>
+
+<h3>Triagem direcionada × auditoria amostral</h3>
+<p>São duas funções diferentes, e <strong>ambas podem enviar itens a humanos</strong>. A triagem direcionada usa os
+gatilhos da matriz para atacar o risco conhecido. A amostra estratificada dos auto-aprovados vai a humanos para
+auditoria: mede a taxa de erro real, revela padrões que os gatilhos não capturam e alimenta a recalibração.
+A auditoria amostral <strong>não substitui</strong> a triagem direcionada; sortear mais itens ao acaso não garante
+revisar a contradição ou o segmento problemático.</p>
+<p>Não prescreva genericamente uma amostra "pequena". Seu tamanho e sua distribuição dependem da
+<strong>precisão estatística desejada, dos estratos e de seus volumes, e da capacidade disponível</strong>.
+Planeje a amostra separadamente da fila direcionada e reserve capacidade para as duas atividades.</p>
 
 <pre><code>{
   "document_type": "contrato_manuscrito",
@@ -200,18 +242,23 @@ auto-aprovados e recalibrar os thresholds.</em></p>
   }
 }</code></pre>
 
-<p>Ponto sutil que a prova cobra: <strong>confidence autorreportada sem calibração é mal calibrada</strong>
-(o modelo costuma estar confiante justamente nos casos difíceis). Por isso o threshold nasce do
-validation set rotulado, não da intuição. E o sampling dos high-confidence não é redundância —
-é o mecanismo que revela erros que a própria confiança não percebe.</p>
+<p>Um score autorrelatado <strong>não deve ser tratado como probabilidade calibrada antes de validação
+empírica</strong>. Isso não significa que ele seja sempre mal calibrado: significa que interpretar 0,97 como
+"97% de chance de acerto" precisa ser demonstrado em dados rotulados, por campo e segmento. Até lá, o score é
+um sinal de entrada, não uma garantia — e contradição, segmento não validado e alto impacto continuam acionando
+revisão mesmo com score alto.</p>
 
-<h3>Calibração é por campo</h3>
-<p>Um threshold único para todos os campos é intuição disfarçada de regra: cada campo erra num nível de confiança
-diferente (o <code>cnpj</code> a 0,80 quase sempre certo; o <code>valor_total</code> a 0,92 ainda errando). Calibre o
-threshold <strong>de cada campo</strong> com o validation set rotulado e, como a capacidade dos revisores é limitada,
-<strong>priorize</strong> a fila: primeiro as extrações de baixa confiança e os documentos ambíguos ou contraditórios.</p>
-<p><strong>Regra de bolso:</strong> <em>o threshold vem dos dados rotulados, campo a campo — nunca do chute nem de uma
-instrução pedindo ao modelo para "ser mais humilde".</em></p>
+<h3>Calibração é por campo e segmento</h3>
+<p>Um threshold único para todos os campos e segmentos é intuição disfarçada de regra: cada recorte erra num nível
+de confiança diferente (o <code>cnpj</code> a 0,80 quase sempre certo num segmento validado; o
+<code>valor_total</code> a 0,92 ainda errando em contratos manuscritos). Calibre cada threshold com validation set
+rotulado representativo do campo × segmento. Se o segmento ainda não foi validado, isso já é um gatilho de revisão,
+não motivo para assumir que o threshold global serve.</p>
+<p>Com capacidade limitada, priorize a fila pelo risco e pela consequência, mas não transforme os gatilhos em uma
+lista cumulativa: baixa confiança calibrada <strong>ou</strong> segmento não validado <strong>ou</strong>
+ambiguidade/contradição <strong>ou</strong> alto impacto basta para revisão.</p>
+<p><strong>Regra de bolso:</strong> <em>o threshold vem dos dados rotulados, campo a campo e segmento a segmento —
+nunca do chute nem de uma instrução pedindo ao modelo para "ser mais humilde".</em></p>
 
 <h2>3. Proveniência e incerteza na síntese multi-fonte (Task Statement 5.6)</h2>
 
@@ -269,16 +316,20 @@ formato natural dele — uniformidade de formato não é virtude.</em></p>
   <tr><td class="en">valid empty result</td><td>resultado vazio válido (query ok, sem matches)</td><td class="uso">"an empty result is a successful query with no matches"</td></tr>
   <tr><td class="en">local recovery</td><td>recuperação local no subagent</td><td class="uso">"implement local recovery for transient failures and propagate only unresolvable errors"</td></tr>
   <tr><td class="en">coverage annotation / gap</td><td>anotação / lacuna de cobertura</td><td class="uso">"annotate which topic areas have gaps due to unavailable sources"</td></tr>
-  <tr><td class="en">stratified random sampling</td><td>amostragem aleatória estratificada</td><td class="uso">"stratified sampling of high-confidence extractions detects novel error patterns"</td></tr>
-  <tr><td class="en">field-level confidence</td><td>confiança por campo</td><td class="uso">"field-level confidence scores calibrated using labeled validation sets"</td></tr>
-  <tr><td class="en">labeled validation set</td><td>conjunto de validação rotulado</td><td class="uso">"calibrate review thresholds with a labeled validation set"</td></tr>
+  <tr><td class="en">stratified random sampling</td><td>amostragem aleatória estratificada</td><td class="uso">"a separate stratified sample of auto-approved fields goes to human audit; it complements targeted routing"</td></tr>
+  <tr><td class="en">field-level confidence</td><td>confiança por campo</td><td class="uso">"a self-reported score is not a calibrated probability before empirical validation"</td></tr>
+  <tr><td class="en">labeled validation set</td><td>conjunto de validação rotulado</td><td class="uso">"calibrate review thresholds by field and document segment with labeled data"</td></tr>
   <tr><td class="en">aggregate accuracy</td><td>acurácia agregada (mascara segmentos)</td><td class="uso">"97% aggregate accuracy may mask poor performance on specific document types"</td></tr>
   <tr><td class="en">claim-source mapping</td><td>mapeamento claim → fonte</td><td class="uso">"structured claim-source mappings that synthesis must preserve"</td></tr>
   <tr><td class="en">provenance</td><td>proveniência (origem rastreável de cada claim)</td><td class="uso">"preserve source attribution through summarization steps"</td></tr>
   <tr><td class="en">publication date</td><td>data de publicação/coleta</td><td class="uso">"require publication dates so temporal differences are not read as contradictions"</td></tr>
   <tr><td class="en">well-established vs contested findings</td><td>achados estabelecidos vs contestados</td><td class="uso">"explicit sections distinguishing well-established findings from contested ones"</td></tr>
   <tr><td class="en">content-type rendering</td><td>renderização por tipo de conteúdo</td><td class="uso">"financial data as tables, news as prose, technical findings as structured lists"</td></tr>
-  <tr><td class="en">review threshold</td><td>corte de roteamento para revisão humana</td><td class="uso">"calibrate review thresholds using labeled validation sets"</td></tr>
+  <tr><td class="en">review threshold</td><td>corte de roteamento para revisão humana</td><td class="uso">"calibrate thresholds for each field-by-segment slice instead of borrowing a global cut-off"</td></tr>
+  <tr><td class="en">alternative review triggers (OR)</td><td>gatilhos alternativos de revisão (OU)</td><td class="uso">"low calibrated confidence, an unvalidated segment, contradiction or high impact each independently triggers review"</td></tr>
+  <tr><td class="en">extraction reviewer</td><td>revisor de extração</td><td class="uso">"check the flagged field and the necessary source excerpt rather than the whole document"</td></tr>
+  <tr><td class="en">domain specialist</td><td>especialista de domínio</td><td class="uso">"resolve ambiguity or contradiction that requires domain interpretation"</td></tr>
+  <tr><td class="en">authorization owner</td><td>responsável por autorização</td><td class="uso">"authorize the high-impact or irreversible action after the required review"</td></tr>
 </table>
 
 <div class="card pegadinha">
@@ -289,9 +340,12 @@ formato natural dele — uniformidade de formato não é virtude.</em></p>
   (parece seguro, mas mata o trabalho todo por uma falha recuperável). O terceiro distrator é o
   status genérico tipo <code>"search unavailable"</code>, que esconde o contexto do coordinator.
   Regra de bolso: <em>erro sobe como dado estruturado (tipo + tentativa + parciais + alternativas),
-  nunca como silêncio, nunca como exceção fatal, nunca como string vaga.</em> E em questões de
-  acurácia: <em>número agregado bonito (97%) nunca é prova suficiente — segmente por tipo de
-  documento e campo antes de tirar o humano do loop.</em></p>
+  nunca como silêncio, nunca como exceção fatal, nunca como string vaga.</em></p>
+  <p>Em revisão humana, número agregado bonito ou score 0,97 não anula os demais gatilhos:
+  <strong>baixa confiança calibrada OU segmento não validado OU ambiguidade/contradição OU alto impacto</strong>
+  já basta para revisar o campo/recorte. A amostra dos auto-aprovados também vai a humanos, para auditoria,
+  mas não substitui essa triagem; seu tamanho depende de precisão, estratos e capacidade, não de uma regra
+  genérica de "amostra pequena".</p>
 </div>
 
 <h2>5. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
@@ -334,10 +388,10 @@ formato natural dele — uniformidade de formato não é virtude.</em></p>
     <label class="opt"><input type="checkbox" name="q3" value="b">B. Rely on JSON schema validation to catch whatever errors remain once review of high-confidence items stops.<div class="pt">Confiar na validação do JSON schema para pegar os erros restantes quando a revisão dos itens high-confidence parar.</div></label>
     <label class="opt"><input type="checkbox" name="q3" value="c">C. Break accuracy down by document type and field, since the aggregate can hide segments that perform poorly.<div class="pt">Quebrar a acurácia por tipo de documento e por campo, já que o agregado pode esconder segmentos com desempenho ruim.</div></label>
     <label class="opt"><input type="checkbox" name="q3" value="d">D. Replace field-level confidence with one document-level score so the routing logic becomes simpler to audit.<div class="pt">Trocar a confiança por campo por um score único por documento para a lógica de roteamento ficar mais fácil de auditar.</div></label>
-    <label class="opt"><input type="checkbox" name="q3" value="e">E. Keep stratified random sampling of high-confidence extractions to measure the real error rate and catch new patterns.<div class="pt">Manter amostragem aleatória estratificada das extrações high-confidence para medir a taxa de erro real e pegar padrões novos.</div></label>
+    <label class="opt"><input type="checkbox" name="q3" value="e">E. Keep a separate stratified human-audit sample of auto-approved high-confidence extractions to measure the real error rate and catch new patterns.<div class="pt">Manter uma amostra estratificada separada de extrações high-confidence auto-aprovadas para auditoria humana, medindo a taxa de erro real e detectando padrões novos.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: C e E.</strong> C: acurácia agregada de 97% pode esconder um tipo de documento a 70% — segmentar por tipo e campo é pré-requisito para reduzir revisão. E: a amostragem estratificada contínua mede o erro real dos auto-aprovados e detecta padrões novos que a confiança não pega. A inventa threshold por intuição — thresholds se calibram com validation set rotulado, e "mais alto" sem calibração só move o erro de lugar. B confunde sintaxe com semântica: schema não pega valor errado bem-formado. D é regressão: score único por documento destrói a granularidade que permite rotear só o campo problemático para revisão. <span class="ts">Domínio 5 · TS 5.5 — Revisão humana e calibração de confiança</span></div>
+  <div class="feedback"><strong>Gabarito: C e E.</strong> C: acurácia agregada de 97% pode esconder um tipo de documento a 70% — segmentar por tipo e campo é pré-requisito para reduzir revisão. E: a amostra estratificada separada também vai a humanos, para auditar os auto-aprovados e detectar padrões novos que a confiança não pega; isso complementa, e não substitui, a triagem direcionada. A inventa threshold por intuição — thresholds se calibram com validation set rotulado, e "mais alto" sem calibração só move o erro de lugar. B confunde sintaxe com semântica: schema não pega valor errado bem-formado. D é regressão: score único por documento destrói a granularidade que permite rotear só o campo problemático para revisão. <span class="ts">Domínio 5 · TS 5.5 — Revisão humana e calibração de confiança</span></div>
 </div>
 
 <div class="q" data-correct="d" data-ts="5.6" data-dom="5">
@@ -373,13 +427,13 @@ formato natural dele — uniformidade de formato não é virtude.</em></p>
   <div class="stem">An insurance-claims extraction pipeline emits a confidence score for every field, and any field below 0.90 goes to a team of three reviewers. The 0.90 cut-off was chosen by intuition and is the same for every field. Reviewers spend most of their time confirming policy numbers that are almost always right, while wrong incident dates scored 0.93 and slip through. What should the team do?</div>
   <div class="pt-block pt">Um pipeline de extração de sinistros de seguro emite um score de confiança para cada campo, e todo campo abaixo de 0,90 vai para um time de três revisores. O corte de 0,90 foi escolhido por intuição e é o mesmo para todos os campos. Os revisores passam a maior parte do tempo confirmando números de apólice que quase sempre estão certos, enquanto datas de sinistro erradas receberam 0,93 e passam direto. O que o time deve fazer?</div>
   <div class="opts">
-    <label class="opt"><input type="radio" name="q6" value="a">A. Calibrate per-field thresholds on a labeled validation set and route low-confidence or contradictory claims first.<div class="pt">Calibrar thresholds por campo num conjunto de validação rotulado e mandar primeiro os sinistros de baixa confiança ou contraditórios.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="a">A. Calibrate thresholds per field and document segment on labeled data; route a field when low calibrated confidence OR another trigger, such as contradiction, applies.<div class="pt">Calibrar thresholds por campo e segmento de documento com dados rotulados; rotear um campo quando houver baixa confiança calibrada OU outro gatilho, como contradição.</div></label>
     <label class="opt"><input type="radio" name="q6" value="b">B. Raise the cut-off to 0.97 for every field, so that incident dates like the ones scored at 0.93 also reach reviewers.<div class="pt">Subir o corte para 0,97 em todos os campos, para datas de sinistro como as de 0,93 também chegarem aos revisores.</div></label>
     <label class="opt"><input type="radio" name="q6" value="c">C. Add a prompt instruction telling the model to report lower confidence on dates whenever it is not fully certain.<div class="pt">Adicionar uma instrução no prompt para o modelo reportar confiança menor em datas sempre que não tiver certeza total.</div></label>
     <label class="opt"><input type="radio" name="q6" value="d">D. Replace the field scores with one score per claim, so reviewers judge whole documents instead of isolated fields.<div class="pt">Trocar os scores por campo por um score por sinistro, para os revisores julgarem documentos inteiros e não campos isolados.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: A.</strong> TS 5.5: confiança por campo só vira critério de roteamento depois de calibrada com um conjunto de validação rotulado — e a calibração é <em>por campo</em>, porque cada campo erra num nível de confiança diferente. Com a capacidade limitada dos revisores, vão primeiro as extrações de baixa confiança e os documentos ambíguos ou contraditórios. B sobe o corte no chute: inunda a fila com ainda mais campos certos e continua sem saber onde o modelo erra. C tenta recalibrar por instrução — confiança autorreportada não fica calibrada porque o prompt pediu. D joga fora a granularidade que permite mandar só o campo problemático para revisão. <span class="ts">Domínio 5 · TS 5.5 — Revisão humana e calibração de confiança</span></div>
+  <div class="feedback"><strong>Gabarito: A.</strong> O score autorrelatado não deve ser lido como probabilidade calibrada antes de validação empírica. Os thresholds precisam ser medidos por campo × segmento, e os gatilhos são alternativos: baixa confiança calibrada ou contradição já direciona o campo/recorte; segmento não validado e alto impacto também podem acionar revisão independentemente do score. B sobe o corte no chute: inunda a fila com ainda mais campos certos e continua sem saber onde o modelo erra. C tenta recalibrar por instrução — o prompt não substitui dados rotulados. D joga fora a granularidade que permite revisar só o campo problemático, em vez do documento inteiro por padrão. <span class="ts">Domínio 5 · TS 5.5 — Revisão humana e calibração de confiança</span></div>
 </div>
 
 <div class="q" data-correct="d" data-ts="5.6" data-dom="5">
@@ -418,11 +472,25 @@ formato natural dele — uniformidade de formato não é virtude.</em></p>
   <div class="opts">
     <label class="opt"><input type="radio" name="q9" value="a">A. Raise the random share from 3% to 5% of all extractions, so that more of the concentrated errors get caught.<div class="pt">Subir a fatia aleatória de 3% para 5% de todas as extrações, para pegar mais dos erros concentrados.</div></label>
     <label class="opt"><input type="radio" name="q9" value="b">B. Use the model's self-reported per-field confidence as a calibrated score and queue every field below 0.8.<div class="pt">Usar a confiança por campo autorrelatada pelo modelo como score calibrado e mandar à fila todo campo abaixo de 0,8.</div></label>
-    <label class="opt"><input type="radio" name="q9" value="c">C. Route by calibrated per-field confidence and document traits; keep a small stratified sample to measure the rest.<div class="pt">Rotear por confiança calibrada por campo e por características do documento; manter uma pequena amostra estratificada para medir o resto.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="c">C. Route flagged fields by calibrated confidence and document traits; keep a separate stratified human-audit sample of auto-approved fields, sized for the required precision, strata and capacity.<div class="pt">Rotear os campos sinalizados por confiança calibrada e características do documento; manter uma amostra estratificada separada de campos auto-aprovados para auditoria humana, dimensionada pela precisão requerida, pelos estratos e pela capacidade.</div></label>
     <label class="opt"><input type="radio" name="q9" value="d">D. Send every scanned multi-currency invoice to review and stop reviewing all other document types.<div class="pt">Mandar toda fatura escaneada com várias moedas para revisão e parar de revisar todos os outros tipos de documento.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: C.</strong> Amostragem aleatória mede a taxa de erro; ela não sabe <em>onde</em> o erro está. Com capacidade para 300 revisões, a fila tem que ir para onde o erro se concentra: confiança calibrada por campo (o <code>tax_id</code> parcialmente ilegível), características do documento (escaneada, várias moedas) e ambiguidade do campo. Uma fatia pequena de amostragem estratificada fica para medir os auto-aprovados e achar padrões novos. A estoura a capacidade (5% = 500 revisões) e continua espalhando o esforço às cegas. B chama de calibrado um autorrelato que ninguém mediu: calibrar exige comparar a confiança com um conjunto de validação rotulado, e o autorrelato costuma errar justamente nos casos difíceis. D acerta um segmento, mas zera a medição de todo o resto — um erro novo em outro tipo de documento passa despercebido.<span class="ts">Domínio 5 · TS 5.5 — Revisão humana e calibração de confiança</span></div>
+  <div class="feedback"><strong>Gabarito: C.</strong> As amostras de auditoria também vão a humanos, mas sua função é medir os auto-aprovados e revelar padrões novos; isso não substitui a triagem direcionada. A fila direcionada prioriza os gatilhos: confiança calibrada por campo, segmento/documento e ilegibilidade ou contradição. A amostra fica separada e seu tamanho decorre da precisão desejada, dos estratos e da capacidade — não de uma fatia genericamente "pequena". A estoura a capacidade (5% = 500 revisões) e continua espalhando o esforço às cegas. B trata como probabilidade calibrada um autorrelato ainda não validado empiricamente; o corte 0,8 também não foi demonstrado por campo e segmento. D concentra tudo num único segmento e elimina a detecção de erros novos nos demais.<span class="ts">Domínio 5 · TS 5.5 — Revisão humana e calibração de confiança</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="5.5" data-dom="5">
+  <div class="qnum">Questão 10 · múltipla escolha <span class="cenario">Structured Data Extraction</span></div>
+  <div class="stem">A handwritten-contract pipeline assigns 0.97 confidence to payment_amount, but the relevant excerpt contains two contradictory amounts. The payment is irreversible, the handwritten-contract segment has not been empirically validated, and reviewer capacity is limited. What is the best design?</div>
+  <div class="pt-block pt">Um pipeline de contratos manuscritos atribui confiança 0,97 ao campo payment_amount, mas o recorte relevante contém dois valores contraditórios. O pagamento é irreversível, o segmento de contratos manuscritos não foi validado empiricamente e a capacidade de revisão é limitada. Qual é o melhor design?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q10" value="a">A. Auto-approve the amount because 0.97 exceeds the global threshold; a random audit can eventually catch the contradiction.<div class="pt">Auto-aprovar o valor porque 0,97 supera o threshold global; uma auditoria aleatória poderá eventualmente pegar a contradição.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="b">B. Hold the payment; route payment_amount and its necessary excerpt to an extraction reviewer, involve a domain specialist if interpretation is needed, and require the authorization owner to approve the payment. Calibrate thresholds by field and handwritten-contract segment on labeled data, and keep a separate stratified human-audit sample of auto-approved fields.<div class="pt">Segurar o pagamento; encaminhar payment_amount e seu recorte necessário ao revisor de extração, envolver um especialista de domínio se houver interpretação e exigir aprovação do responsável por autorização. Calibrar thresholds por campo e pelo segmento de contratos manuscritos com dados rotulados, mantendo uma amostra estratificada separada de campos auto-aprovados para auditoria humana.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="c">C. Send every field of every contract to a domain specialist, eliminate auto-approval and discontinue sampling so all capacity goes to indiscriminate review.<div class="pt">Enviar todos os campos de todos os contratos a um especialista de domínio, eliminar a auto-aprovação e descontinuar a amostragem para que toda a capacidade vá à revisão indiscriminada.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="d">D. Interpret 0.97 as a 97% probability of correctness and raise one global threshold; no separate authorization is needed once the score is high enough.<div class="pt">Interpretar 0,97 como 97% de probabilidade de acerto e subir um threshold global; nenhuma autorização separada é necessária quando o score é alto o suficiente.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> B integra todos os mecanismos: a contradição e o segmento não validado acionam revisão apesar do score alto; somente o campo/recorte necessário é revisado por padrão; o especialista atua se a dúvida for de domínio; e o responsável por autorização controla a ação irreversível. A calibração deve ser empírica por campo × segmento, e a amostra separada dos auto-aprovados continua indo a humanos para auditoria, dimensionada por precisão, estratos e capacidade. A deixa o risco conhecido passar e espera o sorteio. C desperdiça capacidade e ainda elimina a detecção de padrões novos. D confunde autorrelato com probabilidade calibrada e score com autorização. O reforço por consequência do erro é uma recomendação arquitetural, não uma afirmação de requisito literal da TS 5.5 pública.<span class="ts">Domínio 5 · TS 5.5 — Revisão humana e calibração de confiança</span></div>
 </div>
 
 <div class="concluir">

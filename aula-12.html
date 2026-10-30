@@ -93,38 +93,40 @@
 
 <div class="card objetivo">
   <strong>🎯 Objetivo do dia.</strong> Dominar as duas falhas mais cobradas do Domínio 5: (1) <strong>perda de
-  informação crítica em contextos longos</strong> — sumarização progressiva que destrói valores e datas,
+  informação crítica em contextos longos</strong> — sumarização progressiva que pode degradar valores e datas,
   "lost in the middle", tool results inflados — e suas correções arquiteturais; (2) <strong>calibração de
   escalonamento</strong> — quando escalar para humano, quando resolver, e por que sentimento e confidence
   self-reportada NÃO são critérios confiáveis.
 </div>
 
 <h2>1. Sumarização progressiva e o bloco de "case facts" (Task Statement 5.1)</h2>
-<p><strong>Ponto de partida:</strong> a API não guarda estado. Cada request leva o <strong>histórico completo</strong> da
-conversa (mensagens do usuário, respostas e tool results) — é isso que mantém a coerência entre turnos. Mandar só a
-última mensagem para economizar tokens faz o agente "esquecer" o que foi dito. Resumir é o recurso para quando o
-contexto enche — e aí os fatos transacionais vão para o bloco de case facts, abaixo.</p>
-<p>Sessões longas de suporte eventualmente estouram o contexto, e a solução usual é resumir o histórico.
-O problema: <strong>sumarização progressiva destrói exatamente os dados que importam</strong>. Um resumo de
-um resumo de um resumo transforma "o pedido #4821 de R$ 1.247,90, prometido para 12/03, cliente aceitou
-crédito de 10% se entregar até sexta" em "cliente tinha um problema com um pedido, chegou-se a um acordo".
-Valores, percentuais, datas e <em>expectativas declaradas pelo cliente</em> viram texto vago — e o agente
+<p><strong>Ponto de partida:</strong> a API não guarda estado entre requests. A aplicação precisa reenviar as mensagens,
+respostas e tool results necessários à coerência entre turnos. Mandar só a última mensagem faz o agente "esquecer" o que
+não foi preservado de outra forma. Quando o contexto enche, é possível resumir ou descartar trechos — desde que os fatos
+exatos necessários tenham sido extraídos antes.</p>
+<p>Sessões longas de suporte eventualmente estouram o contexto, e uma solução usual é resumir o histórico.
+O risco: <strong>sumarização pode perder dados críticos, e rodadas progressivas podem degradar exatamente os dados que
+importam</strong>. Um resumo de um resumo pode transformar "o pedido #4821 de R$ 1.247,90, prometido para 12/03,
+cliente aceitou crédito de 10% se entregar até sexta" em "cliente tinha um problema com um pedido, chegou-se a um
+acordo". Valores, percentuais, datas e <em>expectativas declaradas pelo cliente</em> podem virar texto vago — e o agente
 passa a violar acordos que ele mesmo fez.</p>
-<p>A correção arquitetural que a prova espera: <strong>extrair fatos transacionais para um bloco persistente
-de "case facts" que vai em TODA chamada à API, fora do histórico resumido</strong>. O histórico pode ser
-resumido; o bloco de fatos, nunca.</p>
+<p>A correção arquitetural que a prova espera: <strong>extrair e verificar fatos transacionais antes de resumir ou
+descartar a evidência, persisti-los em um bloco de "case facts" fora do histórico resumido e injetá-lo nas chamadas que
+precisam desses fatos</strong>. Estado gravado no banco é durável, mas não entra automaticamente no contexto: persistência
+e injeção são passos distintos. O bloco de fatos exatos não deve ser substituído por um resumo.</p>
 <pre><code>def build_prompt(case_id, summarized_history):
-    case_facts = db.get_case_facts(case_id)  # camada separada, nunca resumida
+    case_facts = db.get_case_facts(case_id)  # fatos exatos, extraídos antes do resumo
     system = f"""You are a support agent. Authoritative case facts (do not contradict):
     - Order: {case_facts.order_id} | Amount: R$ {case_facts.amount}
     - Promised delivery: {case_facts.promised_date}
     - Agreed resolution: {case_facts.agreed_terms}
     Conversation so far (summarized): {summarized_history}"""</code></pre>
 <p>Em sessões com múltiplos problemas (cliente trata de 3 pedidos na mesma conversa), essa camada estruturada
-separada — IDs, valores, status por pedido — é o que impede o agente de misturar os casos.</p>
+separada — IDs, valores, status por pedido — ajuda a impedir que o agente misture os casos, desde que seja mantida e
+efetivamente enviada no prompt.</p>
 
 <h3>Lost in the middle</h3>
-<p>Modelos processam com confiabilidade o <strong>início e o fim</strong> de inputs longos, mas tendem a
+<p>Modelos tendem a aproveitar melhor o <strong>início e o fim</strong> de inputs longos e podem
 <em>omitir findings do miolo</em>. Mitigações diretas:</p>
 <ul>
   <li>Colocar o <strong>resumo dos findings-chave no início</strong> do input agregado</li>
@@ -137,23 +139,86 @@ separada — IDs, valores, status por pedido — é o que impede o agente de mis
 <h3>Upstream enxuto quando o downstream tem pouco contexto</h3>
 <p>Quando o agente de síntese tem <strong>orçamento de contexto curto</strong>, cada token que os agentes upstream
 mandam compete com os findings. A correção é <strong>no upstream</strong>: em vez de narrativa verbosa com a cadeia de
-raciocínio, cada agente devolve <strong>dado estruturado</strong> — fatos-chave, citações, score de relevância — com
-<strong>metadados</strong> (data de publicação, localização na fonte, contexto metodológico) para a síntese interpretar
-cada número sem adivinhar.</p>
+raciocínio, cada agente devolve um <strong>contrato estruturado</strong> — resumo, fatos-chave, citações, erros e status —
+com metadados para a síntese interpretar cada número sem adivinhar. Um objeto de exemplo não basta: o contrato
+<code>SubagentResult</code> abaixo define IDs, campos obrigatórios, tipos e valores permitidos.</p>
 <pre><code>{
-  "fact": "Custo médio de integração caiu 18% em 2025",
-  "citation": {"source": "relatorio-setorial.pdf", "location": "p. 14", "published": "2026-02-10"},
-  "method": "survey, n=1.200 empresas",
-  "relevance": 0.86
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "SubagentResult.schema.json",
+  "title": "SubagentResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["run_id", "task_id", "agent_id", "status", "summary", "findings", "errors"],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1},
+    "task_id": {"type": "string", "minLength": 1},
+    "agent_id": {"type": "string", "minLength": 1},
+    "status": {"type": "string", "enum": ["completed", "partial", "failed"]},
+    "summary": {"type": "string", "minLength": 1},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["finding_id", "claim", "citations"],
+        "properties": {
+          "finding_id": {"type": "string", "minLength": 1},
+          "claim": {"type": "string", "minLength": 1},
+          "citations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["source", "locator"],
+              "properties": {
+                "source": {"type": "string", "minLength": 1},
+                "locator": {"type": "string", "minLength": 1},
+                "published": {"type": "string", "format": "date"},
+                "excerpt": {"type": "string"}
+              }
+            }
+          },
+          "method": {"type": "string"},
+          "relevance": {"type": "number", "minimum": 0, "maximum": 1}
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "message"],
+        "properties": {
+          "code": {"type": "string", "minLength": 1},
+          "message": {"type": "string", "minLength": 1},
+          "retryable": {"type": "boolean"}
+        }
+      }
+    }
+  }
 }</code></pre>
-<p><strong>Regra de bolso:</strong> <em>o downstream recebe o resultado, não o raciocínio — e cada número viaja com data
-e origem.</em></p>
+<p>O coordinator aplica dois gates antes da síntese:</p>
+<ul>
+  <li><strong>Validação estrutural:</strong> fazer parse do JSON e validar o resultado contra o schema; rejeitar ou repetir
+      a tarefa se faltar campo obrigatório, houver tipo inválido ou status fora do enum.</li>
+  <li><strong>Validação semântica:</strong> abrir as fontes e conferir se cada citação realmente sustenta sua
+      <code>claim</code>, incluindo valor, data e recorte metodológico. Passar no schema não prova que uma afirmação é
+      verdadeira nem que a fonte existe.</li>
+</ul>
+<p>Se a busca termina sem dados, <code>findings</code> fica vazio e o <code>summary</code> declara a ausência; se houve
+falha ou lacuna de cobertura, use <code>partial</code>/<code>failed</code> e <code>errors</code>. Nunca preencha o vazio
+com valor ou citação inventados. As <code>citations</code> desse JSON são <strong>metadados customizados da aplicação</strong>,
+não o recurso nativo <strong>Citations</strong> da API; um não ativa o outro nem implica compatibilidade entre eles.</p>
+<p><strong>Regra de bolso:</strong> <em>o downstream recebe o resultado validado, não o raciocínio — e cada afirmação viaja
+com origem verificável ou uma lacuna explícita.</em></p>
 
 <h3>Tool results acumulam tokens desproporcionalmente</h3>
-<p>Cada <code>tool_result</code> fica no histórico para sempre. Um <code>lookup_order</code> que retorna
-<strong>40+ campos</strong> quando só 5 são relevantes para devolução incha o contexto a cada iteração do loop.
-A correção acontece <strong>na tool / na camada de integração, antes de o resultado entrar no contexto</strong> —
-não é trabalho do prompt:</p>
+<p>Um <code>tool_result</code> permanece no histórico <strong>enquanto a aplicação continuar reenviando-o sem edição</strong>;
+a API não o retém automaticamente para sempre. Um <code>lookup_order</code> que retorna <strong>40+ campos</strong> quando
+só 5 são relevantes para devolução incha o contexto a cada iteração reenviada. A primeira correção acontece <strong>na
+tool / na camada de integração, antes de o resultado entrar no contexto</strong> — não é trabalho do prompt:</p>
 <pre><code>def lookup_order(order_id):
     raw = orders_api.get(order_id)           # 40+ campos
     return {                                 # trim: só o relevante p/ suporte
@@ -161,34 +226,39 @@ não é trabalho do prompt:</p>
         "total": raw["total"], "items": raw["item_names"],
         "delivered_at": raw["delivered_at"],
     }</code></pre>
+<p>Resultados antigos também podem ser resumidos ou removidos do próximo request, mas somente depois de extrair e
+persistir os fatos exatos ainda necessários.</p>
 
 <h3>As quatro técnicas: sumarização, janela deslizante, estado estruturado e retenção seletiva</h3>
 <p>O objetivo oficial cita quatro técnicas para manter a qualidade quando a conversa passa do limite prático de
 tokens. As duas primeiras você já viu acima (o bloco de case facts é o <em>structured state object</em>). Elas não
-competem; um agente de suporte sério usa as quatro juntas:</p>
+competem; podem ser combinadas conforme os fatos que precisam sobreviver:</p>
 <table class="gloss">
   <tr><th>Técnica (EN)</th><th>O que faz</th><th>Onde falha</th></tr>
-  <tr><td class="en">summarization</td><td>troca trechos antigos do histórico por um resumo</td><td class="uso">resumo de resumo apaga valores, datas e acordos</td></tr>
-  <tr><td class="en">structured state object</td><td>bloco de fatos (case facts) fora do histórico, enviado em toda chamada</td><td class="uso">só guarda o que alguém extraiu para ele</td></tr>
-  <tr><td class="en">sliding window</td><td>mantém inteiros só os últimos N turnos; os anteriores saem do contexto</td><td class="uso">o que foi dito antes da janela e não foi para o bloco se perde de vez</td></tr>
-  <tr><td class="en">selective retention</td><td>decide por tipo de conteúdo o que fica, o que é resumido e o que sai</td><td class="uso">depende de classificar certo o que é crítico</td></tr>
+  <tr><td class="en">summarization</td><td>troca trechos antigos do histórico por um resumo</td><td class="uso">pode degradar ou omitir valores, datas e acordos, sobretudo em resumos sucessivos</td></tr>
+  <tr><td class="en">structured state object</td><td>persiste fatos fora do histórico; a aplicação os injeta quando necessários</td><td class="uso">só guarda o que foi extraído; gravar não garante presença no contexto</td></tr>
+  <tr><td class="en">sliding window</td><td>mantém inteiros só os últimos N turnos; os anteriores saem do contexto</td><td class="uso">N turnos não limitam tokens; fatos anteriores não extraídos ficam fora da janela</td></tr>
+  <tr><td class="en">selective retention</td><td>decide por tipo de conteúdo o que fica, o que é resumido e o que sai</td><td class="uso">depende de classificar e extrair corretamente o que é crítico</td></tr>
 </table>
-<p><strong>Janela deslizante.</strong> O prompt leva o bloco de fatos fixo + os últimos N turnos completos. É
-simples e previsível: o custo por chamada fica estável, e o modelo vê o diálogo recente na íntegra, sem a perda de
-detalhe de um resumo. O ponto fraco é o começo da conversa. Se o cliente disse no turno 3 "só posso receber depois do
-dia 20" e isso não foi para o bloco, no turno 30 o fato já saiu da janela, e o agente agenda a entrega para o dia 15.
-Por isso a janela só é segura junto com a extração de fatos para o bloco no momento em que eles aparecem.</p>
+<p><strong>Janela deslizante.</strong> O prompt leva o bloco de fatos + os últimos N turnos completos. O número de turnos
+é previsível, mas <strong>tokens e custo não ficam necessariamente estáveis</strong>: mensagens e tool results variam de
+tamanho. Um teto de custo exige orçamento de tokens e política de corte, não apenas contagem de turnos. Outro ponto fraco
+é o começo da conversa. Se o cliente disse no turno 3 "só posso receber depois do dia 20" e isso não foi para o bloco,
+no turno 30 o fato já saiu da janela, e o agente agenda a entrega para o dia 15. Por isso a janela precisa ser combinada
+com extração de fatos no momento em que eles aparecem.</p>
 <p><strong>Retenção seletiva.</strong> Em vez de tratar o histórico como uma coisa só, classifique:</p>
 <ul>
-  <li><strong>Nunca sai do contexto</strong> (vai para o bloco de fatos): IDs, valores, datas, acordos e compromissos
+  <li><strong>Extrair, persistir e reinjetar enquanto necessário</strong>: IDs, valores, datas, acordos e compromissos
       feitos, restrições e expectativas declaradas pelo cliente.</li>
-  <li><strong>Pode ser resumido</strong>: a discussão que levou a uma decisão, já registrada no bloco.</li>
+  <li><strong>Pode ser resumido</strong>: a discussão que levou a uma decisão, cujos fatos exatos já foram verificados e
+      registrados no bloco.</li>
   <li><strong>Pode sair</strong>: tool results antigos já usados (o <code>lookup_order</code> de 40 campos de dez
-      turnos atrás), saídas verbosas de exploração, tentativas que falharam e já foram resolvidas.</li>
+      turnos atrás), saídas verbosas de exploração, tentativas que falharam e já foram resolvidas — depois de preservar
+      os fatos exatos ainda necessários.</li>
 </ul>
-<p>Regra de bolso: <em>o que o agente pode ter de honrar mais tarde vai para o bloco de fatos no turno em que aparece;
-o resto pode resumir ou sair. O caso oposto: aumentar a janela ou o contexto só adia a perda, e jogar fora tool
-results antigos é seguro só depois de os dados que importam deles estarem no bloco.</em></p>
+<p>Regra de bolso: <em>o que o agente pode ter de honrar mais tarde é extraído para o bloco de fatos no turno em que
+aparece, antes de qualquer descarte ou resumo; a aplicação precisa incluir esse bloco nos requests relevantes. Aumentar a
+janela só adia a perda, e estado durável fora do transcript não está automaticamente presente no contexto.</em></p>
 
 <h2>2. Escalonamento e resolução de ambiguidade (Task Statement 5.2)</h2>
 <p>A prova cobra a <strong>calibração</strong>: escalar demais derruba o first-contact resolution; escalar
@@ -237,16 +307,37 @@ específicos que ele mesmo descobriu há uma hora. Isso é <strong>degradação 
 real foi espremido para fora ou perdido no miolo. O arsenal de defesa:</p>
 <ul>
   <li><strong>Scratchpad files</strong>: agentes gravam findings-chave em arquivos (ex.: <code>findings.md</code>)
-      e os relêem para perguntas subsequentes — o arquivo sobrevive a qualquer compactação do contexto</li>
+      e os relêem para perguntas subsequentes — o arquivo permanece disponível fora do contexto, mas precisa ser lido ou
+      injetado para voltar a influenciar o agente</li>
   <li><strong>Subagents para exploração verbosa</strong>: o agente principal delega perguntas específicas
       ("ache todos os arquivos de teste", "trace as dependências do fluxo de refund") a subagents, que
-      absorvem a saída verbosa de grep/leitura e devolvem só o resultado — o principal preserva contexto
+      absorvem a saída verbosa de grep/leitura e devolvem resultados contratuais — o principal preserva contexto
       para coordenação de alto nível</li>
   <li><strong>Sumários entre fases</strong>: resumir os findings da fase N e injetar o sumário no contexto
-      inicial dos subagents da fase N+1</li>
-  <li><strong><code>/compact</code></strong>: no Claude Code, reduz o uso de contexto em sessões longas quando
-      ele enche de output de descoberta</li>
+      inicial dos subagents da fase N+1, preservando os fatos exatos necessários</li>
+  <li><strong><code>/compact</code> dirigido</strong>: no Claude Code, reduz o uso de contexto com instruções explícitas
+      de preservação e verificação posterior</li>
 </ul>
+
+<h3>Compactação dirigida e verificada</h3>
+<p>A lição <a href="https://academy.claude.com/courses/claude-code-in-action/steering-long-sessions">Steering long
+sessions</a> mostra que <code>/compact</code> resume a conversa e substitui o contexto anterior pelo resumo. Algo
+importante pode ficar de fora; por isso, não basta rodar o comando sem orientação. Tudo o que vem depois de
+<code>/compact</code> direciona o que o resumo deve preservar:</p>
+<pre><code>/compact Preserve: objetivo; restrições; caminhos arquivo:linha; citações com fonte e localização; decisões; pendências; próxima ação. Consulte findings.md e run-manifest.json e não generalize IDs, valores ou datas.</code></pre>
+<ol>
+  <li><strong>Antes:</strong> extraia IDs, valores, datas, decisões e restrições exatas para o scratchpad/manifest.</li>
+  <li><strong>Compacte:</strong> passe instruções explícitas como as do exemplo, adaptadas ao objetivo atual.</li>
+  <li><strong>Depois:</strong> compare o resumo gerado com scratchpad e manifest, item por item: objetivo, restrições,
+      caminhos, citações, decisões, pendências e próxima ação. Reponha qualquer omissão no contexto antes de agir e
+      confirme que a próxima ação ainda respeita as restrições.</li>
+</ol>
+<p><strong>Restauração programática:</strong> a lição oficial <a href="https://anthropic-partners.skilljar.com/claude-code-in-action/486933">Hooks</a>
+mostra um hook <code>SessionStart</code> com matcher <code>compact</code> que imprime um resumo dos arquivos de trabalho
+após a compactação; esse stdout volta ao contexto. Use esse padrão para reinjetar notas duráveis, e não
+<code>PostCompact</code> quando o objetivo é devolver contexto. A reinjeção complementa a comparação acima: não garante
+fidelidade nem substitui scratchpad, manifest, checkpoint ou verificação.</p>
+<p>Compactação reduz contexto; não garante fidelidade nem grava um checkpoint de execução.</p>
 
 <h3>Passagem de fase: resumo injetado, não transcript</h3>
 <p>Exploração em fases (mapear → investigar) tem uma costura crítica: os subagents da fase N+1 <strong>não herdam</strong>
@@ -256,47 +347,124 @@ um redescobre o mapa, gasta contexto e inventa nomes próprios; com o transcript
 estoura do mesmo jeito.</p>
 <p><strong>Regra de bolso:</strong> <em>entre fases passa o mapa resumido, não o diário de bordo.</em></p>
 
-<h3>Crash recovery com manifest</h3>
-<p>Para pipelines multi-agent que podem cair no meio: cada agente <strong>exporta seu estado para uma
-localização conhecida</strong> (JSON estruturado); na retomada, o coordinator <strong>carrega um
-manifest</strong> e injeta o estado nos prompts dos agentes, continuando de onde parou — em vez de
-reexecutar toda a exploração.</p>
+<h3>Crash recovery com RunManifest</h3>
+<p>Para pipelines multi-agent que podem cair no meio, cada agente grava resultados em <strong>artefatos versionados</strong>
+e o coordinator mantém um <code>RunManifest</code> durável. Injetar esse manifest nos prompts fornece contexto, mas
+<strong>não prova o que terminou nem garante retomada correta</strong>: é preciso reconciliar manifest, artefatos e efeitos
+colaterais antes de continuar.</p>
 <pre><code>{
+  "schema_version": "1.0",
   "run_id": "explore-2026-10-06",
   "phase": 2,
-  "completed": ["find_test_files", "trace_refund_flow"],
-  "pending": ["map_api_handlers"],
-  "agent_state": {
-    "refund_flow": {"entry": "src/payments/refund.ts", "findings_ref": "scratch/phase1.md"}
-  }
+  "manifest_version": 19,
+  "checkpoint": {"id": "ckpt-00019", "created_at": "2026-10-06T14:32:10Z"},
+  "tasks": [
+    {
+      "task_id": "find_test_files",
+      "state": "completed",
+      "attempts": 1,
+      "idempotency_key": "explore-2026-10-06/find_test_files",
+      "artifact": {"ref": "scratch/find-test-files.json", "version": 3, "sha256": "…"}
+    },
+    {
+      "task_id": "trace_refund_flow",
+      "state": "failed",
+      "attempts": 2,
+      "idempotency_key": "explore-2026-10-06/trace_refund_flow",
+      "last_error": "timeout"
+    },
+    {
+      "task_id": "map_api_handlers",
+      "state": "in_progress",
+      "attempts": 1,
+      "idempotency_key": "explore-2026-10-06/map_api_handlers",
+      "attempt_id": "map_api_handlers:attempt-1"
+    },
+    {
+      "task_id": "synthesize",
+      "state": "pending",
+      "attempts": 0,
+      "idempotency_key": "explore-2026-10-06/synthesize",
+      "depends_on": ["find_test_files", "trace_refund_flow", "map_api_handlers"]
+    }
+  ]
 }</code></pre>
-<p>Repare nos distratores: <code>/compact</code> reduz contexto, mas <strong>não grava progresso</strong> fora da sessão;
-retomar o histórico da conversa traz de volta tool results velhos e verbosos e não reconstrói o estado de cada agente; e
-um "resumo de progresso" em prosa na última mensagem não é estado que o coordinator consiga carregar.
-<strong>Regra de bolso:</strong> <em>progresso que precisa sobreviver a um crash mora fora da conversa.</em></p>
+<ol>
+  <li><strong>Máquina de estados:</strong> <code>pending</code> ainda não começou; <code>in_progress</code> registra a
+      tentativa ativa; <code>completed</code> exige artefato válido; <code>failed</code> conserva o último erro. Incremente
+      <code>attempts</code> a cada nova tentativa e nunca trate <code>in_progress</code> de um crash como concluído.</li>
+  <li><strong>Checkpoint atômico:</strong> ao iniciar uma tentativa, grave o estado antes do trabalho. Ao concluir, primeiro
+      persista o artefato com referência imutável, versão e hash; depois grave o manifest completo em arquivo temporário,
+      faça flush e o renomeie atomicamente. Assim a leitura não encontra meio JSON nem um checkpoint parcial.</li>
+  <li><strong>Reconciliação:</strong> um artefato gravado antes do crash, mas ainda ausente do manifest, é um
+      <strong>artefato órfão</strong>, não sucesso automático. Valide <code>run_id</code>/<code>task_id</code>, inputs,
+      schema, versão e hash; só então registre sua referência e avance o checkpoint. Se estiver inválido, isole-o e execute
+      uma nova tentativa. Se o manifest diz <code>completed</code> mas o artefato falta ou falha na validação, marque a
+      tarefa para recuperação em vez de confiar no estado.</li>
+  <li><strong>Idempotência:</strong> uma tarefa <code>in_progress</code> pode ter produzido efeito antes do crash. Use a
+      mesma <code>idempotency_key</code> estável por tarefa, deduplicação no consumidor ou transação/outbox para impedir
+      duplicar escrita, notificação ou cobrança ao repetir; retry cego não é seguro para efeitos não idempotentes.</li>
+  <li><strong>Verificação pós-recovery:</strong> recarregue o manifest, valide estados, tentativas, dependências, artefatos,
+      versões e hashes, reconcilie órfãos e confira efeitos externos. Execute uma checagem de sanidade do próximo passo e só
+      depois injete o estado reconciliado nos subagents e retome as tarefas elegíveis.</li>
+</ol>
+<p><code>/compact</code> não grava progresso fora da sessão; o transcript, sozinho, não é fonte autoritativa de conclusão;
+e um resumo em prosa não substitui o protocolo acima. <strong>Regra de bolso:</strong> <em>recovery correto combina estado
+durável, checkpoint atômico, reconciliação, idempotência e verificação — não apenas injeção de manifest.</em></p>
 
-<h2>4. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
+<h2>4. Exercício integrado — pesquisa recuperável sob contexto curto</h2>
+<p><strong>Cenário.</strong> Você coordena três subagents que auditam o fluxo de refund de 30 serviços. Cada um devolve um
+<code>SubagentResult</code>; uma fonte ficará indisponível, o contexto do coordinator se aproxima do limite e o host pode
+cair. A síntese final precisa preservar evidências e expor falhas parciais.</p>
+<ol>
+  <li>Defina os contratos <code>SubagentResult</code> e <code>RunManifest</code>, os caminhos dos artefatos e uma política de
+      tentativas. Registre os quatro estados e uma chave de idempotência por tarefa.</li>
+  <li>Execute <code>/compact</code> com instruções de preservação e compare o resultado com scratchpad/manifest. Simule a
+      perda de uma restrição, restaure-a e só então avance.</li>
+  <li>Provogue um crash <strong>depois do artefato e antes do checkpoint</strong> e outro <strong>depois do checkpoint</strong>.
+      Reconcilie o órfão no primeiro caso, evite repetir a tarefa concluída no segundo e demonstre que um efeito lateral não
+      será duplicado. Faça a verificação pós-recovery.</li>
+  <li>Gere a síntese somente com findings estrutural e semanticamente validados, mantendo citações e registrando a fonte
+      indisponível como lacuna, sem inventar dados.</li>
+</ol>
+<p><strong>Entrega:</strong> os dois contratos, o comando de compactação com checklist de comparação, um log dos dois
+recoveries e a síntese final com falhas parciais.</p>
+<p><strong>Critérios de aprovação:</strong></p>
+<ul>
+  <li>Campos obrigatórios, status, IDs, tentativas e erros passam na validação estrutural; cada claim tem citação cuja fonte
+      foi aberta e confere com a afirmação.</li>
+  <li>O recovery usa checkpoint atômico, reconcilia artefato órfão e artefato ausente, controla tentativas, impede efeito
+      duplicado e valida o estado antes de retomar.</li>
+  <li>Objetivo, restrições, caminhos, citações, decisões, pendências e próxima ação sobrevivem verificados à compactação.</li>
+  <li>A síntese distingue ausência de dados de falha, preserva citações e não converte resultado parcial em sucesso completo.</li>
+</ul>
+
+<h2>5. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
 <table class="gloss">
   <tr><th>Termo (EN)</th><th>Português</th><th>Uso típico na prova</th></tr>
   <tr><td class="en">progressive summarization</td><td>sumarização progressiva (resumo de resumo)</td><td class="uso">"progressive summarization risks condensing amounts and dates into vague summaries"</td></tr>
-  <tr><td class="en">case facts block</td><td>bloco persistente de fatos do caso</td><td class="uso">"extract transactional facts into a persistent case facts block outside the summarized history"</td></tr>
-  <tr><td class="en">lost in the middle</td><td>efeito "perdido no meio"</td><td class="uso">"models reliably process the beginning and end but may omit middle sections"</td></tr>
-  <tr><td class="en">tool result trimming</td><td>corte de campos irrelevantes do tool result</td><td class="uso">"trim verbose tool outputs to only relevant fields before they accumulate in context"</td></tr>
+  <tr><td class="en">case facts block</td><td>bloco persistente de fatos do caso</td><td class="uso">"extract exact facts before summarizing, persist them and inject the block when needed"</td></tr>
+  <tr><td class="en">lost in the middle</td><td>efeito "perdido no meio"</td><td class="uso">"models tend to process the beginning and end more reliably but may omit middle sections"</td></tr>
+  <tr><td class="en">tool result trimming</td><td>corte de campos irrelevantes do tool result</td><td class="uso">"trim verbose tool outputs to only relevant fields before they accumulate in resent context"</td></tr>
   <tr><td class="en">escalation trigger</td><td>gatilho de escalonamento</td><td class="uso">"appropriate escalation triggers: human requests, policy gaps, inability to progress"</td></tr>
   <tr><td class="en">policy gap</td><td>lacuna/silêncio de política</td><td class="uso">"escalate when policy is ambiguous or silent on the customer's request"</td></tr>
   <tr><td class="en">self-reported confidence</td><td>confiança autorreportada pelo modelo</td><td class="uso">"self-reported confidence scores are unreliable proxies for case complexity"</td></tr>
   <tr><td class="en">sentiment-based escalation</td><td>escalonamento por análise de sentimento</td><td class="uso">"sentiment does not correlate with case complexity"</td></tr>
   <tr><td class="en">additional identifier</td><td>identificador adicional (desambiguação)</td><td class="uso">"request an additional identifier when tool results return multiple matches"</td></tr>
   <tr><td class="en">context degradation</td><td>degradação de contexto em sessões longas</td><td class="uso">"the model references typical patterns rather than classes it discovered earlier"</td></tr>
-  <tr><td class="en">scratchpad file</td><td>arquivo de anotações persistente</td><td class="uso">"maintain scratchpad files recording key findings across context boundaries"</td></tr>
-  <tr><td class="en">/compact</td><td>comando de compactação de contexto do Claude Code</td><td class="uso">"use /compact when context fills with verbose discovery output"</td></tr>
-  <tr><td class="en">state manifest</td><td>manifesto de estado para crash recovery</td><td class="uso">"the coordinator loads a manifest on resume and injects state into agent prompts"</td></tr>
+  <tr><td class="en">scratchpad file</td><td>arquivo de anotações persistente</td><td class="uso">"maintain scratchpad files and reread or inject key findings across context boundaries"</td></tr>
+  <tr><td class="en">directed /compact</td><td>compactação dirigida de contexto do Claude Code</td><td class="uso">"give preservation instructions and verify the compacted context against durable notes"</td></tr>
+  <tr><td class="en">RunManifest</td><td>manifesto versionado de estado para crash recovery</td><td class="uso">"reconcile task states, attempts and artifacts before resuming"</td></tr>
+  <tr><td class="en">atomic checkpoint</td><td>checkpoint gravado atomicamente</td><td class="uso">"publish a complete manifest atomically after the artifact is durable"</td></tr>
+  <tr><td class="en">orphan artifact</td><td>artefato gravado sem checkpoint correspondente</td><td class="uso">"validate an orphan artifact before adopting it into the manifest"</td></tr>
+  <tr><td class="en">idempotency key</td><td>chave estável para deduplicar efeitos de retries</td><td class="uso">"prevent a recovered task from repeating an external side effect"</td></tr>
+  <tr><td class="en">structural vs. semantic validation</td><td>validação de contrato versus validação do significado</td><td class="uso">"schema validity does not prove that a citation supports a claim"</td></tr>
   <tr><td class="en">few-shot examples</td><td>exemplos few-shot no system prompt</td><td class="uso">"explicit escalation criteria with few-shot examples demonstrating when to escalate"</td></tr>
   <tr><td class="en">context budget</td><td>orçamento de contexto do agente downstream</td><td class="uso">"downstream agents have limited context budgets"</td></tr>
   <tr><td class="en">relevance score</td><td>score de relevância de cada fato</td><td class="uso">"return key facts, citations and relevance scores instead of verbose content"</td></tr>
   <tr><td class="en">phase summary</td><td>resumo da fase anterior injetado no prompt</td><td class="uso">"summarize key findings before spawning sub-agents for the next phase"</td></tr>
-  <tr><td class="en">sliding window</td><td>janela deslizante (só os últimos N turnos inteiros)</td><td class="uso">"apply sliding windows and selective retention as conversations exceed practical token limits"</td></tr>
-  <tr><td class="en">selective retention</td><td>retenção seletiva (o que fica, o que resume, o que sai)</td><td class="uso">"retain transactional facts while dropping stale tool results"</td></tr>
+  <tr><td class="en">sliding window</td><td>janela deslizante (só os últimos N turnos inteiros)</td><td class="uso">"a turn-based window does not guarantee a stable token count or cost"</td></tr>
+  <tr><td class="en">selective retention</td><td>retenção seletiva (o que fica, o que resume, o que sai)</td><td class="uso">"extract exact facts before dropping stale tool results"</td></tr>
 </table>
 
 <div class="card pegadinha">
@@ -311,9 +479,12 @@ um "resumo de progresso" em prosa na última mensagem não é estado que o coord
   de negócio determinística (valor acima de um limite, identidade antes de operação financeira), prompt não basta — a
   resposta é hook ou pré-requisito programático (TS 1.4/1.5, aula 03). Critérios + few-shot calibram julgamento; não
   garantem compliance.</em></p>
+  <p>Outras garantias que não se confundem: <strong>JSON válido ≠ claim verdadeira; manifest injetado ≠ recovery
+  verificado; <code>/compact</code> ≠ preservação garantida; estado persistido ≠ estado automaticamente presente no
+  contexto.</strong></p>
 </div>
 
-<h2>5. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
+<h2>6. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
 <div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
 
 <div class="q" data-correct="c" data-ts="5.1" data-dom="5">
@@ -323,11 +494,11 @@ um "resumo de progresso" em prosa na última mensagem não é estado que o coord
   <div class="opts">
     <label class="opt"><input type="radio" name="q1" value="a">A. Instruct the model in the system prompt to pay special attention to numbers and dates when writing summaries.<div class="pt">Instruir o modelo no system prompt a prestar atenção especial a números e datas ao escrever resumos.</div></label>
     <label class="opt"><input type="radio" name="q1" value="b">B. Increase the summarization interval so summaries happen less often and each one keeps more of the details.<div class="pt">Aumentar o intervalo de sumarização para os resumos acontecerem com menos frequência e cada um guardar mais detalhes.</div></label>
-    <label class="opt"><input type="radio" name="q1" value="c">C. Move amounts, dates, order IDs and agreed terms into a persistent case-facts block sent outside the summary.<div class="pt">Mover valores, datas, IDs de pedido e termos acordados para um bloco persistente de case facts enviado fora do resumo.</div></label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. Extract exact amounts, dates, order IDs and agreed terms before summarizing; persist them in a case-facts block and inject it into requests that need them.<div class="pt">Extrair valores, datas, IDs de pedido e termos acordados exatos antes de resumir; persisti-los num bloco de case facts e injetá-lo nos requests que precisam deles.</div></label>
     <label class="opt"><input type="radio" name="q1" value="d">D. Ask the customer to restate the key numbers after each summary, and store their latest answer as the reference.<div class="pt">Pedir ao cliente que repita os números-chave após cada resumo, e guardar a última resposta dele como referência.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: C.</strong> A causa raiz é que sumarização progressiva condensa valores, datas e expectativas do cliente em texto vago; a correção arquitetural é separar os fatos transacionais numa camada persistente que nunca é resumida. A é remendo de prompt sobre um processo (resumo) que precisa de garantia estrutural — cada novo resumo pode degradar de novo. B só adia o problema: quando o resumo acontecer, os dados se perdem igual. D terceiriza a falha da arquitetura para o cliente, que já declarou os dados uma vez. <span class="ts">Domínio 5 · TS 5.1 — Contexto em interações longas</span></div>
+  <div class="feedback"><strong>Gabarito: C.</strong> Neste caso, as rodadas de sumarização degradaram valores, datas e expectativas. A correção arquitetural é extrair e verificar os fatos antes do resumo, persisti-los fora dele e injetá-los nos requests relevantes; persistir sem injetar não basta. A é remendo de prompt sobre um processo que pode degradar novamente. B só adia o risco, sem garantir retenção quando o resumo ocorrer. D terceiriza a falha da arquitetura para o cliente, que já declarou os dados uma vez. <span class="ts">Domínio 5 · TS 5.1 — Contexto em interações longas</span></div>
 </div>
 
 <div class="q" data-correct="b" data-ts="5.1" data-dom="5">
@@ -341,7 +512,7 @@ um "resumo de progresso" em prosa na última mensagem não é estado que o coord
     <label class="opt"><input type="radio" name="q2" value="d">D. Cut the search agents from five to three so that the aggregated input is shorter and easier to read in full.<div class="pt">Reduzir os agentes de busca de cinco para três para o input agregado ficar mais curto e mais fácil de ler inteiro.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: B.</strong> É o "lost in the middle": o modelo processa bem início e fim, mas omite o miolo — e os agentes 3 e 4 caem sempre no miolo. Resumo de findings-chave no início + headers explícitos são as mitigações que o guide prescreve. A é remendo de prompt contra um efeito posicional conhecido do modelo — instrução não muda onde a atenção é mais confiável. C apenas redistribui aleatoriamente qual finding será perdido, sem reduzir a perda. D sacrifica cobertura de pesquisa para contornar um problema que se resolve com estrutura do input. <span class="ts">Domínio 5 · TS 5.1 — Contexto em interações longas</span></div>
+  <div class="feedback"><strong>Gabarito: B.</strong> É o "lost in the middle": o modelo tende a aproveitar melhor início e fim e pode omitir o miolo — neste caso, os agentes 3 e 4 caem consistentemente nessa região. Resumo de findings-chave no início + headers explícitos são as mitigações que o guide prescreve. A é remendo de prompt contra um efeito posicional conhecido do modelo — instrução não muda onde a atenção tende a ser mais confiável. C apenas redistribui aleatoriamente qual finding pode ser perdido, sem reduzir o risco. D sacrifica cobertura de pesquisa para contornar um problema que se resolve com estrutura do input. <span class="ts">Domínio 5 · TS 5.1 — Contexto em interações longas</span></div>
 </div>
 
 <div class="q" data-correct="a" data-ts="5.2" data-dom="5">
@@ -381,24 +552,24 @@ um "resumo de progresso" em prosa na última mensagem não é estado que o coord
     <label class="opt"><input type="radio" name="q5" value="a">A. Restart the session from scratch whenever answers degrade, repeating the exploration with a more detailed initial prompt.<div class="pt">Reiniciar a sessão do zero sempre que as respostas degradarem, repetindo a exploração com um prompt inicial mais detalhado.</div></label>
     <label class="opt"><input type="radio" name="q5" value="b">B. Add a system-prompt instruction reminding the model to cite only files and classes it has actually opened.<div class="pt">Adicionar uma instrução no system prompt lembrando o modelo de citar só arquivos e classes que ele realmente abriu.</div></label>
     <label class="opt"><input type="radio" name="q5" value="c">C. Lower the model temperature so that its answers stay consistent with each other across the long session.<div class="pt">Baixar a temperatura do modelo para as respostas ficarem consistentes entre si ao longo da sessão longa.</div></label>
-    <label class="opt"><input type="radio" name="q5" value="d">D. Delegate verbose exploration to subagents, persist key findings in scratchpad files, and /compact when context fills.<div class="pt">Delegar a exploração verbosa a subagents, persistir findings-chave em scratchpad files e usar /compact quando o contexto encher.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. Delegate verbose exploration to subagents, persist exact findings in scratchpad files, run /compact with explicit preservation instructions, and compare the compacted context with those files.<div class="pt">Delegar a exploração verbosa a subagents, persistir findings exatos em scratchpad files, rodar /compact com instruções explícitas de preservação e comparar o contexto compactado com esses arquivos.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: D.</strong> A causa raiz é degradação de contexto: o detalhe real foi espremido para fora por output verboso acumulado. O combo correto do guide: subagents isolam a exploração verbosa (o principal fica com a coordenação de alto nível), scratchpad files persistem findings através das fronteiras de contexto, e <code>/compact</code> reduz o contexto quando ele enche. A joga fora todo o trabalho e não impede que o novo contexto degrade da mesma forma. B é remendo de prompt: o problema não é o modelo "esquecer a regra", é a informação não estar mais acessível no contexto. C trata variância de amostragem, não perda de contexto — temperatura não recupera a classe que saiu do histórico. <span class="ts">Domínio 5 · TS 5.4 — Contexto na exploração de codebases grandes</span></div>
+  <div class="feedback"><strong>Gabarito: D.</strong> A causa raiz é degradação de contexto: o detalhe real foi espremido para fora por output verboso acumulado. Subagents isolam a exploração verbosa; scratchpads preservam findings fora do transcript, para releitura ou injeção; e o <code>/compact</code> dirigido informa o que preservar. A comparação posterior com os arquivos detecta omissões antes de o agente continuar — compactar sozinho não garante fidelidade. A joga fora todo o trabalho e não impede nova degradação. B é remendo de prompt: a informação necessária pode já não estar acessível no contexto. C trata variância de amostragem, não recupera a classe que saiu do histórico. <span class="ts">Domínio 5 · TS 5.4 — Contexto na exploração de codebases grandes</span></div>
 </div>
 
 <div class="q" data-correct="b" data-ts="5.4" data-dom="5">
   <div class="qnum">Questão 6 · múltipla escolha <span class="cenario">Developer Productivity with Claude</span></div>
-  <div class="stem">A coordinator splits a dependency audit of 30 services among three subagents, and a full run takes about six hours. When the host was rebooted for patching at service 19, the restart began again from service 1, because all progress existed only inside the agents' conversations. Which design lets the next run resume where it stopped?</div>
-  <div class="pt-block pt">Um coordinator divide a auditoria de dependências de 30 serviços entre três subagents, e uma execução completa leva cerca de seis horas. Quando o host foi reiniciado para patch no serviço 19, a retomada começou de novo do serviço 1, porque todo o progresso existia só dentro das conversas dos agentes. Qual design permite que a próxima execução retome de onde parou?</div>
+  <div class="stem">A coordinator splits a dependency audit of 30 services among three subagents, and a full run takes about six hours. When the host was rebooted for patching at service 19, the restart began again from service 1, because all progress existed only inside the agents' conversations. Which design supports a verified recovery rather than an assumed resume point?</div>
+  <div class="pt-block pt">Um coordinator divide a auditoria de dependências de 30 serviços entre três subagents, e uma execução completa leva cerca de seis horas. Quando o host foi reiniciado para patch no serviço 19, a retomada começou de novo do serviço 1, porque todo o progresso existia só dentro das conversas dos agentes. Qual design permite uma recuperação verificada em vez de presumir o ponto de retomada?</div>
   <div class="opts">
     <label class="opt"><input type="radio" name="q6" value="a">A. Resume the coordinator's saved conversation with --resume, so it continues from the last message it produced.<div class="pt">Retomar a conversa salva do coordinator com --resume, para ele continuar da última mensagem que produziu.</div></label>
-    <label class="opt"><input type="radio" name="q6" value="b">B. Have each agent export structured state to a known location; on restart, load a manifest and inject it into prompts.<div class="pt">Fazer cada agente exportar estado estruturado para um local conhecido; na retomada, carregar um manifest e injetá-lo nos prompts.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="b">B. Persist versioned artifacts and a RunManifest with task states, attempts and atomic checkpoints; on restart, reconcile orphans, protect side effects with idempotency keys, verify artifacts and state, then inject the reconciled state.<div class="pt">Persistir artefatos versionados e um RunManifest com estados das tarefas, tentativas e checkpoints atômicos; na retomada, reconciliar órfãos, proteger efeitos colaterais com chaves de idempotência, verificar artefatos e estado e só então injetar o estado reconciliado.</div></label>
     <label class="opt"><input type="radio" name="q6" value="c">C. Run /compact every few services so the coordinator's conversation stays small enough to be resumed after a crash.<div class="pt">Rodar /compact a cada poucos serviços para a conversa do coordinator ficar pequena o bastante para ser retomada após um crash.</div></label>
     <label class="opt"><input type="radio" name="q6" value="d">D. Have the coordinator end each turn with a progress summary that an operator pastes into a fresh session after a crash.<div class="pt">Fazer o coordinator encerrar cada turno com um resumo de progresso que um operador cola numa sessão nova após um crash.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: B.</strong> Crash recovery exige estado <strong>fora</strong> da conversa: cada agente exporta estado estruturado (o que concluiu, o que achou, o que falta) num local conhecido, e na retomada o coordinator carrega o manifest e injeta esse estado nos prompts — o trabalho continua do serviço 19. A retoma o histórico bruto, cheio de tool results velhos e verbosos, e não reconstrói o estado de cada subagent. C confunde reduzir contexto com persistir progresso: <code>/compact</code> não grava nada fora da sessão. D depende de um texto livre na última mensagem e de alguém copiá-lo à mão — o reboot pode vir antes do resumo, e prosa não é estado que o coordinator consiga carregar. <span class="ts">Domínio 5 · TS 5.4 — Contexto na exploração de codebases grandes</span></div>
+  <div class="feedback"><strong>Gabarito: B.</strong> O coordinator pula apenas tarefas <code>completed</code> cujos artefatos foram verificados; tarefas <code>in_progress</code>, órfãos e efeitos externos precisam de reconciliação antes do retry. Injetar o manifest sem esses gates forneceria contexto, mas não garantiria continuar do ponto correto. A recupera conversa, não prova o estado dos artefatos ou subagents. C confunde reduzir contexto com persistir progresso: <code>/compact</code> não grava checkpoint fora da sessão. D depende de prosa e cópia manual, sem reconciliação, idempotência ou verificação pós-recovery. <span class="ts">Domínio 5 · TS 5.4 — Contexto na exploração de codebases grandes</span></div>
 </div>
 
 <div class="q" data-correct="c" data-ts="5.4" data-dom="5">
@@ -438,10 +609,52 @@ um "resumo de progresso" em prosa na última mensagem não é estado que o coord
     <label class="opt"><input type="radio" name="q9" value="a">A. Widen the window to the last 40 turns, so that statements from early in the conversation stay visible.<div class="pt">Ampliar a janela para os últimos 40 turnos, para as falas do começo da conversa continuarem visíveis.</div></label>
     <label class="opt"><input type="radio" name="q9" value="b">B. Replace the window with a running summary of the full history, so that nothing is ever dropped.<div class="pt">Trocar a janela por um resumo contínuo do histórico inteiro, para nada nunca ser descartado.</div></label>
     <label class="opt"><input type="radio" name="q9" value="c">C. Instruct the agent to always ask about delivery constraints right before it schedules any delivery.<div class="pt">Instruir o agente a sempre perguntar sobre restrições de entrega logo antes de agendar qualquer entrega.</div></label>
-    <label class="opt"><input type="radio" name="q9" value="d">D. Extract customer-stated constraints into the case-facts block in the turn in which they appear.<div class="pt">Extrair as restrições declaradas pelo cliente para o bloco de case facts no turno em que aparecem.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="d">D. Extract customer-stated constraints into the case-facts block in the turn in which they appear, and keep injecting that block into relevant requests.<div class="pt">Extrair as restrições declaradas pelo cliente para o bloco de case facts no turno em que aparecem e continuar injetando esse bloco nos requests relevantes.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: D.</strong> A janela deslizante fez o que promete: o turno 3 saiu do contexto. A falha é de retenção seletiva: uma restrição que o agente teria de honrar não foi para o bloco de fatos, que é a única parte que nunca sai. A só adia o problema: a conversa seguinte, com 50 turnos, perde o mesmo fato, e o custo por chamada sobe. B troca uma perda por outra: resumos sucessivos são justamente o que transforma "depois do dia 20" em "o cliente tem preferências de entrega". C faz o cliente repetir algo que já disse e não protege os outros fatos que saem da janela, como um acordo feito no começo.<span class="ts">Domínio 5 · TS 5.1 — Contexto em interações longas</span></div>
+  <div class="feedback"><strong>Gabarito: D.</strong> A janela deslizante fez o que promete: o turno 3 saiu do contexto. A falha é de retenção seletiva: a restrição não foi extraída antes disso; ela precisa ser persistida e injetada enquanto for necessária. A só adia o problema e pode elevar tokens e custo, pois N turnos não são um teto de tokens. B não garante retenção: resumos sucessivos também podem degradar "depois do dia 20" em uma preferência vaga. C faz o cliente repetir algo que já disse e não protege os outros fatos que saem da janela. <span class="ts">Domínio 5 · TS 5.1 — Contexto em interações longas</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="5.4" data-dom="5">
+  <div class="qnum">Questão 10 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">A worker durably writes result-v4.json, then crashes before publishing the RunManifest checkpoint. On recovery, the artifact exists, but its task is still marked in_progress from attempt 2. What should the coordinator do first?</div>
+  <div class="pt-block pt">Um worker grava result-v4.json de forma durável e cai antes de publicar o checkpoint do RunManifest. Na recuperação, o artefato existe, mas sua tarefa ainda está marcada como in_progress na tentativa 2. O que o coordinator deve fazer primeiro?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q10" value="a">A. Discard the artifact and blindly rerun attempt 2, since the manifest was not updated.<div class="pt">Descartar o artefato e repetir cegamente a tentativa 2, já que o manifest não foi atualizado.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="b">B. Mark the task completed immediately, because the existence of a file proves successful completion.<div class="pt">Marcar a tarefa como completed imediatamente, pois a existência do arquivo prova conclusão bem-sucedida.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="c">C. Treat the file as an orphan artifact: validate its run/task IDs, input version, schema and hash, then adopt it into an atomic checkpoint only if valid, and check side effects before any retry.<div class="pt">Tratar o arquivo como artefato órfão: validar IDs de run/tarefa, versão dos inputs, schema e hash, adotá-lo num checkpoint atômico somente se válido e conferir efeitos colaterais antes de qualquer retry.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="d">D. Inject the stale manifest into a new agent and let the agent decide from the prompt whether the work completed.<div class="pt">Injetar o manifest desatualizado num novo agente e deixar o agente decidir pelo prompt se o trabalho terminou.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> O crash entre artefato e checkpoint deixa um órfão: existência do arquivo não prova validade, mas descartá-lo sem inspeção pode repetir trabalho e efeitos. O coordinator valida identidade, inputs, schema e integridade antes de adotar o artefato; se for inválido, isola-o e agenda nova tentativa com idempotência. Injetar o manifest desatualizado não resolve a divergência. <span class="ts">Domínio 5 · TS 5.4 — Recuperação de pipelines multi-agent</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="5.4" data-dom="5">
+  <div class="qnum">Questão 11 · múltipla escolha <span class="cenario">Developer Productivity with Claude</span></div>
+  <div class="stem">After /compact, the coordinator's new context retains the findings but omits the constraint "do not change the public API." The constraint is still recorded verbatim in the scratchpad. What should happen before the next edit?</div>
+  <div class="pt-block pt">Depois de /compact, o novo contexto do coordinator mantém os findings, mas omite a restrição "não alterar a API pública". A restrição ainda está registrada verbatim no scratchpad. O que deve acontecer antes da próxima edição?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q11" value="a">A. Proceed with the edit, because the compacted summary is always the authoritative context.<div class="pt">Prosseguir com a edição, pois o resumo compactado é sempre o contexto autoritativo.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="b">B. Repeat /compact without instructions until the context becomes short enough to recover the constraint.<div class="pt">Repetir /compact sem instruções até o contexto ficar curto o bastante para recuperar a restrição.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="c">C. Restart the entire exploration, since no compacted work can ever be reused safely.<div class="pt">Reiniciar toda a exploração, pois nenhum trabalho compactado pode ser reutilizado com segurança.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="d">D. Stop, restore the exact constraint from the scratchpad, and compare objective, constraints, paths, citations, decisions, pending items and next action against durable notes before proceeding.<div class="pt">Parar, restaurar a restrição exata a partir do scratchpad e comparar objetivo, restrições, caminhos, citações, decisões, pendências e próxima ação com as notas duráveis antes de prosseguir.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> A compactação pode omitir dados; a verificação posterior é o gate que detecta essa perda. O scratchpad permite restaurar a restrição exata sem repetir a exploração, e os demais itens críticos devem ser comparados antes da ação. A trata o resumo como garantia, B pode degradar ainda mais o contexto e C descarta trabalho recuperável. <span class="ts">Domínio 5 · TS 5.4 — Compactação dirigida e verificação</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="5.1" data-dom="5">
+  <div class="qnum">Questão 12 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">A SubagentResult passes JSON Schema validation: all required IDs, status, summary, findings and errors are present. During semantic review, the page cited for an 18% figure does not contain that figure. What should the synthesis stage do?</div>
+  <div class="pt-block pt">Um SubagentResult passa na validação do JSON Schema: todos os IDs, status, summary, findings e errors obrigatórios estão presentes. Na revisão semântica, a página citada para um valor de 18% não contém esse valor. O que a etapa de síntese deve fazer?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q12" value="a">A. Include the figure, because structural validation proves the claim and its citation are correct.<div class="pt">Incluir o valor, pois a validação estrutural prova que a afirmação e sua citação estão corretas.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="b">B. Replace 18% with a plausible industry average and retain the same citation so the record stays complete.<div class="pt">Substituir 18% por uma média setorial plausível e manter a mesma citação para o registro ficar completo.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="c">C. Exclude or quarantine the unsupported finding, record the error or coverage gap, and re-delegate verification if useful; synthesize only supported claims and state the absence if it remains unresolved.<div class="pt">Excluir ou colocar em quarentena o finding sem suporte, registrar o erro ou lacuna de cobertura e re-delegar a verificação se útil; sintetizar só afirmações com suporte e declarar a ausência se ela persistir.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="d">D. Automatically convert the custom citation fields into native API Citations to make the claim valid.<div class="pt">Converter automaticamente os campos customizados de citação em Citations nativas da API para tornar a afirmação válida.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Schema verifica estrutura, não se a fonte sustenta a claim. O gate semântico rejeita a evidência sem suporte, registra a lacuna e evita inventar valor ou citação. D também confunde metadados customizados com o recurso nativo Citations: não há conversão automática que torne uma afirmação semanticamente válida nem compatibilidade implícita entre os recursos. <span class="ts">Domínio 5 · TS 5.1 — Structured data, citations e validação</span></div>
 </div>
 
 <div class="concluir">
