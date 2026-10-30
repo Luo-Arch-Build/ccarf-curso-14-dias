@@ -96,9 +96,9 @@
   <strong>🎯 Objetivo do dia.</strong> Saber <em>onde</em> criar comandos e skills (projeto vs pessoal) e
   <em>quando</em> usar cada mecanismo: slash command versionado, skill com frontmatter
   (<code>context: fork</code>, <code>allowed-tools</code>, <code>argument-hint</code>), CLAUDE.md, hook ou
-  regra de permissão em <code>settings.json</code>. E dominar a decisão <strong>plan mode vs execução direta</strong>
-  por escopo, risco e exigência de aprovação humana — incluindo o papel do Explore subagent para proteger o
-  contexto da conversa principal.
+  regra de permissão em <code>settings.json</code>. E dominar a escolha entre <strong>execução direta, plan mode e
+  workflow multifásico</strong>, distinguindo supervisão, aprovação do plano e gates de produção/deploy — incluindo
+  o papel do Explore subagent para proteger o contexto da conversa principal.
 </div>
 
 <h2>1. Slash commands: escopo de projeto vs escopo de usuário (TS 3.2)</h2>
@@ -214,53 +214,60 @@ a regra deny bloqueia sem olhar contexto — se a proibição depende de uma con
 ela vira hook com lógica. E o deny cobre as tools nativas e os comandos que o Claude Code reconhece
 (<code>cat</code>, <code>head</code>), não um script que abre o arquivo por conta própria: para isso, sandbox.</em></p>
 
-<h2>3. Plan mode vs execução direta (TS 3.4)</h2>
-<p><strong>Plan mode</strong> é o modo em que o Claude <strong>explora e planeja sem modificar nada</strong>: lê o
-código, mapeia dependências, propõe uma abordagem — e só executa depois da sua aprovação. A prova cobra a
-fronteira da decisão:</p>
-<ul>
-  <li>✅ <strong>Plan mode</strong> quando a tarefa tem: mudanças em larga escala, <strong>múltiplas abordagens válidas</strong>,
-      <strong>decisões arquiteturais</strong> (fronteiras de serviço, dependências entre módulos), modificação de
-      <strong>muitos arquivos</strong> (ex.: migração de biblioteca em 45+ arquivos, monólito → microservices,
-      escolha entre abordagens de integração com requisitos de infra diferentes).</li>
-  <li>✅ <strong>Execução direta</strong> quando a mudança é <strong>simples e bem-escopada</strong>: um bug de um arquivo com
-      stack trace claro, adicionar uma validação de data numa função, renomear uma variável.</li>
-</ul>
-<p>O raciocínio econômico: plan mode <strong>previne retrabalho caro</strong>. Descobrir tarde demais que dois módulos
-são acoplados custa muito mais do que os minutos gastos explorando antes. Mas planejar uma mudança de 3 linhas
-é over-engineering de processo — o exame penaliza os dois extremos.</p>
-
-<h3>Além do escopo: risco e aprovação humana</h3>
-<p>Os objetivos oficiais da prova pedem para escolher entre plan mode, execução direta ou workflow multifase com base
-em <em>"task scope, risk level, and human approval requirements"</em>. Escopo é o que a seção acima cobre; os outros dois
-critérios mudam a resposta mesmo quando a mudança é pequena:</p>
+<h2>3. Execução direta, plan mode e workflow multifásico (TS 3.4)</h2>
+<p>São três escolhas diferentes, não três nomes para o mesmo ciclo. <strong>Execução direta</strong> deixa o Claude agir
+nas tools permitidas; <strong>plan mode</strong> restringe a atuação do Claude a exploração e planejamento antes da
+implementação; <strong>workflow multifásico</strong> organiza fases explícitas com artefatos, handoffs e gates.</p>
 <table class="gloss">
-  <tr><th>Critério</th><th>Aponta para plan mode quando…</th><th>Aponta para execução direta quando…</th></tr>
-  <tr><td class="en">Escopo</td><td>muitos arquivos, várias abordagens válidas, decisão arquitetural</td><td>mudança pequena, bem entendida, um arquivo</td></tr>
-  <tr><td class="en">Risco</td><td>toca produção, dados de cliente ou algo irreversível (migração que apaga coluna, script que remove registros)</td><td>a mudança é reversível e os testes pegam o erro</td></tr>
-  <tr><td class="en">Aprovação humana</td><td>alguém precisa aprovar <strong>antes</strong> do efeito (política, dono do dado, change advisory)</td><td>ninguém precisa aprovar antes; review do PR basta</td></tr>
+  <tr><th>Arquitetura</th><th>Escolha quando…</th><th>Controle e saída</th></tr>
+  <tr><td class="en">Direct execution</td><td>A mudança é simples, bem compreendida e bem delimitada: bug com stack trace claro, validação em uma função, renomear uma variável.</td><td>O Claude edita/executa dentro das permissions. A revisão pode ser manual, edição por edição ou comando por comando; supervisão não transforma a tarefa em plan mode.</td></tr>
+  <tr><td class="en">Plan mode</td><td>O desenho ainda é incerto: múltiplas abordagens válidas, dependências desconhecidas, decisão arquitetural ou mudança em muitos arquivos.</td><td>O Claude lê e explora sem modificar arquivos, produz um plano e só implementa depois da aprovação desse plano. A aprovação controla a transição do Claude, não autoriza produção ou deploy.</td></tr>
+  <tr><td class="en">Multi-phase workflow</td><td>O processo exige fases separadas, com responsáveis ou verificações independentes: discovery → aprovação → implementação → verificação → release.</td><td>Cada fase entrega um artefato (relatório, plano, diff, evidência de testes) que é passado adiante por um <strong>handoff</strong>; <strong>gates</strong> humanos ou programáticos decidem se a fase seguinte pode começar.</td></tr>
 </table>
-<p>No plan mode, o plano é o ponto de aprovação: o humano lê o que vai acontecer antes de qualquer arquivo mudar. Sem
-humano no terminal, o mesmo vale no modo não interativo: <code>claude -p --permission-mode plan "…"</code> produz o plano sem
-editar nada; depois da aprovação, uma segunda execução aplica o plano aprovado. Quando a tarefa tem fases distintas
-(discovery → plano → implementação → verificação), a resposta é o <strong>workflow multifase</strong> da seção seguinte.</p>
-<p>Regra de bolso: <em>plan mode se <strong>qualquer</strong> critério pesa — escopo grande, risco alto ou aprovação exigida antes do
-efeito; execução direta só quando os três estão baixos. O caso oposto: mudança pequena e reversível, sem aprovação prévia
-exigida, vai direto mesmo em código importante — planejar 3 linhas continua sendo over-engineering de processo.</em></p>
+<p>Um único ciclo <strong>plano → execução</strong> é uma combinação útil de modos, mas <strong>não basta</strong> para definir
+um workflow multifásico. Esse workflow pode <strong>conter plan mode</strong> na fase de desenho, desde que existam outras
+fases explícitas, artefatos/handoffs e gates. A distinção segue a ideia de workflow como uma sequência predefinida de
+etapas especializadas na referência conceitual <a href="https://academy.claude.com/courses/building-with-the-claude-api/workflows-vs-agents">Workflows vs agents</a>.</p>
+<p>O raciocínio econômico continua valendo: planejar antes de uma mudança incerta previne retrabalho caro, mas planejar
+uma correção de três linhas já compreendida é over-engineering de processo. O exame penaliza tanto planejar tudo quanto
+começar direto uma tarefa cuja complexidade já está declarada.</p>
+
+<h3>Aprovação do plano ≠ gate de produção ou deploy</h3>
+<p>A aprovação do plano responde: <strong>"o Claude pode sair do planejamento e implementar esta proposta?"</strong>.
+Uma exigência do dono do dado, do change advisory board ou de uma política de release responde outra pergunta:
+<strong>"esta mudança pode chegar ao ambiente ou produzir efeito externo?"</strong>. Essa autorização precisa do processo
+externo correspondente — por exemplo, aprovação registrada no sistema de mudanças, proteção de ambiente, gate de CI/CD
+ou validação programática. Plan mode, sozinho, não fornece essa garantia.</p>
+<p>Risco e revisão humana influenciam o desenho dos controles, mas não criam uma regra automática de modo. Uma edição
+simples pode usar <strong>execução direta supervisionada</strong> por permissions <code>ask</code> e revisão manual; uma mudança de
+alto risco pode exigir plan mode <strong>e</strong> gates externos; e um processo com aprovação, implementação e verificação
+independentes pede um workflow multifásico. Risco ou aprovação humana, isoladamente, não tornam plan mode suficiente.</p>
+
+<h3>Headless: o plano precisa ser retomado ou entregue</h3>
+<p><code>claude -p --permission-mode plan "…"</code> pode produzir um plano sem editar arquivos, mas uma <strong>segunda
+execução headless não herda automaticamente</strong> a sessão nem o plano aprovado. Para implementar a mesma proposta,
+retome explicitamente a sessão correspondente ou forneça à nova execução o artefato/plano aprovado e o contexto necessário.
+Mesmo com esse handoff, aprovações de produção/deploy continuam sendo gates separados.</p>
+<p>Regra de bolso: <em>simples e compreendida → execução direta, ainda que supervisionada; desenho incerto → plan mode;
+fases predefinidas com artefatos, handoffs e gates → workflow multifásico. Um plano seguido de execução, sozinho, não é
+multifásico; aprovar o plano do Claude, sozinho, não aprova produção.</em></p>
 
 <h3>Explore subagent: protegendo o contexto</h3>
 <p>Fases de <strong>discovery</strong> ("onde essa função é usada?", "mapeie todos os callers") geram output enorme:
 dezenas de arquivos lidos, greps, listagens. Se isso entra na conversa principal, a janela de contexto
 acaba antes da fase de implementação. O <strong>Explore subagent</strong> resolve: faz a busca verbosa num contexto
 isolado e <strong>devolve só o resumo</strong>. Mesma lógica do <code>context: fork</code> das skills.</p>
-<p>Onde isso cai na prova: <strong>tarefas multifase</strong>. Para uma mudança grande num código que você não conhece, o fluxo proporcional é: <strong>discovery no Explore subagent</strong> (buscas e leituras ficam isoladas; volta um resumo) → <strong>plan mode</strong> para escolher a abordagem a partir desse resumo → <strong>execução direta</strong> do plano aprovado. Sem o Explore, a saída do discovery enche a janela e a implementação começa com o contexto esgotado: decisões tomadas no meio do caminho se perdem.</p>
-<p>Regra de bolso: <em>discovery verboso não mora na conversa principal — roda isolado e entrega só o resumo.</em></p>
+<p>Num workflow multifásico, esse resumo pode ser o <strong>artefato de discovery</strong> entregue à fase de desenho. O plano
+aprovado vira outro artefato, recebido pela implementação; uma verificação independente produz evidências próprias antes
+do gate de release. O Explore protege o contexto, mas não substitui esses handoffs e gates.</p>
+<p>Regra de bolso: <em>discovery verboso não precisa morar na conversa principal — rode isolado e entregue um resumo útil
+à fase seguinte.</em></p>
 
-<h3>Combinando os dois (o padrão "certo" da prova)</h3>
-<p>Para tarefas grandes, o fluxo proporcional é: <strong>plan mode para investigação e desenho → execução direta
-para implementar o plano aprovado</strong>. Não é "plan mode pra sempre" nem "execução direta desde o início" —
-é cada modo na fase em que ele é forte. Distrator clássico: "começar em execução direta e trocar pra plan mode
-se aparecer complexidade" — errado quando a complexidade <em>já está declarada</em> no requisito.</p>
+<h3>Compondo modos sem confundir as arquiteturas</h3>
+<p>Para uma tarefa grande de desenho incerto, <strong>plan mode → execução direta</strong> pode ser suficiente. Se o requisito
+também determinar discovery com relatório, aprovação formal, implementação e verificação independente, a resposta passa a
+ser <strong>workflow multifásico</strong>, possivelmente usando plan mode numa das fases. Não é o tamanho do prompt nem a
+quantidade de etapas mencionadas que decide: procure artefatos, handoffs e gates explícitos.</p>
 
 <h2>4. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
 <table class="gloss">
@@ -274,35 +281,36 @@ se aparecer complexidade" — errado quando a complexidade <em>já está declara
   <tr><td class="en">allowed-tools</td><td>tools permitidas durante a skill</td><td class="uso">"restrict tool access with allowed-tools to prevent destructive actions"</td></tr>
   <tr><td class="en">argument-hint</td><td>dica de parâmetros ao invocar</td><td class="uso">"argument-hint prompts developers for required parameters"</td></tr>
   <tr><td class="en">on-demand invocation</td><td>invocação sob demanda</td><td class="uso">"skills: on-demand invocation vs CLAUDE.md: always-loaded"</td></tr>
-  <tr><td class="en">plan mode</td><td>modo de planejamento (explora sem modificar)</td><td class="uso">"plan mode enables safe codebase exploration before committing to changes"</td></tr>
-  <tr><td class="en">direct execution</td><td>execução direta</td><td class="uso">"direct execution is appropriate for simple, well-scoped changes"</td></tr>
+  <tr><td class="en">plan mode</td><td>modo de planejamento (explora sem modificar)</td><td class="uso">"approve Claude's plan before implementation; this is not production authorization"</td></tr>
+  <tr><td class="en">direct execution</td><td>execução direta, com ou sem supervisão manual</td><td class="uso">"use direct execution with per-edit review for a simple, well-scoped change"</td></tr>
   <tr><td class="en">Explore subagent</td><td>sub-agente de exploração/discovery</td><td class="uso">"the Explore subagent returns summaries to preserve main conversation context"</td></tr>
   <tr><td class="en">costly rework</td><td>retrabalho caro</td><td class="uso">"planning prevents costly rework when dependencies are discovered late"</td></tr>
-  <tr><td class="en">multi-phase task</td><td>tarefa multifase (discovery → plano → implementação)</td><td class="uso">"use the Explore subagent for verbose discovery phases in multi-phase tasks"</td></tr>
+  <tr><td class="en">multi-phase workflow</td><td>workflow multifásico com artefatos, handoffs e gates</td><td class="uso">"a plan followed by execution alone is not a multi-phase workflow"</td></tr>
+  <tr><td class="en">artifact / handoff</td><td>artefato / passagem explícita do resultado entre fases</td><td class="uso">"hand off the discovery report and approved plan to later phases"</td></tr>
+  <tr><td class="en">deployment gate</td><td>gate humano ou programático antes de deploy/produção</td><td class="uso">"plan approval does not replace an external deployment gate"</td></tr>
   <tr><td class="en">verbose discovery output</td><td>saída verbosa da fase de descoberta</td><td class="uso">"isolate verbose discovery output and return summaries"</td></tr>
   <tr><td class="en">context window exhaustion</td><td>estouro da janela de contexto</td><td class="uso">"prevent context window exhaustion during multi-phase tasks"</td></tr>
   <tr><td class="en">always-loaded</td><td>sempre carregado (em toda sessão)</td><td class="uso">"CLAUDE.md for always-loaded universal standards"</td></tr>
   <tr><td class="en">settings permissions</td><td>regras de permissão (allow / ask / deny) nos arquivos de settings</td><td class="uso">"select CLAUDE.md, rules, skills, hooks, or settings permissions"</td></tr>
-  <tr><td class="en">deny rule</td><td>regra que bloqueia uma tool, um comando ou um arquivo</td><td class="uso">"add a deny rule to the project settings to block reading .env"</td></tr>
+  <tr><td class="en">deny rule</td><td>regra que bloqueia incondicionalmente uma tool, comando ou arquivo</td><td class="uso">"add a deny rule to block reading .env in every context"</td></tr>
+  <tr><td class="en">conditional hook</td><td>hook com lógica para decidir conforme o contexto</td><td class="uso">"use a PreToolUse hook to deny deployment only when it targets production"</td></tr>
   <tr><td class="en">settings precedence</td><td>ordem de prioridade entre arquivos de settings</td><td class="uso">"managed settings take precedence over project and user settings"</td></tr>
-  <tr><td class="en">risk level</td><td>nível de risco (produção, dados, irreversível)</td><td class="uso">"select plan mode based on task scope, risk level, and human approval requirements"</td></tr>
-  <tr><td class="en">human approval requirement</td><td>exigência de aprovação humana antes do efeito</td><td class="uso">"the plan is reviewed and approved before execution"</td></tr>
+  <tr><td class="en">session resume / plan artifact</td><td>retomada da sessão / artefato do plano fornecido explicitamente</td><td class="uso">"a new headless run must resume the session or receive the approved plan"</td></tr>
+  <tr><td class="en">risk level</td><td>nível de risco (produção, dados, irreversível)</td><td class="uso">"choose proportional controls; high risk alone does not make plan mode sufficient"</td></tr>
+  <tr><td class="en">human approval requirement</td><td>exigência de aprovação humana</td><td class="uso">"distinguish approval of Claude's plan from production or deployment approval"</td></tr>
 </table>
 
 <div class="card pegadinha">
   <h3>⚠️ Pegadinha do dia</h3>
-  <p>Dois padrões de distrator dominam este tema. (1) <strong>Escopo errado</strong>: a questão pede algo
-  "disponível pra todo o time" e oferece <code>~/.claude/...</code> como opção — pessoal nunca é compartilhado,
-  e "mandar cada dev copiar o arquivo" ignora o version control. (2) <strong>Plan mode como reflexo ou como
-  fallback</strong>: "usar plan mode para toda tarefa" (over-engineering de processo) e "começar direto e trocar
-  se complicar" (a complexidade já está no enunciado) são os dois errados simétricos.
-  (3) <strong>Proibição como texto</strong>: "never read .env" no CLAUDE.md ou numa rule — instrução é probabilística;
-  bloqueio garantido é regra <code>deny</code> no <code>settings.json</code> versionado.
-  Regra de bolso: <em>compartilhado = dentro do repo e versionado; planeje quando há mudança em
-  larga escala, várias abordagens válidas, decisão arquitetural ou muitos arquivos (ex.: migração em 45+ arquivos,
-  monólito → serviços), e também quando a mudança é pequena mas arriscada ou exige aprovação antes do efeito (ex.: script
-  que apaga dados em produção); execute direto quando a mudança é simples, reversível, de escopo claro e sem aprovação
-  prévia exigida (ex.: bug de um arquivo com stack trace claro).</em></p>
+  <p>Cinco padrões de distrator dominam este tema. (1) <strong>Escopo errado</strong>: algo disponível para todo o time
+  vai no repo versionado, não em <code>~/.claude/...</code>. (2) <strong>Modo como reflexo</strong>: plan mode para toda tarefa é
+  over-engineering; começar direto uma complexidade já declarada também é erro. (3) <strong>Falso multifásico</strong>: um plano
+  seguido de execução não basta; procure fases com artefatos, handoffs e gates. (4) <strong>Aprovação ou memória invisível</strong>:
+  aprovar o plano do Claude não autoriza produção/deploy, e uma nova execução headless não herda o plano sem retomar a sessão
+  ou receber o artefato. (5) <strong>Texto ou bloqueio errado</strong>: instrução não garante enforcement; use <code>deny</code> para
+  proibição incondicional e hook com lógica quando a decisão depender do contexto.</p>
+  <p>Regra de bolso: <em>compartilhado = repo versionado; mudança simples = execução direta, mesmo com revisão por edição;
+  desenho incerto = plan mode; processo com handoffs e gates independentes = workflow multifásico.</em></p>
 </div>
 
 <h2>5. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
@@ -390,7 +398,7 @@ se aparecer complexidade" — errado quando a complexidade <em>já está declara
     <label class="opt"><input type="radio" name="q6" value="d">D. Keep discovery in the main session but tell Claude to print only file paths, leaving out the code it reads.<div class="pt">Manter o discovery na sessão principal, mas mandar o Claude imprimir só os caminhos dos arquivos, sem o código que ele lê.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: C.</strong> O Explore subagent existe para fases de discovery verbosas: as buscas e leituras rodam num contexto isolado e só o resumo volta, preservando a conversa principal para o desenho (plan mode) e a implementação — o fluxo multifase que o guia descreve. A troca um problema de contexto por um de qualidade: num serviço desconhecido, pular o discovery é contratar retrabalho. B espalha o problema: o CLAUDE.md é carregado em toda sessão, e despejar resultados de busca ali polui todas as sessões futuras com dado que envelhece. D é remendo via prompt: o que lota a janela são os resultados das buscas e leituras (tool results), que entram inteiros no contexto da sessão principal não importa o que o Claude imprima — pedir só os caminhos encurta a resposta dele, não o que se acumula.<span class="ts">Domínio 3 · TS 3.4 — Plan mode vs execução direta</span></div>
+  <div class="feedback"><strong>Gabarito: C.</strong> O Explore subagent existe para discovery verboso: buscas e leituras rodam num contexto isolado e só o resumo volta, preservando a conversa principal para o desenho e a implementação. O resumo funciona como handoff de discovery; isso, sozinho, ainda não define um workflow multifásico sem as demais fases, os artefatos e os gates exigidos. A troca um problema de contexto por um de qualidade: num serviço desconhecido, pular o discovery é contratar retrabalho. B espalha o problema: o CLAUDE.md é carregado em toda sessão, e despejar resultados de busca ali polui todas as sessões futuras com dado que envelhece. D é remendo via prompt: o que lota a janela são os resultados das buscas e leituras (tool results), que entram no contexto da sessão principal não importa o que o Claude imprima — pedir só os caminhos encurta a resposta dele, não o que se acumula.<span class="ts">Domínio 3 · TS 3.4 — Plan mode, execução direta e workflows multifásicos</span></div>
 </div>
 
 <div class="q" data-correct="a,d" data-ts="3.2" data-dom="3">
@@ -401,11 +409,11 @@ se aparecer complexidade" — errado quando a complexidade <em>já está declara
     <label class="opt"><input type="checkbox" name="q7" value="a">A. A quarterly dependency-audit workflow with long exploratory output → a project skill with context: fork.<div class="pt">Um workflow trimestral de auditoria de dependências, com saída exploratória longa → uma skill de projeto com context: fork.</div></label>
     <label class="opt"><input type="checkbox" name="q7" value="b">B. Conventions for every *.sql migration file, wherever it sits in the repo → a CLAUDE.md inside the db/ folder.<div class="pt">Convenções para todo arquivo de migração *.sql, onde quer que ele esteja no repo → um CLAUDE.md dentro da pasta db/.</div></label>
     <label class="opt"><input type="checkbox" name="q7" value="c">C. A personal shortcut that only you use to summarize your daily diffs → a command in the repo's .claude/commands/.<div class="pt">Um atalho pessoal, só seu, para resumir seus diffs do dia → um comando em .claude/commands/ do repo.</div></label>
-    <label class="opt"><input type="checkbox" name="q7" value="d">D. Commit-message rules that every developer must follow in every session → the project-level CLAUDE.md.<div class="pt">Regras de mensagem de commit que todo dev precisa seguir em toda sessão → o CLAUDE.md do projeto.</div></label>
+    <label class="opt"><input type="checkbox" name="q7" value="d">D. Commit-message conventions that should be available as guidance in every developer session → the project-level CLAUDE.md.<div class="pt">Convenções de mensagem de commit que devem estar disponíveis como orientação em toda sessão de cada dev → o CLAUDE.md do projeto.</div></label>
     <label class="opt"><input type="checkbox" name="q7" value="e">E. A security linter that must run after every file edit, without exception → a mandatory rule in CLAUDE.md.<div class="pt">Um linter de segurança que precisa rodar depois de toda edição de arquivo, sem exceção → uma regra obrigatória no CLAUDE.md.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: A e D.</strong> Workflow pontual, com saída exploratória grande, é caso de skill sob demanda — e <code>context: fork</code> mantém essa saída fora da conversa principal. Regra que vale para todo dev em toda sessão é padrão universal: CLAUDE.md do projeto, sempre carregado e versionado (TS 3.2: skill sob demanda × CLAUDE.md sempre carregado). B erra o mecanismo: convenção que acompanha um tipo de arquivo espalhado pelo repo pede <code>.claude/rules/</code> com <code>paths</code> glob (ex.: <code>**/*.sql</code>); o CLAUDE.md de diretório só vale dentro daquela pasta (TS 3.3). C erra o escopo: atalho pessoal vai em <code>~/.claude/commands/</code> — no repo, ele aparece para o time inteiro. E confunde contexto com garantia: instrução no CLAUDE.md é seguida de forma probabilística; o que precisa rodar sempre, sem exceção, pede enforcement programático (um hook) — a mesma lógica do TS 1.5.<span class="ts">Domínio 3 · TS 3.2 — Slash commands e skills</span></div>
+  <div class="feedback"><strong>Gabarito: A e D.</strong> Workflow pontual, com saída exploratória grande, é caso de skill sob demanda — e <code>context: fork</code> mantém essa saída fora da conversa principal. D pede <strong>orientação</strong> universal sempre carregada: CLAUDE.md do projeto, versionado. Isso não garante conformidade; se o requisito fosse impedir commits fora do padrão, seria necessária uma validação programática. B erra o mecanismo: convenção que acompanha um tipo de arquivo espalhado pelo repo pede <code>.claude/rules/</code> com <code>paths</code> glob (ex.: <code>**/*.sql</code>); o CLAUDE.md de diretório só vale dentro daquela pasta (TS 3.3). C erra o escopo: atalho pessoal vai em <code>~/.claude/commands/</code> — no repo, ele aparece para o time inteiro. E confunde contexto com garantia: instrução no CLAUDE.md é seguida de forma probabilística; o que precisa rodar sempre, sem exceção, pede enforcement programático (um hook) — a mesma lógica do TS 1.5.<span class="ts">Domínio 3 · TS 3.2 — Slash commands e skills</span></div>
 </div>
 
 <div class="q" data-correct="d" data-ts="3.2" data-dom="3">
@@ -424,16 +432,86 @@ se aparecer complexidade" — errado quando a complexidade <em>já está declara
 
 <div class="q" data-correct="b" data-ts="3.4" data-dom="3">
   <div class="qnum">Questão 9 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
-  <div class="stem">To meet a retention policy, a nightly script must start deleting customer records older than seven years. The edit is one line in one file, but the script runs against the production database, deletions cannot be undone, and the policy requires the data owner to approve any deletion logic before it runs. How should you use Claude Code for this change?</div>
-  <div class="pt-block pt">Para cumprir uma política de retenção, um script noturno precisa passar a apagar registros de clientes com mais de sete anos. A edição é uma linha num arquivo, mas o script roda contra o banco de produção, as exclusões não podem ser desfeitas e a política exige que o dono do dado aprove qualquer lógica de exclusão antes de ela rodar. Como você deve usar o Claude Code nessa mudança?</div>
+  <div class="stem">To meet a retention policy, a nightly script must start deleting customer records older than seven years. The edit is one line, but deletions are irreversible. The team's existing change-management system requires the data owner's approval and independently blocks both deployment and the nightly job until that approval is recorded. Which approach best separates Claude's planning control from production authorization?</div>
+  <div class="pt-block pt">Para cumprir uma política de retenção, um script noturno precisa passar a apagar registros de clientes com mais de sete anos. A edição é uma linha, mas as exclusões são irreversíveis. O sistema de mudanças que o time já usa exige a aprovação do dono do dado e bloqueia independentemente tanto o deploy quanto o job noturno até que essa aprovação seja registrada. Qual abordagem separa melhor o controle de planejamento do Claude da autorização de produção?</div>
   <div class="opts">
-    <label class="opt"><input type="radio" name="q9" value="a">A. Direct execution: it is one line in one file, so planning would only add process overhead.<div class="pt">Execução direta: é uma linha num arquivo, então planejar só acrescentaria burocracia.</div></label>
-    <label class="opt"><input type="radio" name="q9" value="b">B. Plan mode: have Claude produce a plan, get the data owner's approval, then execute it.<div class="pt">Plan mode: fazer o Claude produzir um plano, obter a aprovação do dono do dado e então executá-lo.</div></label>
-    <label class="opt"><input type="radio" name="q9" value="c">C. Direct execution with a careful prompt, then have the data owner review the merged commit.<div class="pt">Execução direta com um prompt cuidadoso, e depois pedir ao dono do dado para revisar o commit já mergeado.</div></label>
-    <label class="opt"><input type="radio" name="q9" value="d">D. An Explore subagent to map the script's callers, then direct execution of the one-line edit.<div class="pt">Um Explore subagent para mapear quem chama o script, e depois execução direta da edição de uma linha.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="a">A. Direct execution without reviewing the proposed logic: the edit is one line, and the external gate makes design review unnecessary.<div class="pt">Execução direta sem revisar a lógica proposta: a edição é uma linha, e o gate externo torna a revisão do desenho desnecessária.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="b">B. Use plan mode for the code change: your plan approval lets Claude implement it, while the data owner's separate authorization remains enforced by the existing deployment and run gates.<div class="pt">Usar plan mode para a mudança de código: sua aprovação do plano permite que o Claude a implemente, enquanto a autorização separada do dono do dado continua imposta pelos gates existentes de deploy e execução.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="c">C. Use direct execution and let the nightly job run before the data owner reviews the result.<div class="pt">Usar execução direta e deixar o job noturno rodar antes de o dono do dado revisar o resultado.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="d">D. Use plan mode and treat your approval of Claude's plan as the data owner's production approval, bypassing the external gate.<div class="pt">Usar plan mode e tratar sua aprovação do plano do Claude como a aprovação de produção pelo dono do dado, contornando o gate externo.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: B.</strong> Escopo não é o único critério: o risco (produção, exclusão irreversível) e a exigência de aprovação <strong>antes</strong> do efeito apontam para plan mode, mesmo numa mudança de uma linha. O plano é o ponto em que o dono do dado aprova o que vai acontecer; só depois a mudança é aplicada (sem humano no terminal, <code>claude -p --permission-mode plan</code> faz a mesma etapa). A decide só pelo escopo e ignora os outros dois critérios. C coloca a aprovação depois do merge — e a política pede aprovação antes de rodar, quando ainda dá para impedir a exclusão. D resolve um problema que não existe: o difícil aqui não é descobrir onde mexer, é aprovar o efeito antes de ele acontecer.<span class="ts">Domínio 3 · TS 3.4 — Plan mode vs execução direta</span></div>
+  <div class="feedback"><strong>Gabarito: B.</strong> O impacto irreversível justifica revisar a proposta antes da edição, e B separa as duas autorizações: a sua aprovação permite que o Claude implemente; a aprovação do dono do dado continua sendo um requisito externo, imposta pelos gates de deploy e execução. Plan mode não substitui esse controle, e risco alto não o torna automaticamente suficiente. A usa o gate externo como desculpa para não revisar a lógica; em outro cenário, execução direta com supervisão poderia ser adequada, mas não essa variante sem revisão. C viola a exigência de aprovação antes do efeito. D confunde aprovação do plano com autorização de produção e ainda propõe contornar o gate.<span class="ts">Domínio 3 · TS 3.4 — Plan mode e gates externos</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="3.4" data-dom="3">
+  <div class="qnum">Questão 10 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">A two-line null check in one function has a known cause and an agreed fix. You want to inspect and approve each edit before Claude applies it. There is no architectural decision, separate implementation phase, or deployment authorization in scope. What is the best approach?</div>
+  <div class="pt-block pt">Uma verificação de null de duas linhas numa função tem causa conhecida e correção já combinada. Você quer inspecionar e aprovar cada edição antes de o Claude aplicá-la. Não há decisão arquitetural, fase separada de implementação nem autorização de deploy no escopo. Qual é a melhor abordagem?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q10" value="a">A. Direct execution with permission prompts and manual per-edit review.<div class="pt">Execução direta com prompts de permissão e revisão manual de cada edição.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="b">B. Plan mode, because any human review before an edit requires a formal plan.<div class="pt">Plan mode, porque qualquer revisão humana antes de uma edição exige um plano formal.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="c">C. A multi-phase workflow, because reviewing an edit creates the artifacts and gates required for that architecture.<div class="pt">Um workflow multifásico, porque revisar uma edição cria os artefatos e gates exigidos por essa arquitetura.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="d">D. An Explore subagent, because every one-function fix requires an isolated discovery phase.<div class="pt">Um Explore subagent, porque toda correção em uma função exige uma fase isolada de discovery.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> A mudança é simples e compreendida; a revisão por edição é supervisão da execução direta, não um motivo automático para plan mode. B confunde aprovação de uma tool call com aprovação de um plano. C não ganha artefatos, handoffs ou gates de fases apenas porque alguém revisa cada diff. D acrescenta discovery a uma causa já conhecida.<span class="ts">Domínio 3 · TS 3.4 — Execução direta supervisionada</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="3.4" data-dom="3">
+  <div class="qnum">Questão 11 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">You need to add retry behavior to a client. Two designs are plausible, and their interaction with the existing timeout logic is unclear. You want Claude to investigate and compare them before modifying files; no independent implementation or release phases are required. Which approach fits best?</div>
+  <div class="pt-block pt">Você precisa adicionar comportamento de retry a um client. Dois desenhos são plausíveis, e a interação deles com a lógica de timeout existente não está clara. Você quer que o Claude investigue e compare as opções antes de modificar arquivos; não são exigidas fases independentes de implementação ou release. Qual abordagem se encaixa melhor?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q11" value="a">A. Direct execution, choosing between the designs as the edits are made.<div class="pt">Execução direta, escolhendo entre os desenhos conforme as edições são feitas.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="b">B. Plan mode to investigate the timeout interactions and compare the designs before implementation.<div class="pt">Plan mode para investigar as interações com timeout e comparar os desenhos antes da implementação.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="c">C. A multi-phase workflow, because any use of plan mode automatically creates separate handoffs and gates.<div class="pt">Um workflow multifásico, porque qualquer uso de plan mode cria automaticamente handoffs e gates separados.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="d">D. A PreToolUse hook to choose the architecture, because hooks are design-decision tools.<div class="pt">Um hook PreToolUse para escolher a arquitetura, porque hooks são ferramentas de decisão de desenho.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> A incerteza está no desenho e nas dependências, exatamente onde exploração sem edição e comparação prévia evitam retrabalho. Depois da aprovação, o plano pode ser implementado em execução direta. A decide tarde demais; C transforma um único ciclo plano → execução em multifásico sem artefatos, handoffs e gates adicionais; D confunde enforcement programático com escolha arquitetural.<span class="ts">Domínio 3 · TS 3.4 — Plan mode para desenho incerto</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="3.4" data-dom="3">
+  <div class="qnum">Questão 12 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">A database migration must produce a discovery report, obtain the architecture owner's approval, implement from the approved artifact, and have an independent verifier check data integrity and rollback evidence. Later phases cannot start unless the preceding gate passes. Which architecture matches the requirement?</div>
+  <div class="pt-block pt">Uma migração de banco de dados precisa produzir um relatório de discovery, obter a aprovação do responsável pela arquitetura, implementar a partir do artefato aprovado e ter um verificador independente checando integridade dos dados e evidências de rollback. As fases seguintes não podem começar sem o gate anterior passar. Qual arquitetura atende ao requisito?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q12" value="a">A. Direct execution in one continuous session, with no explicit artifacts or handoffs.<div class="pt">Execução direta numa sessão contínua, sem artefatos ou handoffs explícitos.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="b">B. One plan-mode session followed by direct execution, without separate approval and verification artifacts.<div class="pt">Uma sessão em plan mode seguida de execução direta, sem artefatos separados de aprovação e verificação.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="c">C. A multi-phase workflow: discovery report → approval gate → implementation → independent verification evidence and gate; plan mode may be used in the design phase.<div class="pt">Um workflow multifásico: relatório de discovery → gate de aprovação → implementação → evidências e gate de verificação independente; plan mode pode ser usado na fase de desenho.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="d">D. An Explore subagent followed by immediate implementation, with no approval or independent verification.<div class="pt">Um Explore subagent seguido de implementação imediata, sem aprovação nem verificação independente.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> O enunciado especifica fases, artefatos, handoffs e gates, além de verificação independente: é um workflow multifásico. Plan mode pode participar do desenho, mas B é apenas plano → execução e omite os controles exigidos. A e D não preservam os artefatos nem impedem o avanço quando um gate falha; o Explore pode ajudar no discovery, mas não substitui a arquitetura do processo.<span class="ts">Domínio 3 · TS 3.4 — Workflow multifásico</span></div>
+</div>
+
+<div class="q" data-correct="a,b" data-ts="3.2" data-dom="3">
+  <div class="qnum">Questão 13 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">Which TWO configurations correctly match a need to a rule or hook?</div>
+  <div class="pt-block pt">Quais DUAS configurações associam corretamente uma necessidade a uma rule ou hook?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q13" value="a">A. Naming guidance for every <code>**/*.service.ts</code> file, wherever it lives → a project rule in .claude/rules/ with a paths glob.<div class="pt">Orientação de nomes para todo arquivo <code>**/*.service.ts</code>, onde quer que esteja → uma rule de projeto em .claude/rules/ com glob em paths.</div></label>
+    <label class="opt"><input type="checkbox" name="q13" value="b">B. Run a formatter after every successful Edit/Write without relying on the model to remember → a PostToolUse hook matching those tools.<div class="pt">Rodar um formatter depois de cada Edit/Write bem-sucedido, sem depender da memória do modelo → um hook PostToolUse com matcher nessas tools.</div></label>
+    <label class="opt"><input type="checkbox" name="q13" value="c">C. Guarantee that the formatter always runs → a sentence in CLAUDE.md saying that it must always run.<div class="pt">Garantir que o formatter sempre rode → uma frase no CLAUDE.md dizendo que ele deve sempre rodar.</div></label>
+    <label class="opt"><input type="checkbox" name="q13" value="d">D. Load guidance automatically whenever a matching service file is opened → a personal slash command that the developer must invoke manually.<div class="pt">Carregar orientação automaticamente sempre que um arquivo de service correspondente for aberto → um slash command pessoal que o dev precisa invocar manualmente.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A e B.</strong> A escolhe positivamente uma <strong>rule com <code>paths</code></strong>: orientação contextual para um padrão de arquivos em qualquer diretório. B escolhe positivamente um <strong>hook PostToolUse</strong>: código executado no evento das tools, sem depender de o modelo lembrar. C oferece apenas instrução probabilística, não garantia. D erra o escopo e o gatilho: comando pessoal não é compartilhado e invocação manual não é carregamento automático por arquivo.<span class="ts">Domínio 3 · TS 3.2 — Escolha de rules e hooks</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="3.2" data-dom="3">
+  <div class="qnum">Questão 14 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">A deploy command is allowed in development but forbidden in production. The team needs programmatic enforcement based on the command's target; an unconditional deny would also block the allowed development use. What should it use?</div>
+  <div class="pt-block pt">Um comando de deploy é permitido em desenvolvimento, mas proibido em produção. O time precisa de enforcement programático baseado no destino do comando; um deny incondicional também bloquearia o uso permitido em desenvolvimento. O que deve usar?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q14" value="a">A. A project deny rule for every deploy command, regardless of environment.<div class="pt">Uma regra deny de projeto para todo comando de deploy, independentemente do ambiente.</div></label>
+    <label class="opt"><input type="radio" name="q14" value="b">B. A PreToolUse hook that inspects the command and its target, denies production calls, and leaves development calls to the other permission rules.<div class="pt">Um hook PreToolUse que inspeciona o comando e seu destino, nega chamadas de produção e deixa as de desenvolvimento para as demais regras de permissão.</div></label>
+    <label class="opt"><input type="radio" name="q14" value="c">C. A CLAUDE.md instruction telling Claude to deploy only to development.<div class="pt">Uma instrução no CLAUDE.md mandando o Claude fazer deploy apenas em desenvolvimento.</div></label>
+    <label class="opt"><input type="radio" name="q14" value="d">D. Plan mode, because approving a plan enforces environment-specific command rules.<div class="pt">Plan mode, porque aprovar um plano impõe regras de comando específicas por ambiente.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> A decisão depende do destino, então o <strong>hook PreToolUse</strong> executa a lógica condicional antes da tool. A é o mecanismo adequado para proibição incondicional — como bloquear sempre a leitura de <code>.env</code> na Q8 — mas aqui bloquearia também o ambiente permitido. C é orientação, não enforcement. D controla a atuação do Claude no planejamento, não implementa uma política programática por ambiente. Em B, não ser negado por esse hook também não equivale a permissão automática: as demais regras continuam valendo.<span class="ts">Domínio 3 · TS 3.2 — Hook condicional vs deny incondicional</span></div>
 </div>
 
 <div class="concluir">

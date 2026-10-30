@@ -95,7 +95,8 @@
   <strong>🎯 Objetivo do dia.</strong> Dominar a <strong>hierarquia de CLAUDE.md</strong> (user / project /
   directory), saber modularizar com <code>@import</code> e <code>.claude/rules/</code>, e escolher
   <strong>rules com glob no frontmatter</strong> quando uma convenção precisa seguir o <em>tipo do arquivo</em>
-  e não o diretório — o caso clássico dos arquivos de teste espalhados pelo codebase.
+  e não o diretório. Ao final, distinguir contexto persistente, procedimento sob demanda, permissões,
+  permission modes e hooks — incluindo qual garantia cada mecanismo realmente oferece.
 </div>
 
 <h2>1. A hierarquia de CLAUDE.md (Task Statement 3.1)</h2>
@@ -131,11 +132,16 @@ tudo. Causa raiz: as instruções estão em <code>~/.claude/CLAUDE.md</code> (se
 Correção: mover para o <strong>project-level</strong> (<code>CLAUDE.md</code> na raiz ou <code>.claude/CLAUDE.md</code>),
 que é versionado.</p>
 
-<h3>/memory: o diagnóstico de primeira linha</h3>
-<p>Quando o comportamento do Claude está inconsistente entre sessões ou entre máquinas, o primeiro passo
-não é reescrever nada — é <strong>inspecionar o que está carregado</strong>. O comando <code>/memory</code> mostra
-quais arquivos de memória (CLAUDE.md de cada nível, rules) estão ativos na sessão. É o equivalente a
-"verificar as variáveis de ambiente" antes de culpar o código.</p>
+<h3>/memory e /context: diagnosticar sem confundir</h3>
+<p>Quando o comportamento do Claude está inconsistente, comece pela configuração, não pela reescrita.
+<code>/memory</code> <strong>lista localizações de memórias e permite abri-las/criá-las no editor</strong>; ele não é
+o inventário do que a sessão carregou. Para verificar os <code>CLAUDE.md</code> e rules carregados <strong>no início</strong>,
+use <code>/context</code> e confira a seção <strong>Memory files</strong>.</p>
+<p>Arquivos sob demanda pedem outro diagnóstico: reproduza o caso trabalhando com um arquivo que dá match no
+path. Um <code>CLAUDE.md</code> de subdiretório, por exemplo, não aparece na lista inicial do <code>/context</code>;
+ao carregar, seu caminho aparece numa linha <code>Loaded</code> no terminal. Para registrar o que carregou, quando e
+por quê — inclusive rules por path — use um hook <code>InstructionsLoaded</code>. Portanto, não espere que uma
+chamada a <code>/context</code> liste todos os arquivos que ainda podem entrar no contexto durante o trabalho.</p>
 
 <h2>2. Modularizando: @import e .claude/rules/ (Task Statement 3.1)</h2>
 <p>Um CLAUDE.md monolítico de 2.000 linhas é impossível de manter e pesa em toda sessão.
@@ -162,7 +168,9 @@ E, como veremos na próxima seção, esses arquivos podem ganhar <strong>escopo 
 <h2>3. Rules com glob: carregamento condicional por path (Task Statement 3.3)</h2>
 <p>Arquivos em <code>.claude/rules/</code> aceitam <strong>YAML frontmatter</strong> com o campo <code>paths</code>,
 uma lista de <strong>glob patterns</strong>. Quando presente, a regra <strong>só entra no contexto quando o Claude
-está editando arquivos que dão match</strong> no glob — em vez de ficar carregada o tempo todo.</p>
+trabalha com arquivos que dão match</strong> no glob — em vez de ficar carregada o tempo todo. Isso inclui
+<code>Read</code>, <code>Write</code> e <code>Edit</code>, além de leituras reconhecidas via Bash, como <code>cat</code>
+ou <code>head</code> em um único arquivo: <strong>não é somente ao editar</strong>.</p>
 <pre><code># .claude/rules/testing.md
 ---
 paths: ["**/*.test.tsx", "**/*.spec.tsx"]
@@ -183,7 +191,8 @@ paths: ["terraform/**/*"]
 <p>Dois ganhos, e os dois são o coração do Task Statement 3.3:</p>
 <ol>
   <li><strong>Economia de contexto:</strong> a regra de testes só ocupa tokens quando você está de fato
-      editando um <code>*.test.tsx</code>. Regra sempre carregada = contexto irrelevante na maioria dos turnos.</li>
+      trabalhando com um <code>*.test.tsx</code>, inclusive na leitura. Regra sempre carregada = contexto
+      irrelevante na maioria dos turnos.</li>
   <li><strong>Convenção por TIPO de arquivo, não por lugar:</strong> o CLAUDE.md de subdiretório é
       <em>directory-bound</em> — só cobre aquela árvore. Mas arquivos de teste costumam ficar
       <strong>espalhados ao lado do código que testam</strong> (<code>Button.test.tsx</code> junto de
@@ -191,23 +200,30 @@ paths: ["terraform/**/*"]
       O glob <code>**/*.test.tsx</code> resolve em <strong>um único arquivo</strong>, não importa o diretório.</li>
 </ol>
 <p>Essa é exatamente a lógica da Questão 6 oficial do guide: áreas com convenções diferentes + arquivos
-de teste espalhados pelo codebase → a resposta é <code>.claude/rules/</code> com frontmatter de globs,
-porque é o único mecanismo que aplica a convenção <em>deterministamente pelo path do arquivo</em>.</p>
+de teste espalhados pelo codebase → a resposta é <code>.claude/rules/</code> com frontmatter de globs.
+<strong>Seleção e carregamento pelo path podem ser determinísticos; a aderência do modelo à instrução continua
+probabilística.</strong> Quando a convenção precisa de enforcement, ainda é necessário um mecanismo programático.</p>
 
 <h2>4. Mapa de decisão rápido</h2>
-<p><strong>Orientação × garantia.</strong> Tudo o que esta aula ensinou (CLAUDE.md, <code>@import</code>,
-rules) é <strong>contexto</strong>: o modelo lê e tende a seguir, mas segue de forma probabilística. Quando a
-exigência é "isso <em>nunca</em> pode acontecer", o mecanismo é outro e fica no <code>settings.json</code>
-(usuário <code>~/.claude/settings.json</code>, projeto <code>.claude/settings.json</code> versionado, local
-<code>.claude/settings.local.json</code>), aplicado pelo próprio Claude Code, não pelo modelo:</p>
+<p><strong>Orientação × garantia.</strong> CLAUDE.md, <code>@import</code> e rules fornecem <strong>contexto</strong>:
+o modelo lê e tende a seguir, mas sua aderência é probabilística — mesmo quando a seleção pelo path é determinística.
+Uma <strong>Skill</strong> empacota um <strong>procedimento reutilizável sob demanda</strong>: pode ser invocada
+explicitamente ou carregada automaticamente quando o Claude a considera relevante para a tarefa. Seleção automática
+não a torna orientação <em>always-on</em> nem substitui o contexto persistente do CLAUDE.md.</p>
+<p>Para controle de execução, o Claude Code oferece mecanismos distintos. Regras de permissão e hooks ficam nos
+arquivos de settings (usuário <code>~/.claude/settings.json</code>, projeto <code>.claude/settings.json</code>
+versionado, local <code>.claude/settings.local.json</code>):</p>
 <ul>
-  <li><strong>Regras de permissão</strong> (<code>permissions.deny</code> / <code>ask</code> / <code>allow</code>):
-      avaliadas na ordem <strong>deny → ask → allow</strong> — um <code>deny</code> vence qualquer <code>allow</code>.
-      Entre arquivos, a precedência é managed &gt; linha de comando &gt; local &gt; projeto &gt; usuário, e as listas
-      de regras se <em>somam</em> entre eles em vez de uma substituir a outra.</li>
-  <li><strong>Hooks</strong> (ação determinística num evento, ex.: validar o comando antes de rodar, formatar depois
-      de editar): também se configuram no <code>settings.json</code> — e ainda em plugins e no frontmatter de skills
-      e de subagents.</li>
+  <li><strong>Regras de permissão</strong> (<code>settings.permissions</code> com <code>allow</code> / <code>ask</code> /
+      <code>deny</code>): permitem, pedem aprovação ou bloqueiam alvos como tools, comandos e paths. São avaliadas na
+      ordem <strong>deny → ask → allow</strong> — um <code>deny</code> vence qualquer <code>allow</code>. Entre arquivos,
+      a precedência é managed &gt; linha de comando &gt; local &gt; projeto &gt; usuário, e as listas de regras se
+      <em>somam</em> entre eles em vez de uma substituir a outra.</li>
+  <li><strong>Hooks de comando</strong>: executam código em eventos — por exemplo, validar ou bloquear uma ação antes
+      de ela ocorrer, ou formatar e verificar estilo depois de uma edição. Também podem vir de plugins e do frontmatter
+      de skills e subagents.</li>
+  <li><strong>Permission modes</strong>: controlam o nível geral de <strong>autonomia e aprovação</strong> da sessão.
+      Não são uma regra <code>allow/ask/deny</code> para um alvo específico nem uma verificação executada em um evento.</li>
 </ul>
 <pre><code>// .claude/settings.json  (commitado: vale para o time todo)
 {
@@ -215,25 +231,32 @@ exigência é "isso <em>nunca</em> pode acontecer", o mecanismo é outro e fica 
     "deny": ["Read(**/.env)", "Read(./secrets/**)", "Bash(terraform apply:*)"]
   }
 }</code></pre>
-<p>Regra de bolso: <em>o que o Claude deve saber ou considerar vai no CLAUDE.md/rules; o que não pode acontecer
-de jeito nenhum, decida o modelo o que decidir, vai num <code>deny</code> do settings.json ou num hook. O inverso
-também vale: convenção de estilo ou de nomes não cabe em <code>deny</code> nem em hook — não há comando para
-bloquear; ela é orientação e mora no CLAUDE.md. E o deny tem alcance: cobre as tools nativas e os comandos que o
-Claude Code reconhece (<code>cat</code>, <code>head</code>, redirecionamentos), não um script Python ou Node que abre o
-arquivo por conta própria — bloqueio no nível do sistema operacional pede o sandbox.</em></p>
+<p>Regra de bolso: <em>o que o Claude deve saber ou considerar vai no CLAUDE.md/rules; um procedimento reutilizável
+sob demanda vai numa Skill; permissão por alvo vai em <code>settings.permissions</code>; ação ou verificação em evento
+vai num hook de comando; autonomia geral vai no permission mode. Convenção de estilo ou de nomes pode ser orientação
+em CLAUDE.md/rules, mas, se houver um critério executável, um hook de comando também pode validar, formatar ou bloquear
+em um evento. O <code>deny</code> tem alcance: cobre as tools nativas e os comandos que o Claude Code reconhece
+(<code>cat</code>, <code>head</code>, redirecionamentos), não um script Python ou Node que abre o arquivo por conta
+própria — bloqueio no nível do sistema operacional pede o sandbox.</em></p>
 <p>Detalhe de sintaxe: <code>Read(./.env)</code> casa só com o <code>.env</code> do diretório atual; para todos os
 <code>.env</code> do repositório, use <code>Read(**/.env)</code>.</p>
 <table class="gloss">
   <tr><th>Situação</th><th>Mecanismo certo</th></tr>
   <tr><td>Preferência pessoal sua, todos os projetos</td><td><code>~/.claude/CLAUDE.md</code> (não versionado — nunca para regras do time)</td></tr>
-  <tr><td>Padrão universal do projeto, time inteiro</td><td><code>CLAUDE.md</code> na raiz ou <code>.claude/CLAUDE.md</code> (commitado)</td></tr>
+  <tr><td><strong>Contexto persistente</strong> do projeto, para o time inteiro</td><td><code>CLAUDE.md</code> na raiz ou <code>.claude/CLAUDE.md</code> (commitado)</td></tr>
   <tr><td>Convenção de um subdiretório específico</td><td><code>CLAUDE.md</code> naquele subdiretório</td></tr>
   <tr><td>CLAUDE.md gigante demais</td><td>Quebrar em <code>.claude/rules/*.md</code> e/ou <code>@import</code> (organização); para cortar contexto, <code>paths:</code> com glob nas rules específicas</td></tr>
-  <tr><td>Convenção por tipo de arquivo, espalhado pelo repo</td><td><code>.claude/rules/</code> com <code>paths:</code> glob no frontmatter</td></tr>
-  <tr><td>Comportamento inconsistente entre sessões</td><td><code>/memory</code> para ver o que está carregado</td></tr>
-  <tr><td>Bloquear sempre um comando ou arquivo (garantia, não orientação)</td><td>Regra <code>deny</code> em <code>permissions</code> no <code>.claude/settings.json</code> (ou hook)</td></tr>
-  <tr><td>Ação automática em todo evento (ex.: formatar após cada edição)</td><td>Hook configurado no <code>settings.json</code></td></tr>
+  <tr><td><strong>Orientação por path</strong> ou tipo de arquivo, espalhada pelo repo</td><td><code>.claude/rules/</code> com <code>paths:</code> glob no frontmatter</td></tr>
+  <tr><td><strong>Procedimento reutilizável</strong> necessário apenas sob demanda</td><td><strong>Skill</strong>, invocada explicitamente ou carregada por relevância; não é orientação always-on</td></tr>
+  <tr><td>Verificar memórias carregadas no início da sessão</td><td><code>/context</code>, seção Memory files; arquivos sob demanda exigem reproduzir o acesso correspondente</td></tr>
+  <tr><td>Localizar, abrir ou editar arquivos de memória</td><td><code>/memory</code>; não usar como inventário do que está carregado</td></tr>
+  <tr><td>Permitir, pedir aprovação ou negar uma tool, comando ou path</td><td><code>settings.permissions</code> com <code>allow</code>, <code>ask</code> ou <code>deny</code></td></tr>
+  <tr><td><strong>Ação ou verificação em evento</strong> (ex.: formatar ou checar estilo após edição)</td><td><strong>Hook de comando</strong> configurado no <code>settings.json</code></td></tr>
+  <tr><td>Ajustar a <strong>autonomia/aprovação</strong> geral da sessão</td><td><strong>Permission mode</strong>, sem confundir com regras para alvos específicos</td></tr>
 </table>
+<p><strong>Fronteiras com as outras aulas:</strong> aqui o objetivo é escolher o mecanismo. A Aula 3 aprofunda hooks
+do Agent SDK; os hooks desta seção são <strong>hooks de comando do Claude Code</strong>. A Aula 7 detalha
+<code>SKILL.md</code>, frontmatter, comandos e plan mode; não é preciso repetir essa implementação para decidir o mapa acima.</p>
 
 <h2>5. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
 <table class="gloss">
@@ -246,21 +269,28 @@ arquivo por conta própria — bloqueio no nível do sistema operacional pede o 
   <tr><td class="en">YAML frontmatter</td><td>bloco de metadados --- no topo do arquivo</td><td class="uso">"rule files with YAML frontmatter specifying glob patterns"</td></tr>
   <tr><td class="en">paths field</td><td>campo do frontmatter com globs de ativação</td><td class="uso">“paths: ["**/*.test.tsx"] loads the rule conditionally”</td></tr>
   <tr><td class="en">glob pattern</td><td>padrão de correspondência de caminhos (**, *)</td><td class="uso">"glob patterns apply conventions to files by type regardless of directory location"</td></tr>
-  <tr><td class="en">conditional loading</td><td>carregamento só ao editar arquivo que dá match</td><td class="uso">"path-scoped rules load only when editing matching files"</td></tr>
-  <tr><td class="en">/memory</td><td>comando que lista os arquivos de memória carregados</td><td class="uso">"use /memory to verify which memory files are loaded"</td></tr>
+  <tr><td class="en">conditional loading</td><td>carregamento ao trabalhar com arquivo que dá match, inclusive leitura</td><td class="uso">"path-scoped rules load for matching Read, Write, Edit, and recognized Bash reads"</td></tr>
+  <tr><td class="en">probabilistic adherence</td><td>aderência do modelo à instrução não garantida, mesmo com carregamento por path determinístico</td><td class="uso">"deterministic path-based loading does not guarantee instruction adherence"</td></tr>
+  <tr><td class="en">/memory</td><td>comando que lista localizações e permite abrir/editar memórias</td><td class="uso">"use /memory to locate and edit memory files, not to inspect everything loaded"</td></tr>
+  <tr><td class="en">/context</td><td>comando para verificar CLAUDE.md/rules carregados no início</td><td class="uso">"use /context to check memory files loaded at launch; on-demand files need a matching access"</td></tr>
   <tr><td class="en">directory-bound</td><td>preso ao diretório (limitação do CLAUDE.md de subpasta)</td><td class="uso">"CLAUDE.md files are directory-bound and can't handle files spread across many directories"</td></tr>
-  <tr><td class="en">settings permissions (deny rule)</td><td>regra de permissão no settings.json que bloqueia tool, comando ou arquivo</td><td class="uso">"add a deny rule to .claude/settings.json so the command is blocked for everyone"</td></tr>
+  <tr><td class="en">Skill</td><td>procedimento reutilizável sob demanda, invocado ou carregado automaticamente por relevância</td><td class="uso">"use a skill for a reusable task procedure; skills are not always-on guidance"</td></tr>
+  <tr><td class="en">settings.permissions (allow / ask / deny)</td><td>regras que permitem, pedem aprovação ou bloqueiam tool, comando ou path</td><td class="uso">"configure allow, ask, or deny rules under settings.permissions"</td></tr>
+  <tr><td class="en">command hook</td><td>comando executado em evento para agir, validar, formatar ou bloquear</td><td class="uso">"use a command hook to validate naming or format files at a lifecycle event"</td></tr>
+  <tr><td class="en">permission mode</td><td>modo que controla autonomia e aprovação gerais da sessão</td><td class="uso">"choose a permission mode for overall autonomy, not a target-specific permission rule"</td></tr>
   <tr><td class="en">version control (VCS)</td><td>controle de versão (git)</td><td class="uso">"shared via version control"</td></tr>
 </table>
 
 <div class="card pegadinha">
   <h3>⚠️ Pegadinha do dia</h3>
   <p>Questões de configuração adoram o distrator "consolide tudo no CLAUDE.md raiz e deixe o Claude
-  inferir qual seção se aplica". Inferência não é garantia: é o remendo probabilístico onde se pede
-  aplicação <strong>determinística</strong> por path. Também aparece muito o distrator "instruções no
-  <code>~/.claude/CLAUDE.md</code>" para regras de time — arquivo de usuário não viaja pelo git.
-  Regra de bolso: <em>convenção de time vai no que é versionado; convenção por tipo de arquivo vai em
-  .claude/rules/ com glob; e antes de reescrever configuração, rode /memory para ver o que está carregado.</em></p>
+  inferir qual seção se aplica". A seleção/carregamento de uma rule por path pode ser <strong>determinística</strong>,
+  mas a aderência à instrução continua probabilística; enforcement exige outro mecanismo. Também aparece muito o
+  distrator "instruções no <code>~/.claude/CLAUDE.md</code>" para regras de time — arquivo de usuário não viaja pelo git.</p>
+  <p>Não trate Skill como sinônimo de invocação manual: ela também pode ser carregada por relevância, mas continua
+  sob demanda, não always-on. Estilo e nomes podem ser orientação em CLAUDE.md/rules <em>ou</em> verificação/formatação/
+  bloqueio em hook de comando quando houver critério executável. No diagnóstico, <code>/context</code> verifica o início
+  da sessão; <code>/memory</code> localiza e edita memórias; arquivos sob demanda exigem reproduzir o acesso correspondente.</p>
 </div>
 
 <h2>6. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
@@ -291,7 +321,7 @@ arquivo por conta própria — bloqueio no nível do sistema operacional pede o 
     <label class="opt"><input type="radio" name="q2" value="d">D. Move the file to ~/.claude/CLAUDE.md so that it stops weighing on the repository and loads only once for each user.<div class="pt">Mover o arquivo para ~/.claude/CLAUDE.md para que ele deixe de pesar no repositório e carregue só uma vez para cada usuário.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: B.</strong> O Exam Guide prescreve exatamente isso: quebrar o CLAUDE.md monolítico em arquivos focados por tópico em <code>.claude/rules/</code> — organização mantível, e ainda prepara o terreno para escopo por glob. Sem <code>paths</code> no frontmatter, as rules continuam carregando em toda sessão; o corte de contexto vem quando os arquivos específicos ganham <code>paths</code> (TS 3.3). A remove a aplicação automática: skill é invocação sob demanda, não padrão sempre carregado. C perde detalhes normativos na compressão e mantém o monólito. D torna as regras invisíveis para o time (user-level não é versionado).<span class="ts">Domínio 3 · TS 3.1 — Hierarquia e organização do CLAUDE.md</span></div>
+  <div class="feedback"><strong>Gabarito: B.</strong> O Exam Guide prescreve exatamente isso: quebrar o CLAUDE.md monolítico em arquivos focados por tópico em <code>.claude/rules/</code> — organização mantível, e ainda prepara o terreno para escopo por glob. Sem <code>paths</code> no frontmatter, as rules continuam carregando em toda sessão; o corte de contexto vem quando os arquivos específicos ganham <code>paths</code> (TS 3.3). A remove o contexto persistente: Skill é procedimento sob demanda — mesmo quando carregada automaticamente por relevância, não é orientação always-on. C perde detalhes normativos na compressão e mantém o monólito. D torna as regras invisíveis para o time (user-level não é versionado).<span class="ts">Domínio 3 · TS 3.1 — Hierarquia e organização do CLAUDE.md</span></div>
 </div>
 
 <div class="q" data-correct="a" data-ts="3.1" data-dom="3">
@@ -302,10 +332,10 @@ arquivo por conta própria — bloqueio no nível do sistema operacional pede o 
     <label class="opt"><input type="radio" name="q3" value="a">A. Keep each package's CLAUDE.md short and @import the shared API standards plus that package's own domain standards.<div class="pt">Manter o CLAUDE.md de cada pacote curto e usar @import para os padrões de API compartilhados mais os padrões de domínio daquele pacote.</div></label>
     <label class="opt"><input type="radio" name="q3" value="b">B. Copy the full text of every standards document into each package's CLAUDE.md so that nothing can be missed.<div class="pt">Copiar o texto completo de cada documento de padrões no CLAUDE.md de cada pacote, para que nada fique de fora.</div></label>
     <label class="opt"><input type="radio" name="q3" value="c">C. Put the standards of every package in the root CLAUDE.md and rely on Claude to apply the ones that fit each package.<div class="pt">Colocar os padrões de todos os pacotes no CLAUDE.md raiz e confiar no Claude para aplicar os que servem a cada pacote.</div></label>
-    <label class="opt"><input type="radio" name="q3" value="d">D. Create one skill per standards document and require developers to invoke the right ones before each code change.<div class="pt">Criar uma skill por documento de padrões e exigir que os devs invoquem as certas antes de cada alteração de código.</div></label>
+    <label class="opt"><input type="radio" name="q3" value="d">D. Create one skill per standards document and rely on explicit or relevance-based skill loading instead of persistent package context.<div class="pt">Criar uma skill por documento de padrões e confiar no carregamento explícito ou por relevância das skills em vez do contexto persistente do pacote.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: A.</strong> É o caso de uso que o guide cita para <code>@import</code>: incluir seletivamente os standards relevantes em cada CLAUDE.md de pacote, sem duplicar conteúdo e deixando cada time manter seu arquivo-fonte. B duplica texto (diverge na primeira atualização). C volta ao monólito e depende de inferência. D troca carregamento automático por disciplina manual — convenção obrigatória não pode depender de lembrar de invocar.<span class="ts">Domínio 3 · TS 3.1 — Hierarquia e organização do CLAUDE.md</span></div>
+  <div class="feedback"><strong>Gabarito: A.</strong> É o caso de uso que o guide cita para <code>@import</code>: incluir seletivamente os standards relevantes em cada CLAUDE.md de pacote, sem duplicar conteúdo e deixando cada time manter seu arquivo-fonte. B duplica texto (diverge na primeira atualização). C volta ao monólito e depende de inferência. D troca contexto persistente por procedimentos sob demanda: mesmo com seleção automática por relevância, Skills não são orientação always-on nem garantem o escopo persistente de cada pacote.<span class="ts">Domínio 3 · TS 3.1 — Hierarquia e organização do CLAUDE.md</span></div>
 </div>
 
 <div class="q" data-correct="b,d" data-ts="3.3" data-dom="3">
@@ -316,25 +346,25 @@ arquivo por conta própria — bloqueio no nível do sistema operacional pede o 
     <label class="opt"><input type="checkbox" name="q4" value="a">A. The rule overrides any conflicting instruction in CLAUDE.md, so the testing conventions always take precedence.<div class="pt">A regra sobrescreve qualquer instrução conflitante do CLAUDE.md, então as convenções de teste sempre têm prioridade.</div></label>
     <label class="opt"><input type="checkbox" name="q4" value="b">B. The glob matches by file path, so the convention follows the file type in whichever directory the test lives.<div class="pt">O glob casa pelo caminho do arquivo, então a convenção segue o tipo de arquivo em qualquer diretório em que o teste esteja.</div></label>
     <label class="opt"><input type="checkbox" name="q4" value="c">C. The rule runs as a pre-commit check, so test files that break the conventions cannot be committed at all.<div class="pt">A regra roda como checagem de pre-commit, então arquivos de teste que quebram as convenções nem podem ser commitados.</div></label>
-    <label class="opt"><input type="checkbox" name="q4" value="d">D. The rule loads only when Claude edits a matching file, which keeps it out of context during unrelated work.<div class="pt">A regra só carrega quando o Claude edita um arquivo que dá match, o que a mantém fora do contexto no trabalho não relacionado.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="d">D. The rule loads when Claude works with a matching file — through Read, Write, Edit, or a recognized Bash read — and stays out of unrelated work.<div class="pt">A regra carrega quando o Claude trabalha com um arquivo que dá match — via Read, Write, Edit ou leitura reconhecida via Bash — e fica fora do trabalho não relacionado.</div></label>
     <label class="opt"><input type="checkbox" name="q4" value="e">E. Each developer can switch the rule on or off locally without touching the version-controlled configuration.<div class="pt">Cada dev pode ligar ou desligar a regra localmente sem mexer na configuração versionada.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: B e D.</strong> São os dois pilares do Task Statement 3.3: o glob casa pelo caminho e cobre arquivos espalhados — onde o CLAUDE.md de diretório falha por ser directory-bound (B) — e o carregamento condicional economiza contexto (D). A inventa uma regra de precedência que o guide não descreve: o ganho da rule é escopo, não prioridade. C descreve enforcement por execução — rules são contexto/instrução, não código que bloqueia commit (isso seria território de hooks ou CI, outro mecanismo). E também não é propriedade das rules: elas são versionadas justamente para valerem igual para o time inteiro.<span class="ts">Domínio 3 · TS 3.3 — Rules por caminho (glob)</span></div>
+  <div class="feedback"><strong>Gabarito: B e D.</strong> O glob casa pelo caminho e cobre arquivos espalhados, onde o CLAUDE.md de diretório falha por ser directory-bound (B). O carregamento condicional economiza contexto e ocorre também na leitura, não somente na edição (D). A seleção pelo path pode ser determinística, mas a aderência às convenções continua probabilística. A inventa precedência e aderência garantida; o ganho da rule é escopo, não prioridade ou enforcement. C descreve execução de checagem — rules são contexto, não código que bloqueia commit (isso seria território de hooks ou CI). E não é propriedade das rules versionadas do time.<span class="ts">Domínio 3 · TS 3.3 — Rules por caminho (glob)</span></div>
 </div>
 
 <div class="q" data-correct="d" data-ts="3.1" data-dom="3">
   <div class="qnum">Questão 5 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
-  <div class="stem">A colleague complains that Claude behaves inconsistently between sessions: sometimes it follows the API conventions, sometimes it ignores them. Before rewriting any configuration, what is the correct first diagnostic step?</div>
-  <div class="pt-block pt">Um colega reclama que o Claude se comporta de forma inconsistente entre sessões: às vezes segue as convenções de API, às vezes ignora. Antes de reescrever qualquer configuração, qual é o primeiro passo de diagnóstico correto?</div>
+  <div class="stem">A colleague reports inconsistent adherence to conventions stored in a project CLAUDE.md and path-scoped rules. Before rewriting anything, which diagnostic approach correctly distinguishes startup loading, file locations, and on-demand loading?</div>
+  <div class="pt-block pt">Um colega relata aderência inconsistente a convenções guardadas num CLAUDE.md do projeto e em rules com escopo por path. Antes de reescrever qualquer coisa, qual abordagem de diagnóstico distingue corretamente carregamento inicial, localizações de arquivos e carregamento sob demanda?</div>
   <div class="opts">
-    <label class="opt"><input type="radio" name="q5" value="a">A. Search the repository for the word "convention" to find where the instructions might be duplicated or contradicted.<div class="pt">Buscar no repositório a palavra "convention" para achar onde as instruções podem estar duplicadas ou contraditórias.</div></label>
-    <label class="opt"><input type="radio" name="q5" value="b">B. Reinstall Claude Code to clear any corrupted configuration cache that might be dropping the conventions.<div class="pt">Reinstalar o Claude Code para limpar algum cache de configuração corrompido que possa estar descartando as convenções.</div></label>
-    <label class="opt"><input type="radio" name="q5" value="c">C. Ask Claude at the start of each session which rules it remembers, and treat its answer as the loaded configuration.<div class="pt">Perguntar ao Claude, no início de cada sessão, quais regras ele lembra, e tratar a resposta como a configuração carregada.</div></label>
-    <label class="opt"><input type="radio" name="q5" value="d">D. Run /memory to see which memory files are actually loaded in the session and compare them with what you expect.<div class="pt">Rodar /memory para ver quais arquivos de memória estão de fato carregados na sessão e comparar com o que você espera.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="a">A. Search the repository for the word "convention" and treat every match as a file loaded into the current session.<div class="pt">Buscar no repositório a palavra "convention" e tratar cada ocorrência como um arquivo carregado na sessão atual.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. Reinstall Claude Code to clear the corrupted configuration cache that must be dropping the conventions.<div class="pt">Reinstalar o Claude Code para limpar o cache de configuração corrompido que certamente está descartando as convenções.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. Ask Claude which rules it remembers and treat the answer as a complete inventory of loaded and on-demand files.<div class="pt">Perguntar ao Claude quais regras ele lembra e tratar a resposta como inventário completo dos arquivos carregados e sob demanda.</div></label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. Use /context for CLAUDE.md/rules loaded at launch and /memory to locate and open memories; reproduce a matching file access for on-demand rules, using InstructionsLoaded for detailed load logging when needed.<div class="pt">Usar /context para CLAUDE.md/rules carregados no início e /memory para localizar e abrir memórias; reproduzir um acesso a arquivo que dá match para rules sob demanda, usando InstructionsLoaded para log detalhado quando necessário.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: D.</strong> O guide lista <code>/memory</code> como a ferramenta para verificar quais arquivos estão carregados e diagnosticar comportamento inconsistente entre sessões — diagnóstico antes de reescrita. A busca texto solto sem mostrar o que a sessão carregou. B é superstição: não existe "cache corrompido" de CLAUDE.md nesse modelo. C confia em auto-relato do modelo em vez da fonte estrutural de verdade.<span class="ts">Domínio 3 · TS 3.1 — Hierarquia e organização do CLAUDE.md</span></div>
+  <div class="feedback"><strong>Gabarito: D.</strong> <code>/context</code> verifica os arquivos carregados no início; <code>/memory</code> lista localizações e permite abrir/editar memórias. Uma rule por path exige trabalhar com um arquivo correspondente, e <code>InstructionsLoaded</code> pode registrar o carregamento, o momento e o motivo. Não se deve prometer que o <code>/context</code> inicial liste tudo o que poderá carregar depois. A confunde texto presente no disco com contexto carregado. B inventa uma causa sem evidência. C confia em autorrelato e ainda ignora o carregamento sob demanda.<span class="ts">Domínio 3 · TS 3.1 — Diagnóstico de memórias e rules</span></div>
 </div>
 
 <div class="q" data-correct="c" data-ts="3.1" data-dom="3">
@@ -345,10 +375,102 @@ arquivo por conta própria — bloqueio no nível do sistema operacional pede o 
     <label class="opt"><input type="radio" name="q6" value="a">A. Move the rule to the top of CLAUDE.md in capital letters, so that it is the first instruction of every session.<div class="pt">Mover a regra para o topo do CLAUDE.md em letras maiúsculas, para ela ser a primeira instrução de toda sessão.</div></label>
     <label class="opt"><input type="radio" name="q6" value="b">B. Add the rule to each engineer's ~/.claude/CLAUDE.md, so that it applies in every project they open.<div class="pt">Adicionar a regra ao ~/.claude/CLAUDE.md de cada engenheiro, para ela valer em todo projeto que abrirem.</div></label>
     <label class="opt"><input type="radio" name="q6" value="c">C. Add deny rules for the .env reads and the terraform apply command to the committed .claude/settings.json.<div class="pt">Adicionar regras deny para a leitura dos .env e para o comando terraform apply no .claude/settings.json commitado.</div></label>
-    <label class="opt"><input type="radio" name="q6" value="d">D. Create a .claude/rules/ file with paths: ["**/*.tf"] that repeats the ban whenever Terraform files are edited.<div class="pt">Criar um arquivo em .claude/rules/ com paths: ["**/*.tf"] que repete a proibição sempre que arquivos Terraform forem editados.</div></label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. Create a .claude/rules/ file with paths: ["**/*.tf"] that repeats the ban whenever Terraform files are read or edited.<div class="pt">Criar um arquivo em .claude/rules/ com paths: ["**/*.tf"] que repete a proibição sempre que arquivos Terraform forem lidos ou editados.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: C.</strong> "Nunca" pede garantia, e CLAUDE.md é orientação: o modelo lê e costuma seguir, mas já mostrou que pode não seguir. Uma regra <code>deny</code> em <code>permissions</code> é aplicada pelo próprio Claude Code antes da tool rodar, vence qualquer <code>allow</code> e, no <code>.claude/settings.json</code> versionado, chega ao time inteiro pelo git (o deny cobre as tools e os comandos que o Claude Code reconhece; leitura indireta por um script próprio pede o sandbox). A é o mesmo mecanismo probabilístico com mais ênfase. B usa um arquivo pessoal que não viaja pelo VCS e continua sendo orientação. D carrega a regra só ao editar <code>.tf</code> — o <code>terraform apply</code> é um comando, não uma edição — e ainda é contexto, não bloqueio.<span class="ts">Domínio 3 · TS 3.1 — Hierarquia e organização do CLAUDE.md</span></div>
+  <div class="feedback"><strong>Gabarito: C.</strong> "Nunca" pede garantia, e CLAUDE.md é orientação: o modelo lê e costuma seguir, mas já mostrou que pode não seguir. Uma regra <code>deny</code> em <code>settings.permissions</code> é aplicada pelo próprio Claude Code antes da tool rodar, vence qualquer <code>allow</code> e, no <code>.claude/settings.json</code> versionado, chega ao time inteiro pelo git (o deny cobre as tools e os comandos que o Claude Code reconhece; leitura indireta por um script próprio pede o sandbox). A é o mesmo mecanismo probabilístico com mais ênfase. B usa um arquivo pessoal que não viaja pelo VCS e continua sendo orientação. D carrega contexto ao trabalhar com <code>.tf</code>, mas o <code>terraform apply</code> é um comando e a rule continua sendo orientação, não bloqueio.<span class="ts">Domínio 3 · TS 3.1 — Orientação e settings.permissions</span></div>
+</div>
+
+<div class="card objetivo">
+  <p><strong>Transfer exercise.</strong> For each of Questions 7–12, write your justification before answering:
+  the primary mechanism, the guarantee it actually provides, and why each alternative does not fit. Do not answer by keyword recognition alone.</p>
+  <p class="pt"><strong>Exercício de transferência.</strong> Em cada uma das Questões 7–12, escreva sua justificativa
+  antes de responder: mecanismo principal, garantia que ele realmente oferece e por que cada alternativa não se encaixa.
+  Não responda apenas por reconhecimento de palavras-chave.</p>
+</div>
+
+<div class="q" data-correct="b" data-ts="3.1" data-dom="3">
+  <div class="qnum">Questão 7 · transferência — múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">Every developer needs the same short set of architecture decisions and build/test commands available in every session, regardless of the file or task. The content is guidance, not an executable gate. Which mechanism is the best primary choice?</div>
+  <div class="pt-block pt">Todo dev precisa do mesmo conjunto curto de decisões de arquitetura e comandos de build/teste disponível em toda sessão, independentemente do arquivo ou da tarefa. O conteúdo é orientação, não um gate executável. Qual é o melhor mecanismo principal?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q7" value="a">A. A reusable skill that loads only for relevant tasks.<div class="pt">Uma skill reutilizável que carrega apenas em tarefas relevantes.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="b">B. The versioned project CLAUDE.md.<div class="pt">O CLAUDE.md do projeto, versionado.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="c">C. A rule with paths limited to *.ts files.<div class="pt">Uma rule com paths limitado a arquivos *.ts.</div></label>
+    <label class="opt"><input type="radio" name="q7" value="d">D. A command hook that runs after each edit.<div class="pt">Um hook de comando que roda depois de cada edição.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Contexto compartilhado e persistente pede CLAUDE.md do projeto: ele é versionado e carregado para o trabalho geral, embora sua aderência continue probabilística. A é sob demanda, não persistente. C restringe indevidamente a arquivos <code>.ts</code>. D executa uma ação em evento; não é o mecanismo para manter orientação geral no contexto.<span class="ts">Domínio 3 · TS 3.1 — Contexto persistente com CLAUDE.md</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="3.3" data-dom="3">
+  <div class="qnum">Questão 8 · transferência — múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">Schema-authoring conventions must be available whenever Claude reads or writes any *.schema.json file across the repository, but not during unrelated work. The team wants scoped guidance, not a blocking validator. Which mechanism fits best?</div>
+  <div class="pt-block pt">Convenções de autoria de schemas devem estar disponíveis sempre que o Claude ler ou escrever qualquer arquivo *.schema.json no repositório, mas não durante trabalho não relacionado. O time quer orientação com escopo, não um validador bloqueante. Qual mecanismo se encaixa melhor?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q8" value="a">A. Put all schema conventions in the always-loaded root CLAUDE.md.<div class="pt">Colocar todas as convenções de schema no CLAUDE.md raiz, sempre carregado.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="b">B. Put them in a skill and rely on task-level relevance to select the file type.<div class="pt">Colocá-las numa skill e confiar na relevância da tarefa para selecionar o tipo de arquivo.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="c">C. Use .claude/rules/ with paths: ["**/*.schema.json"].<div class="pt">Usar .claude/rules/ com paths: ["**/*.schema.json"].</div></label>
+    <label class="opt"><input type="radio" name="q8" value="d">D. Change the session's permission mode.<div class="pt">Mudar o permission mode da sessão.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Orientação por path, inclusive em leituras e escritas, é o caso de rule com <code>paths</code>: o glob cobre o tipo de arquivo em qualquer diretório e evita o custo em trabalho não relacionado. A desperdiça contexto always-on. B seleciona por procedimento/relevância, não pelo path do arquivo. D muda autonomia, não fornece orientação. A seleção pelo glob pode ser determinística, mas, como o enunciado não pede bloqueio, a aderência do modelo permanece probabilística.<span class="ts">Domínio 3 · TS 3.3 — Orientação por path com rules</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="3.2" data-dom="3">
+  <div class="qnum">Questão 9 · transferência — múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">The team has a reusable, multi-step dependency-audit procedure. It should be available for explicit invocation and automatic selection when relevant to a task, without occupying every session as general guidance. Which mechanism should the team choose?</div>
+  <div class="pt-block pt">O time tem um procedimento reutilizável de auditoria de dependências com várias etapas. Ele deve ficar disponível para invocação explícita e seleção automática quando relevante para uma tarefa, sem ocupar toda sessão como orientação geral. Qual mecanismo o time deve escolher?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q9" value="a">A. A project skill containing the reusable procedure.<div class="pt">Uma skill de projeto contendo o procedimento reutilizável.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="b">B. The project CLAUDE.md, because skills only work when manually invoked.<div class="pt">O CLAUDE.md do projeto, porque skills só funcionam quando invocadas manualmente.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="c">C. A path-scoped rule for every source file in the repository.<div class="pt">Uma rule com escopo por path para todo arquivo-fonte do repositório.</div></label>
+    <label class="opt"><input type="radio" name="q9" value="d">D. An allow rule under settings.permissions.<div class="pt">Uma regra allow em settings.permissions.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> Procedimento reutilizável e sob demanda é o caso positivo de Skill. Ela pode ser invocada explicitamente ou carregada automaticamente por relevância; nenhuma das duas formas a transforma em orientação always-on. B usa a premissa falsa de que Skill é somente manual e ainda colocaria o procedimento em toda sessão. C fornece orientação condicionada a arquivos, não um procedimento de tarefa. D controla permissão para um alvo, não empacota um workflow.<span class="ts">Domínio 3 · TS 3.2 — Procedimento reutilizável com Skill</span></div>
+</div>
+
+<div class="q" data-correct="d" data-ts="3.2" data-dom="3">
+  <div class="qnum">Questão 10 · transferência — múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">For target-specific control, the team wants ordinary project reads allowed, git push to require approval, and terraform apply denied. No custom lifecycle logic is needed. Where do these three decisions belong?</div>
+  <div class="pt-block pt">Para controle por alvo, o time quer permitir leituras comuns do projeto, exigir aprovação para git push e negar terraform apply. Não é necessária lógica customizada de ciclo de vida. Onde essas três decisões pertencem?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q10" value="a">A. A single permission mode, because it encodes separate allow, ask, and deny targets.<div class="pt">Um único permission mode, porque ele codifica alvos allow, ask e deny separados.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="b">B. Three imperative sentences in CLAUDE.md.<div class="pt">Três frases imperativas no CLAUDE.md.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="c">C. A reusable skill for permission decisions.<div class="pt">Uma skill reutilizável para decisões de permissão.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="d">D. allow, ask, and deny rules under settings.permissions in the project settings.<div class="pt">Regras allow, ask e deny em settings.permissions nas configurações do projeto.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> Permitir, pedir aprovação e negar alvos específicos é exatamente o papel de <code>settings.permissions</code>, com avaliação <code>deny → ask → allow</code>. A confunde modo geral de autonomia com regras por alvo. B fornece orientação probabilística, não enforcement pelo Claude Code. C empacota procedimento, não substitui a decisão de permissão. Um hook seria indicado se houvesse lógica ou ação customizada em evento, o que o enunciado descarta explicitamente.<span class="ts">Domínio 3 · TS 3.2 — allow/ask/deny em settings.permissions</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="3.2" data-dom="3">
+  <div class="qnum">Questão 11 · transferência — múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">The team has executable style and naming checks: a formatter must run after successful edits, and a validator must be able to block a matching action before it executes. Both must run at their configured events without relying on the model remembering instructions. Which mechanism is required?</div>
+  <div class="pt-block pt">O time tem checagens executáveis de estilo e nomes: um formatador deve rodar após edições bem-sucedidas, e um validador deve poder bloquear uma ação correspondente antes da execução. Ambos devem rodar nos eventos configurados sem depender de o modelo lembrar instruções. Qual mecanismo é necessário?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q11" value="a">A. A CLAUDE.md rule stating that style and naming conventions are mandatory.<div class="pt">Uma regra no CLAUDE.md dizendo que as convenções de estilo e nomes são obrigatórias.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="b">B. A skill containing the formatting procedure for relevant tasks.<div class="pt">Uma skill contendo o procedimento de formatação para tarefas relevantes.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="c">C. Command hooks configured for the corresponding lifecycle events.<div class="pt">Hooks de comando configurados para os eventos de ciclo de vida correspondentes.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="d">D. A permission mode with a higher level of autonomy.<div class="pt">Um permission mode com nível maior de autonomia.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Ação ou verificação executável em evento é o caso positivo de hook de comando: formatar depois da edição e validar/bloquear antes de uma ação são dois usos válidos. Estilo e nomes <em>cabem</em> em hook quando há código para verificá-los ou aplicá-los. A oferece apenas orientação probabilística. B é sob demanda e depende de seleção/invocação, não de um evento garantido. D altera autonomia geral e não executa as checagens.<span class="ts">Domínio 3 · TS 3.2 — Ação e verificação em evento com hook de comando</span></div>
+</div>
+
+<div class="q" data-correct="b" data-ts="3.4" data-dom="3">
+  <div class="qnum">Questão 12 · transferência — múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">An operator wants to change the session's overall autonomy and approval posture, rather than configure allow/ask/deny for one target or run a command at an event. Which mechanism should the operator select?</div>
+  <div class="pt-block pt">Um operador quer mudar a postura geral de autonomia e aprovação da sessão, em vez de configurar allow/ask/deny para um alvo ou executar um comando num evento. Qual mecanismo o operador deve selecionar?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q12" value="a">A. A new settings.permissions rule for one command.<div class="pt">Uma nova regra em settings.permissions para um comando.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="b">B. The appropriate permission mode for the session.<div class="pt">O permission mode apropriado para a sessão.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="c">C. A command hook triggered after every edit.<div class="pt">Um hook de comando disparado depois de cada edição.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="d">D. A stronger instruction in the project CLAUDE.md.<div class="pt">Uma instrução mais forte no CLAUDE.md do projeto.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Autonomia e aprovação gerais da sessão são controladas pelo permission mode. A trata um alvo específico, não a postura geral. C executa código em um evento, o que o enunciado não pede. D continua sendo orientação ao modelo, não seleção do modo de permissão. A escolha entre plan mode e execução é detalhada na Aula 7; aqui basta reconhecer a fronteira entre modo geral, regra por alvo e hook.<span class="ts">Domínio 3 · TS 3.4 — Autonomia/aprovação com permission mode</span></div>
 </div>
 
 <div class="concluir">

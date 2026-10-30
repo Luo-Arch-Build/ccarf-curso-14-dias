@@ -120,15 +120,22 @@ latência?</strong></p>
       real, qualquer fluxo onde um humano (ou um pipeline) <em>espera parado</em> pelo resultado. Um check que pode
       levar até 24h destrói o fluxo de desenvolvimento</li>
 </ul>
-<p>Repare nos distratores clássicos: "migre tudo e faça polling de status" (polling não cria SLA), "adicione um
-timeout com fallback pra API real-time" (complexidade desnecessária quando a solução simples é casar cada API com
-seu caso de uso).</p>
+<p><strong>Polling do status é a forma normal de acompanhar a conclusão do batch</strong>: consulte o status e,
+quando ele terminar, recupere os resultados. Polling não reduz a janela de processamento, não cria SLA e não torna
+um workload bloqueante adequado para batch. Nos distratores clássicos, o erro de "migre tudo e faça polling de status"
+está em migrar o workflow bloqueante, não em acompanhar o batch por polling. "Adicione um timeout com fallback pra API
+real-time" também é complexidade desnecessária quando a solução simples é casar cada API com seu caso de uso.</p>
 
-<h3>Limitação estrutural: sem tool calling multi-turn dentro do batch</h3>
-<p>Um request de batch <strong>não suporta tool calling multi-turn</strong>: a API não executa tools no meio do
-request e devolve os resultados para o modelo continuar. Se seu workload precisa que o modelo chame tools e
-raciocine sobre os resultados (loop agêntico), isso tem que ser orquestrado por VOCÊ, fora do batch — ou o workload
-não é candidato a batch.</p>
+<h3>No recorte da prova: client tools sem multi-turn na mesma request</h3>
+<p>Para o gabarito esperado pelo Exam Guide, a restrição é sobre <strong>client tools executadas pela aplicação</strong>:
+na mesma request de batch, não há o ciclo em que o modelo emite <code>tool_use</code>, a aplicação executa a tool e
+devolve <code>tool_result</code> para o modelo continuar (<strong>multi-turn</strong>). Se o workload depende desse
+loop, ele precisa ser orquestrado fora do item de batch — ou não é candidato a batch nesse recorte.</p>
+<div class="card">
+  <strong>Prova × produto atual.</strong> Não transforme a regra em "batch não executa nenhuma tool". Server tools e
+  o agentic loop do produto atual são outro recorte; a distinção acima delimita o que o Exam Guide espera, sem
+  afirmar uma proibição genérica de tools no batch.
+</div>
 
 <h3>custom_id: a cola entre request e response</h3>
 <p>Os resultados de um batch podem vir <strong>fora de ordem</strong>. Cada request leva um <code>custom_id</code>
@@ -162,8 +169,9 @@ request ↔ response e identifica exatamente quais itens falharam.</p>
       <strong>só os itens que falharam</strong>.</li>
   <li><strong>Amostra antes do volume:</strong> refine o prompt num <strong>sample set</strong> pequeno (via API
       síncrona, iterando rápido) ANTES de submeter 10.000 documentos em batch. Um prompt ruim em batch significa
-      milhares de resultados ruins e resubmissões caras — a taxa de acerto de primeira (<em>first-pass success
-      rate</em>) é o que torna o batch realmente mais barato.</li>
+      milhares de resultados ruins e resubmissões caras. A amostra melhora a taxa de acerto de primeira
+      (<em>first-pass success rate</em>) e reduz retrabalho e custo total; o desconto tarifário de 50% do batch não
+      depende dessa taxa.</li>
 </ul>
 
 <h2>2. Review multi-instância e multi-pass (Task Statement 4.6)</h2>
@@ -238,10 +246,12 @@ cada finding vai.</em></p>
   <tr><td class="en">Message Batches API</td><td>API de batches de mensagens (assíncrona)</td><td class="uso">"the Message Batches API offers 50% cost savings"</td></tr>
   <tr><td class="en">24-hour processing window</td><td>janela de processamento de até 24h</td><td class="uso">"processing times up to 24 hours with no guaranteed latency SLA"</td></tr>
   <tr><td class="en">latency SLA</td><td>SLA (garantia) de latência</td><td class="uso">"unsuitable for workflows with strict latency requirements"</td></tr>
+  <tr><td class="en">batch status polling</td><td>consulta periódica ao status do batch</td><td class="uso">"poll the batch status to track completion; polling does not create a latency SLA"</td></tr>
   <tr><td class="en">non-blocking workload</td><td>carga de trabalho não-bloqueante</td><td class="uso">"appropriate for non-blocking, latency-tolerant workloads"</td></tr>
   <tr><td class="en">pre-merge check</td><td>verificação pré-merge (bloqueante)</td><td class="uso">"a blocking pre-merge check that must complete before developers can merge"</td></tr>
   <tr><td class="en">custom_id</td><td>ID customizado por request do batch</td><td class="uso">"batch results can be correlated using custom_id fields"</td></tr>
-  <tr><td class="en">first-pass success rate</td><td>taxa de acerto na primeira passada</td><td class="uso">"refine the prompt on a sample set to maximize first-pass success"</td></tr>
+  <tr><td class="en">client tool</td><td>tool executada pela aplicação</td><td class="uso">"no tool_result/multi-turn loop for a client tool within the same batch request"</td></tr>
+  <tr><td class="en">first-pass success rate</td><td>taxa de acerto na primeira passada</td><td class="uso">"refine the prompt on a sample set to reduce rework and total cost"; "the 50% batch discount does not depend on first-pass success"</td></tr>
   <tr><td class="en">self-review</td><td>auto-revisão (mesma sessão que gerou)</td><td class="uso">"self-review retains reasoning context from generation"</td></tr>
   <tr><td class="en">independent review instance</td><td>instância independente de revisão</td><td class="uso">"an independent instance without prior reasoning context"</td></tr>
   <tr><td class="en">attention dilution</td><td>diluição de atenção</td><td class="uso">"attention dilution when processing many files at once"</td></tr>
@@ -257,8 +267,9 @@ cada finding vai.</em></p>
   <h3>⚠️ Pegadinha do dia</h3>
   <p>O distrator mais comum dos dois temas é o <strong>"migra tudo / roda tudo de uma vez"</strong>: migrar TODOS os
   workflows pra batch por causa dos 50%, ou revisar TODOS os arquivos num passe único com um modelo mais caro.
-  Variações: "polling resolve a latência" (não cria SLA), "context window maior resolve atenção" (janela ≠ qualidade
-  de atenção), "self-review com extended thinking equivale a reviewer independente" (o contexto de raciocínio da
+  Variações: "polling resolve a latência" (polling é o acompanhamento normal, mas não cria SLA nem torna workload
+  bloqueante adequado), "context window maior resolve atenção" (janela ≠ qualidade de atenção), "self-review com
+  extended thinking equivale a reviewer independente" (o contexto de raciocínio da
   geração continua lá).
   Regra de bolso: <em>batch é decisão de latência, não de custo; review de qualidade é decisão de contexto limpo e
   foco, não de modelo maior ou mais esforço na mesma sessão.</em></p>
@@ -278,7 +289,7 @@ cada finding vai.</em></p>
     <label class="opt"><input type="radio" name="q1" value="d">D. Move both to batch and add a fallback that retries via the synchronous API if a batch has not finished within 30 minutes.<div class="pt">Migrar os dois para batch e adicionar um fallback que tenta de novo via API síncrona se um batch não terminar em 30 minutos.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: B.</strong> Batch = 50% de economia, mas janela de até 24h e SEM SLA de latência — perfeito pro resumo semanal (não-bloqueante), inaceitável pro gate de CI onde o dev espera parado. A está errada: polling não cria garantia de latência, o merge pode ficar travado por horas. C está errada: a correlação request/response existe e se chama <code>custom_id</code>. D está errada: é complexidade desnecessária — a solução proporcional é casar cada API com seu tipo de workflow. <span class="ts">Domínio 4 · TS 4.5 — Processamento em batch</span></div>
+  <div class="feedback"><strong>Gabarito: B.</strong> Batch = 50% de economia, mas janela de até 24h e SEM SLA de latência — perfeito pro resumo semanal (não-bloqueante), inaceitável pro gate de CI onde o dev espera parado. A está errada: polling é a forma normal de acompanhar a conclusão, mas não cria garantia de latência nem torna o gate bloqueante adequado para batch; o merge pode ficar travado por horas. C está errada: a correlação request/response existe e se chama <code>custom_id</code>. D está errada: é complexidade desnecessária — a solução proporcional é casar cada API com seu tipo de workflow. <span class="ts">Domínio 4 · TS 4.5 — Processamento em batch</span></div>
 </div>
 
 <div class="q" data-correct="a" data-ts="4.6" data-dom="4">
@@ -315,13 +326,13 @@ cada finding vai.</em></p>
   <div class="pt-block pt">Quais DUAS práticas melhoram os resultados ao implantar um workload grande na Message Batches API?</div>
   <div class="opts">
     <label class="opt"><input type="checkbox" name="q4" value="a">A. Refine the prompt on a small sample set via the synchronous API first, then submit the full volume as a batch.<div class="pt">Refinar o prompt num conjunto pequeno de amostra via API síncrona primeiro, e então submeter o volume completo em batch.</div></label>
-    <label class="opt"><input type="checkbox" name="q4" value="b">B. Design each batch item so the model calls tools mid-request and keeps reasoning over their results within that item.<div class="pt">Projetar cada item do batch para o modelo chamar tools no meio do request e seguir raciocinando sobre os resultados dentro do item.</div></label>
-    <label class="opt"><input type="checkbox" name="q4" value="c">C. Choose a submission frequency with headroom between the 24-hour worst case and the SLA (e.g., every 4 h for 30 h).<div class="pt">Escolher uma frequência de submissão com folga entre o pior caso de 24 horas e o SLA (ex.: a cada 4 h para 30 h).</div></label>
-    <label class="opt"><input type="checkbox" name="q4" value="d">D. Submit one batch a day; most batches finish well under 24 hours, so a 30-hour SLA is comfortably met.<div class="pt">Submeter um batch por dia; a maioria termina bem antes de 24 horas, então um SLA de 30 horas fica folgado.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="b">B. Design each batch item so the model calls an application-executed client tool and receives its tool_result to continue multi-turn within the same batch request.<div class="pt">Projetar cada item do batch para o modelo chamar uma client tool executada pela aplicação e receber o tool_result para continuar em multi-turn dentro da mesma request de batch.</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="c">C. Choose a submission interval that leaves headroom after allowing for the 24-hour worst case (e.g., every 4 h for a 30 h SLA: 4 + 24 = 28 h, preserving 2 h).<div class="pt">Escolher um intervalo de submissão que deixe folga depois de reservar o pior caso de 24 horas (ex.: a cada 4 h para um SLA de 30 h: 4 + 24 = 28 h, preservando 2 h).</div></label>
+    <label class="opt"><input type="checkbox" name="q4" value="d">D. For a 30-hour SLA, submit every 6 hours; since 6 + 24 = 30 hours, this preserves comfortable headroom.<div class="pt">Para um SLA de 30 horas, submeter a cada 6 horas; como 6 + 24 = 30 horas, isso preserva uma folga confortável.</div></label>
     <label class="opt"><input type="checkbox" name="q4" value="e">E. Match results to inputs by their position in the results file, so no per-request identifier is needed.<div class="pt">Casar resultados com entradas pela posição no arquivo de resultados, para não precisar de identificador por request.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: A e C.</strong> A: refinar o prompt numa amostra antes do volume maximiza a taxa de acerto de primeira e evita resubmissões caras de milhares de itens. C: sem SLA de latência, a frequência de submissão precisa de folga — 30h de SLA menos 24h de pior caso = janelas de no máximo 6h (a cada 4h sobra margem). B está errada: a Batch API NÃO suporta tool calling multi-turn dentro de um request — não existe executar tool no meio e continuar. D está errada: "geralmente termina antes" não é garantia; um documento que chega logo depois do envio do dia espera quase 24h pelo próximo batch e ainda pode levar mais 24h de processamento — 48h estouram o SLA de 30h. E está errada: os resultados podem vir fora de ordem; a correlação é pelo <code>custom_id</code>. <span class="ts">Domínio 4 · TS 4.5 — Processamento em batch</span></div>
+  <div class="feedback"><strong>Gabarito: A e C.</strong> A: refinar o prompt numa amostra antes do volume maximiza a taxa de acerto de primeira, reduz retrabalho e custo total; o desconto tarifário de 50% não depende dessa taxa. C: a frequência de submissão precisa deixar folga — a cada 4h, 4 + 24 = 28h, preservando 2h de margem num SLA de 30h. B está errada: no recorte da prova, não há retorno de <code>tool_result</code>/multi-turn dentro da mesma request para uma client tool executada pela aplicação; isso não significa "batch não executa nenhuma tool". D está errada: 6h é apenas o teto aritmético (6 + 24 = 30h), com zero folga, não uma frequência com margem. E está errada: os resultados podem vir fora de ordem; a correlação é pelo <code>custom_id</code>. <span class="ts">Domínio 4 · TS 4.5 — Processamento em batch</span></div>
 </div>
 
 <div class="q" data-correct="d" data-ts="4.6" data-dom="4">

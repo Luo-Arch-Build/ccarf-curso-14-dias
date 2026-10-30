@@ -203,26 +203,55 @@ chamado na hora certa mas fazendo outra coisa → tools e system prompt.</em></p
 <p>Esta é a regra mais testada do TS 1.3: <strong>subagents operam com contexto isolado</strong>. Eles não herdam
 automaticamente o histórico da conversa do coordinator <em>nem</em> compartilham memória entre invocações. Tudo que um
 subagent precisa saber tem que ir <strong>explicitamente no prompt</strong> da Task call.</p>
-<p>Consequência prática: quando o agent de síntese precisa dos achados da busca web e da análise de documentos,
-o coordinator coloca esses achados <strong>completos</strong> no prompt dele:</p>
+
+<h3>Handoff completo: contexto, contrato e retorno</h3>
+<p>Passar os findings é indispensável, mas um handoff autocontido também diz o que deve ser feito e como o resultado
+será avaliado. No <strong>prompt da Task call</strong>, deixe explícitos:</p>
+<ul>
+  <li><strong>Objetivo</strong> — a pergunta ou entrega que aquela invocação precisa resolver;</li>
+  <li><strong>Escopo e fronteiras</strong> — subtópicos, recorte e o que fica de fora ou pertence a outro agent;</li>
+  <li><strong>Contexto completo</strong> — findings integralmente transmitidos, com evidências e metadados de cada fonte (URL, documento, página e data, quando aplicáveis);</li>
+  <li><strong>Fontes e tools permitidas</strong> — o que pode ser consultado e quais restrições o papel impõe;</li>
+  <li><strong>Critérios de qualidade e conclusão</strong> — cobertura, atribuição e condições para considerar a tarefa terminada;</li>
+  <li><strong>Formato de saída</strong> — campos esperados para findings, fontes e status;</li>
+  <li><strong>Erros e lacunas</strong> — como relatar falhas, conflitos, dados ausentes e trabalho não concluído, sem escondê-los numa resposta aparentemente bem-sucedida.</li>
+</ul>
+<p>Veja o bom exemplo de passagem de contexto agora com o contrato completo. O coordinator coloca os achados da busca
+web e da análise de documentos <strong>completos</strong> no prompt do subagent de síntese:</p>
 <pre><code>// Coordinator montando o prompt do subagent de síntese
 const synthesisPrompt = `
-Tópico original: ${userQuery}
+OBJETIVO
+Responda à pergunta original: ${userQuery}
 
-ACHADOS DA BUSCA WEB (completos):
+ESCOPO E FRONTEIRAS
+Sintetize somente os achados fornecidos; não introduza temas ou fatos externos.
+
+FONTES E TOOLS PERMITIDAS
+Use exclusivamente as fontes abaixo. Não faça novas buscas; nenhuma tool é necessária.
+
+ACHADOS DA BUSCA WEB (completos, com evidências e metadados):
 ${JSON.stringify(webFindings, null, 2)}
 
-ANÁLISE DOS DOCUMENTOS (completa):
+ANÁLISE DOS DOCUMENTOS (completa, com evidências e metadados):
 ${JSON.stringify(docAnalysis, null, 2)}
 
-Sintetize um relatório preservando a atribuição de cada claim à sua fonte.`;</code></pre>
+CRITÉRIOS DE QUALIDADE E CONCLUSÃO
+Cubra todos os achados relevantes, preserve a atribuição claim→fonte e sinalize conflitos.
+Conclua somente quando cada finding tiver sido incorporado ou tiver uma exclusão justificada.
+
+FORMATO DE SAÍDA
+Retorne um objeto JSON com "claims" (texto, evidência e fonte), "conflicts" e "gaps".
+
+ERROS E LACUNAS
+Liste dados ausentes, fontes inacessíveis e qualquer parte não concluída; não improvise.`;</code></pre>
 <p>Se o subagent de síntese "esquece" o que a busca encontrou, a causa raiz não é o subagent — é o coordinator
 que não passou o contexto. E reinvocar "o mesmo" subagent esperando que ele lembre da invocação anterior não funciona:
 <strong>não há memória compartilhada entre invocações</strong>.</p>
 
 <h3>Formatos estruturados: separar conteúdo de metadados</h3>
-<p>Ao passar contexto entre agents, use estruturas que separam o <strong>conteúdo</strong> dos <strong>metadados</strong>
-(URL da fonte, nome do documento, número da página, data). É o que preserva a <strong>atribuição</strong> na síntese final:</p>
+<p>Ao passar contexto entre agents, prefira estruturas que separam o <strong>conteúdo</strong> dos <strong>metadados</strong>
+(URL da fonte, nome do documento, número da página, data). Esse pareamento torna a <strong>atribuição</strong> mais
+confiável e permite que o coordinator a verifique na síntese final:</p>
 <pre><code>{
   "claim": "Adoção de IA generativa em estúdios de jogos cresceu 40% em 2025",
   "evidence": "trecho literal do texto...",
@@ -231,8 +260,15 @@ que não passou o contexto. E reinvocar "o mesmo" subagent esperando que ele lem
   "page": 14,
   "published": "2025-11-02"
 }</code></pre>
-<p>Achados passados como prosa solta ("a pesquisa diz que...") perdem o mapeamento claim→fonte na primeira
-sumarização. Estrutura preserva; prosa dilui. (Esse tema volta com força no Domínio 5, provenance.)</p>
+<p>Prosa cuidadosa também pode manter referências, mas prosa solta ("a pesquisa diz que...") facilita perder ou misturar
+o mapeamento claim→fonte durante sumarizações. Campos estruturados reduzem essa ambiguidade e facilitam validação;
+não dispensam a conferência do resultado. (Esse tema volta com força no Domínio 5, provenance.)</p>
+
+<h3>Verificação pelo coordinator: retorno não é aceite automático</h3>
+<p>Depois de cada Task call, o coordinator confere se a saída segue o contrato: cobertura do escopo, presença e coerência
+das atribuições, formato esperado e erros/lacunas declarados. Se encontrar um gap, re-delega uma subtarefa direcionada
+com o contexto necessário e o gap explícito, depois verifica novamente antes de agregar ou concluir. Status de sucesso da
+tool e prosa fluente não comprovam, por si sós, cobertura ou correção.</p>
 
 <h2>4. Subagents em paralelo: múltiplos Task calls numa única resposta</h2>
 <p>Para paralelizar, o coordinator emite <strong>múltiplas chamadas da Task tool na mesma resposta</strong> — não em
@@ -271,15 +307,60 @@ resultados no prompt.</em></p>
 dependentes que não podem ser pulados → pipeline. O caso oposto também vale: pipeline fixo para pesquisa aberta perde
 cobertura, e coordinator dinâmico para um processo que exige sempre os mesmos passos pode pular um deles.</em></p>
 
-<h3>Prompts do coordinator: metas, não procedimentos</h3>
-<p>Último ponto do blueprint: escreva prompts de coordinator que especificam <strong>objetivos de pesquisa e critérios
-de qualidade</strong> ("cubra todos os setores relevantes; toda claim precisa de fonte"), não instruções procedurais
-passo a passo ("primeiro chame X, depois Y"). Instrução procedural engessa os subagents e mata a adaptabilidade —
-justamente a vantagem de ter um modelo decidindo. A receita quebra no primeiro caso que ela não previu (outra fonte,
-outro formato), e acrescentar ramos ou fallbacks só adia a próxima quebra. O coordinator não perde visibilidade com
-isso: os resultados continuam voltando estruturados por ele. <strong>Regra de bolso:</strong> <em>diga o que e com
-que qualidade, não como.</em> E lembre: <code>fork_session</code> existe para explorar abordagens
-divergentes a partir de uma baseline de análise compartilhada (aprofundado na aula de sessões).</p>
+<h3>Autonomia tática com contrato, observabilidade e enforcement</h3>
+<p>Em <strong>pesquisa aberta</strong>, especifique objetivos e critérios de qualidade ("cubra todos os setores relevantes;
+toda claim precisa de fonte") e deixe a <strong>estratégia tática</strong> adaptável: queries, ordem das buscas e caminho
+entre fontes podem mudar conforme o que o subagent descobrir. Uma receita fixa para essa parte quebra no primeiro caso
+não previsto, e acrescentar ramos ou fallbacks apenas adia a próxima quebra.</p>
+<p>"Diga o que, não como" qualifica a tática de exploração; <strong>não autoriza apagar o contrato</strong>. Escopo,
+fronteiras, fontes/tools permitidas, formato de saída e critérios de conclusão continuam explícitos. Na direção oposta,
+quando um procedimento é obrigatório e não pode ser pulado — por exemplo, uma verificação exigida por auditoria — não o
+transforme apenas em instrução probabilística de prompt: garanta a ordem e a execução no workflow/código e valide o resultado.</p>
+<p>Para evitar misturar instruções, separe três camadas:</p>
+<ul>
+  <li><strong><code>systemPrompt</code> do coordinator</strong> — política global de decomposição, delegação, agregação e verificação;</li>
+  <li><strong><code>prompt</code> da AgentDefinition</strong> — o system prompt do subagent, com papel e regras duráveis daquele especialista;</li>
+  <li><strong>prompt da Task call</strong> — o contrato desta invocação: objetivo, escopo, contexto/findings, fontes permitidas, critérios e saída.</li>
+</ul>
+<p>Autonomia tática <strong>não gera visibilidade automaticamente</strong>. O coordinator precisa registrar o que delegou,
+exigir retorno estruturado com resultados e erros, verificar cobertura/atribuição e aplicar enforcement por restrições de
+tools, validações ou workflow quando necessário. <strong>Regra de bolso:</strong> <em>em pesquisa aberta, deixe a tática
+adaptável; mantenha o contrato explícito e verifique o retorno.</em> E lembre: <code>fork_session</code> existe para explorar
+abordagens divergentes a partir de uma baseline de análise compartilhada (aprofundado na aula de sessões).</p>
+
+<h3>Exercício dirigido: repare o handoff e feche o loop</h3>
+<div class="card">
+  <p><strong>Cenário novo (dados fictícios).</strong> Seu sistema deve comparar regras de descarte de baterias no Brasil,
+  na Argentina e no Chile. O coordinator já recebeu estes dois findings e precisa delegar a lacuna restante a um
+  <code>web_researcher</code> com <code>WebSearch</code> e <code>WebFetch</code>. Só fontes primárias de reguladores
+  publicadas em 2025–2026 são aceitas. Na primeira síntese, o Chile ficou de fora e uma citação foi ligada à claim errada.</p>
+  <pre><code>[
+  {
+    "claim": "O Brasil exige devolução de baterias em pontos credenciados",
+    "evidence": "Artigo 8, parágrafo segundo",
+    "source_url": "https://regulator-br.example/norma-8",
+    "document_name": "Norma BR-8",
+    "page": 4,
+    "published": "2025-04-10"
+  },
+  {
+    "claim": "A Argentina atualizou o cadastro de operadores de reciclagem",
+    "evidence": "Seção III, item 2",
+    "source_url": "https://regulator-ar.example/resolucao-18",
+    "document_name": "Resolução AR-18",
+    "page": 3,
+    "published": "2026-02-02"
+  }
+]</code></pre>
+  <ol>
+    <li>Escreva o próximo <strong>prompt da Task call</strong> para pesquisar o Chile sem repetir o trabalho anterior. Inclua os dois findings completos e seus metadados como contexto, objetivo, escopo/fronteiras, fontes/tools permitidas, critérios de qualidade/conclusão, formato estruturado de saída e relato de erros/lacunas. Deixe queries e ordem de consulta adaptáveis ao que for encontrado.</li>
+    <li>Escreva a <strong>verificação do coordinator</strong>: como ele conferirá cobertura dos três países, correspondência claim→fonte, datas e campos obrigatórios antes de agregar. Se faltar uma fonte primária datada para o Chile, especifique a re-delegação dirigida e o contexto que ela deve receber.</li>
+    <li>Marque o que pertence à política global do <code>systemPrompt</code> do coordinator, ao <code>prompt</code> da AgentDefinition e ao contrato específico da Task call.</li>
+  </ol>
+  <p><strong>Critério de gabarito:</strong> a resposta só está completa se o prompt for autocontido, preservar integralmente
+  os dados acima, restringir fontes e tools sem engessar a tática de busca, exigir erros/gaps explícitos e impedir conclusão
+  antes da verificação. "Pesquise melhor", "seja cuidadoso" ou confiar no status de sucesso da Task não atendem ao exercício.</p>
+</div>
 
 <h2>5. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
 <table class="gloss">
@@ -295,10 +376,14 @@ divergentes a partir de uma baseline de análise compartilhada (aprofundado na a
   <tr><td class="en">allowedTools</td><td>lista de tools permitidas do agent</td><td class="uso">"allowedTools must include Task for the coordinator to invoke subagents"</td></tr>
   <tr><td class="en">AgentDefinition</td><td>definição de subagent (description, system prompt, tools)</td><td class="uso">"each AgentDefinition includes a description, system prompt, and tool restrictions"</td></tr>
   <tr><td class="en">isolated context</td><td>contexto isolado (sem herança de histórico)</td><td class="uso">"subagents do not inherit the coordinator's conversation history"</td></tr>
-  <tr><td class="en">attribution</td><td>atribuição (mapeamento claim→fonte)</td><td class="uso">"separate content from metadata to preserve attribution"</td></tr>
+  <tr><td class="en">handoff contract</td><td>contrato de handoff da invocação</td><td class="uso">"make the Task prompt self-contained, including scope, findings, quality criteria, output, and errors"</td></tr>
+  <tr><td class="en">structured return</td><td>retorno estruturado de resultados e falhas</td><td class="uso">"return findings, source metadata, errors, and gaps in the requested format"</td></tr>
+  <tr><td class="en">coordinator verification</td><td>verificação do retorno pelo coordinator</td><td class="uso">"validate coverage and attribution before aggregating or completing"</td></tr>
+  <tr><td class="en">enforcement</td><td>garantia por restrições, validações ou workflow</td><td class="uso">"enforce mandatory steps in the workflow rather than relying only on a prompt"</td></tr>
+  <tr><td class="en">attribution</td><td>atribuição (mapeamento claim→fonte)</td><td class="uso">"pair content with source metadata to make attribution easier to verify"</td></tr>
   <tr><td class="en">dynamic subagent selection</td><td>seleção dinâmica de subagents (só os que a query exige)</td><td class="uso">"invoke only the subagents the query requires rather than the full pipeline"</td></tr>
   <tr><td class="en">scope partitioning</td><td>particionamento de escopo entre subagents</td><td class="uso">"assign distinct subtopics or source types to minimize duplication"</td></tr>
-  <tr><td class="en">research goals and quality criteria</td><td>objetivos de pesquisa e critérios de qualidade</td><td class="uso">"specify goals rather than step-by-step procedural instructions"</td></tr>
+  <tr><td class="en">research goals and quality criteria</td><td>objetivos de pesquisa e critérios de qualidade</td><td class="uso">"keep the research contract explicit while leaving open-search tactics adaptable"</td></tr>
   <tr><td class="en">independent subtasks</td><td>subtarefas independentes (paralelizáveis)</td><td class="uso">"emit multiple Task calls in a single coordinator response"</td></tr>
   <tr><td class="en">tool restrictions</td><td>restrição de tools por papel do subagent</td><td class="uso">"restrict each subagent's tool set to those relevant to its role"</td></tr>
   <tr><td class="en">misconfigured subagent spawning</td><td>spawn de subagents mal configurado</td><td class="uso">"diagnose missing tool permissions, incorrect AgentDefinition parameters, or absent wiring"</td></tr>
@@ -308,11 +393,14 @@ divergentes a partir de uma baseline de análise compartilhada (aprofundado na a
 <div class="card pegadinha">
   <h3>⚠️ Pegadinha do dia</h3>
   <p>Questões do tipo "todos os subagents rodaram com sucesso, mas o resultado final está incompleto/errado".
-  Os distratores sempre culpam um subagent específico ("o search agent precisa de queries melhores", "o synthesis
+  Os distratores costumam culpar um subagent específico ("o search agent precisa de queries melhores", "o synthesis
   agent filtrou fontes"). Se o enunciado diz que cada subagent executou bem <em>dentro do escopo recebido</em>,
   a causa raiz está <strong>no coordinator</strong> — decomposição estreita, contexto não passado, ou seleção errada
   de subagents. Regra de bolso: <em>subagent executa o escopo que recebe; escopo errado é problema de quem delegou,
   não de quem executou.</em></p>
+  <p>Outra variante descreve delegação apenas por objetivo e trata autonomia como se fosse observabilidade. Não basta:
+  procure contrato de retorno, resultados/erros estruturados e verificação pelo coordinator. Se uma etapa obrigatória pode
+  ser pulada sem consequência, uma frase no prompt não fornece enforcement.</p>
 </div>
 
 <h2>6. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
@@ -334,16 +422,16 @@ divergentes a partir de uma baseline de análise compartilhada (aprofundado na a
 
 <div class="q" data-correct="b" data-ts="1.3" data-dom="1">
   <div class="qnum">Questão 2 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
-  <div class="stem">In production, your synthesis subagent repeatedly produces reports that ignore the web search findings gathered earlier in the same run, as if it had never seen them. The coordinator did run the search subagent first and received its results. What is the root cause and the correct fix?</div>
-  <div class="pt-block pt">Em produção, seu subagent de síntese repetidamente produz relatórios que ignoram os achados da busca web coletados antes na mesma execução, como se nunca os tivesse visto. O coordinator de fato rodou o subagent de busca antes e recebeu seus resultados. Qual é a causa raiz e a correção correta?</div>
+  <div class="stem">In production, your synthesis subagent repeatedly produces reports that ignore the web search findings gathered earlier in the same run, as if it had never seen them. The coordinator did run the search subagent first and received its results. However, the logged Task call to the synthesizer contains only <code>prompt: "Write a report on the user's original topic and cite sources."</code>; neither the findings nor their source metadata appear in that prompt. What is the root cause and the correct fix?</div>
+  <div class="pt-block pt">Em produção, seu subagent de síntese repetidamente produz relatórios que ignoram os achados da busca web coletados antes na mesma execução, como se nunca os tivesse visto. O coordinator de fato rodou o subagent de busca antes e recebeu seus resultados. Porém, a Task call registrada para o sintetizador contém apenas <code>prompt: "Write a report on the user's original topic and cite sources."</code>; nem os achados nem os metadados de suas fontes aparecem nesse prompt. Qual é a causa raiz e a correção correta?</div>
   <div class="opts">
     <label class="opt"><input type="radio" name="q2" value="a">A. The synthesis subagent's context window is too small for the findings; move it to a model with a larger window.<div class="pt">A janela de contexto do subagent de síntese é pequena demais para os achados; migrá-lo para um modelo com janela maior.</div></label>
-    <label class="opt"><input type="radio" name="q2" value="b">B. Subagents don't inherit the coordinator's history; the coordinator must put the findings in the synthesis prompt.<div class="pt">Subagents não herdam o histórico do coordinator; o coordinator precisa colocar os achados no prompt da síntese.</div></label>
+    <label class="opt"><input type="radio" name="q2" value="b">B. Subagents don't inherit the coordinator's history; the coordinator must put the complete findings and source metadata in the synthesis Task prompt.<div class="pt">Subagents não herdam o histórico do coordinator; o coordinator precisa colocar os achados completos e os metadados das fontes no prompt da Task de síntese.</div></label>
     <label class="opt"><input type="radio" name="q2" value="c">C. Re-invoke the same search subagent instance first, so that its memory of the run is shared with the synthesis subagent.<div class="pt">Re-invocar antes a mesma instância do subagent de busca, para que a memória dela sobre a execução seja compartilhada com o subagent de síntese.</div></label>
     <label class="opt"><input type="radio" name="q2" value="d">D. Add a line to the synthesis system prompt telling it to remember and use every finding from earlier in the run.<div class="pt">Adicionar uma linha ao system prompt da síntese mandando ele lembrar e usar todos os achados anteriores da execução.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: B.</strong> Regra central do TS 1.3: contexto isolado, sem herança de histórico e sem memória entre invocações — o contexto vai explícito no prompt da Task call. A é over-engineering: o problema não é tamanho de janela, é ausência do conteúdo. C descreve um mecanismo inexistente: subagents não compartilham memória entre si nem entre invocações. D é remendo cosmético via prompt: instruir a "lembrar" não injeta dado nenhum no contexto isolado.<span class="ts">Domínio 1 · TS 1.3 — Invocação de subagents e passagem de contexto</span></div>
+  <div class="feedback"><strong>Gabarito: B.</strong> O log torna a causa inequívoca: os findings recebidos pelo coordinator não foram incluídos na Task call da síntese. Contexto isolado significa sem herança de histórico e sem memória entre invocações — o conteúdo e seus metadados vão explícitos no prompt. A é over-engineering: o problema não é tamanho de janela, é ausência do conteúdo. C descreve um mecanismo inexistente: subagents não compartilham memória entre si nem entre invocações. D é remendo cosmético via prompt: instruir a "lembrar" não injeta dado nenhum no contexto isolado.<span class="ts">Domínio 1 · TS 1.3 — Invocação de subagents e passagem de contexto</span></div>
 </div>
 
 <div class="q" data-correct="a,c" data-ts="1.3" data-dom="1">
@@ -372,7 +460,7 @@ divergentes a partir de uma baseline de análise compartilhada (aprofundado na a
     <label class="opt"><input type="radio" name="q4" value="d">D. Return structured findings that pair each claim with its source metadata, and have later stages preserve them.<div class="pt">Retornar achados estruturados que pareiam cada claim com os metadados da fonte, e fazer os estágios seguintes preservá-los.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: D.</strong> A atribuição se perde na sumarização quando findings viajam como prosa: o mapeamento claim→fonte só sobrevive em formato estruturado, com conteúdo separado dos metadados (claim, trecho de evidência, URL, nome do documento, página, data) e preservado estágio a estágio. A é remendo cosmético via prompt contra um problema estrutural de formato de dados. B destrói a arquitetura (e a separação de papéis) sem resolver o formato. C troca de modelo sem mudar a entrada — prosa sem metadados continua entrando, atribuição continua saindo errada.<span class="ts">Domínio 1 · TS 1.3 — Invocação de subagents e passagem de contexto</span></div>
+  <div class="feedback"><strong>Gabarito: D.</strong> Neste pipeline, a prosa livre facilita perder ou trocar o mapeamento claim→fonte durante a sumarização. Parear conteúdo e metadados (claim, evidência, URL, documento, página e data) reduz a ambiguidade e torna a atribuição mais verificável estágio a estágio; ainda é preciso conferir o resultado. Prosa cuidadosa pode preservar referências, mas A depende apenas de mais cuidado probabilístico contra um problema de formato de dados. B remove a separação de papéis sem estabelecer esse contrato. C pode melhorar o desempenho, mas não muda a entrada nem oferece campos que o coordinator possa validar.<span class="ts">Domínio 1 · TS 1.3 — Invocação de subagents e passagem de contexto</span></div>
 </div>
 
 <div class="q" data-correct="a" data-ts="1.2" data-dom="1">
@@ -420,16 +508,16 @@ divergentes a partir de uma baseline de análise compartilhada (aprofundado na a
 
 <div class="q" data-correct="d" data-ts="1.3" data-dom="1">
   <div class="qnum">Questão 8 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
-  <div class="stem">Your coordinator delegates regulatory research with this prompt: "1. Open the official gazette search page. 2. Search for the bill number. 3. Copy the first five result titles. 4. Summarize them." It works for national bills, but for state rules and agency guidance the subagent returns irrelevant results or nothing at all. How should the coordinator's prompt change?</div>
-  <div class="pt-block pt">Seu coordinator delega pesquisa regulatória com este prompt: "1. Abra a página de busca do diário oficial. 2. Busque o número do projeto de lei. 3. Copie os títulos dos cinco primeiros resultados. 4. Resuma-os." Funciona para projetos de lei nacionais, mas para normas estaduais e orientações de agências o subagent devolve resultados irrelevantes ou nada. Como o prompt do coordinator deve mudar?</div>
+  <div class="stem">Your coordinator delegates open regulatory research with this Task prompt: "1. Open the official gazette search page. 2. Search for the bill number. 3. Copy the first five result titles. 4. Summarize them." It works for national bills, but for state rules and agency guidance the subagent returns irrelevant results or nothing at all. How should the Task prompt change?</div>
+  <div class="pt-block pt">Seu coordinator delega pesquisa regulatória aberta com este prompt de Task: "1. Abra a página de busca do diário oficial. 2. Busque o número do projeto de lei. 3. Copie os títulos dos cinco primeiros resultados. 4. Resuma-os." Funciona para projetos de lei nacionais, mas para normas estaduais e orientações de agências o subagent devolve resultados irrelevantes ou nada. Como o prompt da Task deve mudar?</div>
   <div class="opts">
     <label class="opt"><input type="radio" name="q8" value="a">A. Add a branch to the procedure for each source type, each with its own search page and its own fixed steps.<div class="pt">Acrescentar ao procedimento um ramo para cada tipo de fonte, cada um com sua página de busca e seus passos fixos.</div></label>
     <label class="opt"><input type="radio" name="q8" value="b">B. Keep the steps, but have the coordinator run them itself and pass only the copied titles to the subagent.<div class="pt">Manter os passos, mas fazer o coordinator executá-los ele mesmo e passar só os títulos copiados ao subagent.</div></label>
     <label class="opt"><input type="radio" name="q8" value="c">C. Keep the steps and add a fallback: when a search returns nothing, retry with the next keyword from a fixed list.<div class="pt">Manter os passos e acrescentar um fallback: quando uma busca não retornar nada, tentar de novo com a próxima palavra-chave de uma lista fixa.</div></label>
-    <label class="opt"><input type="radio" name="q8" value="d">D. State the research goal and quality criteria, such as dated primary sources, and let the subagent choose how.<div class="pt">Declarar o objetivo da pesquisa e os critérios de qualidade, como fontes primárias datadas, e deixar o subagent escolher como.</div></label>
+    <label class="opt"><input type="radio" name="q8" value="d">D. Keep the goal, scope, permitted sources and tools, quality criteria, structured output, and error reporting explicit, but let the subagent adapt its search tactics.<div class="pt">Manter explícitos objetivo, escopo, fontes e tools permitidas, critérios de qualidade, saída estruturada e relato de erros, mas deixar o subagent adaptar as táticas de busca.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: D.</strong> TS 1.3: prompts de coordinator devem especificar <strong>objetivos de pesquisa e critérios de qualidade</strong>, não procedimentos passo a passo — é isso que deixa o subagent se adaptar ao que encontra (fontes e formatos diferentes). A e C só alongam o procedimento: cada caso imprevisto pede mais um ramo ou mais um fallback, e o próximo tipo de fonte quebra de novo. B tira do subagent justamente o trabalho de pesquisa e mantém a receita rígida — agora dentro do coordinator.<span class="ts">Domínio 1 · TS 1.3 — Invocação de subagents e passagem de contexto</span></div>
+  <div class="feedback"><strong>Gabarito: D.</strong> Em pesquisa aberta, objetivo, escopo e critérios de qualidade ficam explícitos, enquanto queries e navegação se adaptam às fontes e formatos encontrados. Isso não elimina o contrato nem o retorno estruturado. A e C só alongam a receita tática: cada caso imprevisto pede outro ramo ou fallback. B tira do subagent o trabalho de pesquisa e mantém a rigidez no coordinator. Se um procedimento fosse obrigatório por compliance, ele deveria também ter enforcement no workflow e validação — não apenas uma frase de prompt.<span class="ts">Domínio 1 · TS 1.3 — Invocação de subagents e passagem de contexto</span></div>
 </div>
 
 <div class="q" data-correct="d,e" data-ts="1.3" data-dom="1">
@@ -486,7 +574,36 @@ divergentes a partir de uma baseline de análise compartilhada (aprofundado na a
     <label class="opt"><input type="radio" name="q12" value="d">D. Use a fixed sequential pipeline in code, where each stage receives the previous stage's output.<div class="pt">Usar um pipeline sequencial fixo em código, em que cada estágio recebe a saída do estágio anterior.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: D.</strong> Os requisitos apontam para o pipeline: estágios dependentes em ordem fixa, todos obrigatórios, e latência sem importância (24 h). Com a ordem no código, a verificação não pode ser pulada, e cada estágio pode ser testado e auditado. A deixa uma regra que não pode falhar dependendo do prompt, e ela já falhou duas vezes. B ignora a dependência: a verificação não tem o que verificar antes da extração, e latência não é o requisito. C acrescenta outra camada de julgamento do modelo sobre um processo que não precisa de julgamento nenhum. O caso oposto também vale: numa pesquisa aberta, com escopo desconhecido, o pipeline fixo perderia cobertura, e aí o coordinator-worker é o certo.<span class="ts">Domínio 1 · TS 1.2 — Orquestração coordinator-subagents</span></div>
+  <div class="feedback"><strong>Gabarito: D.</strong> Os requisitos apontam para o pipeline: estágios dependentes em ordem fixa e todos obrigatórios; a janela de 24 h não exige paralelismo. Com a ordem garantida no código e a saída validada, a verificação não pode ser silenciosamente pulada, e cada estágio pode ser testado e auditado. A deixa uma regra que não pode falhar dependendo apenas de um prompt probabilístico, e ela já falhou duas vezes. B ignora a dependência: a verificação não tem o que verificar antes da extração. C acrescenta julgamento do modelo a um processo cuja ordem já está determinada. O caso oposto também vale: numa pesquisa aberta, com escopo desconhecido, um pipeline tático fixo perderia adaptabilidade e cobertura; aí o coordinator-worker com verificação é mais adequado.<span class="ts">Domínio 1 · TS 1.2 — Orquestração coordinator-subagents</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="1.3" data-dom="1">
+  <div class="qnum">Questão 13 · múltipla escolha <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">Your coordinator must compare open-source licensing obligations across three products. It sends each researcher only "Research this product however you think best." Relevant policy excerpts already returned by doc_analyzer are absent from those Task calls. The coordinator then forwards each fluent prose answer directly to the report. Two answers lack source links, and one product disappears from the report after a search failure is omitted from the researcher's answer. Which redesign addresses these failures while preserving useful autonomy?</div>
+  <div class="pt-block pt">Seu coordinator deve comparar obrigações de licenças open-source em três produtos. Ele envia a cada pesquisador apenas "Pesquise este produto como achar melhor." Trechos relevantes de políticas já retornados pelo doc_analyzer não aparecem nessas Task calls. O coordinator então encaminha cada resposta fluente em prosa diretamente ao relatório. Duas respostas não têm links de fontes, e um produto desaparece do relatório depois que uma falha de busca é omitida da resposta do pesquisador. Qual redesign resolve essas falhas preservando autonomia útil?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q13" value="a">A. Prescribe one fixed sequence of queries for every product and log only whether each Task finished successfully.<div class="pt">Prescrever uma sequência fixa de queries para todos os produtos e registrar apenas se cada Task terminou com sucesso.</div></label>
+    <label class="opt"><input type="radio" name="q13" value="b">B. Move "be thorough and cite everything" into each researcher's description and let every researcher choose a different output format.<div class="pt">Mover "seja minucioso e cite tudo" para a description de cada pesquisador e deixar cada um escolher um formato de saída diferente.</div></label>
+    <label class="opt"><input type="radio" name="q13" value="c">C. Use a self-contained Task prompt with the objective, product scope, complete prior findings and source metadata, permitted sources/tools, quality and completion criteria, and a structured findings/errors format; let search tactics adapt, then have the coordinator verify coverage and attribution and re-delegate any gaps.<div class="pt">Usar um prompt de Task autocontido com objetivo, escopo do produto, findings anteriores completos e metadados das fontes, fontes/tools permitidas, critérios de qualidade/conclusão e formato estruturado de findings/erros; deixar as táticas de busca adaptáveis e fazer o coordinator verificar cobertura e atribuição e re-delegar lacunas.</div></label>
+    <label class="opt"><input type="radio" name="q13" value="d">D. Let researchers call one another directly to recover failed searches, while the coordinator reads only their final prose.<div class="pt">Deixar os pesquisadores chamarem uns aos outros diretamente para recuperar buscas falhas, enquanto o coordinator lê apenas a prosa final deles.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> A solução integra as três partes: handoff autocontido, autonomia apenas na tática de pesquisa e verificação antes de agregar. Os findings anteriores precisam estar na Task call por causa do contexto isolado; o formato com erros/lacunas impede que uma falha vire omissão silenciosa; e o coordinator precisa conferir cobertura e atribuição e re-delegar o que faltar. A engessa a pesquisa e confunde status da tool com qualidade. B usa a description para algo que não é sua função e elimina o contrato comum de retorno. D quebra o hub-and-spoke e mantém o coordinator sem resultados estruturados para verificar.<span class="ts">Domínio 1 · TS 1.3 — Handoff, autonomia e verificação</span></div>
+</div>
+
+<div class="q" data-correct="b,d" data-ts="1.3" data-dom="1">
+  <div class="qnum">Questão 14 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Multi-Agent Research System</span></div>
+  <div class="stem">An open research task may use any effective search strategy, but every final claim must cite a dated primary source, inaccessible sources must be reported, and the report cannot ship until the coordinator has checked all three requested regions. Which TWO design decisions correctly separate tactical autonomy from control?</div>
+  <div class="pt-block pt">Uma tarefa de pesquisa aberta pode usar qualquer estratégia de busca eficaz, mas toda claim final deve citar uma fonte primária datada, fontes inacessíveis devem ser relatadas, e o relatório não pode ser entregue até o coordinator verificar as três regiões solicitadas. Quais DUAS decisões de design separam corretamente autonomia tática de controle?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q14" value="a">A. Put a fixed search sequence in the coordinator's systemPrompt and assume that each researcher can see the coordinator's prior findings.<div class="pt">Colocar uma sequência fixa de busca no systemPrompt do coordinator e presumir que cada pesquisador consegue ver os findings anteriores do coordinator.</div></label>
+    <label class="opt"><input type="checkbox" name="q14" value="b">B. Keep durable role rules in AgentDefinition.prompt; put the case-specific objective, scope, complete available findings with metadata, permitted sources/tools, output and error contract in the Task prompt, without fixing search tactics.<div class="pt">Manter regras duráveis do papel no prompt da AgentDefinition; colocar no prompt da Task o objetivo específico, escopo, findings disponíveis completos com metadados, fontes/tools permitidas e contrato de saída/erros, sem fixar as táticas de busca.</div></label>
+    <label class="opt"><input type="checkbox" name="q14" value="c">C. Accept any structured result whose Task status is successful, because structured output makes coordinator verification unnecessary.<div class="pt">Aceitar qualquer resultado estruturado cuja Task tenha status de sucesso, porque saída estruturada torna desnecessária a verificação pelo coordinator.</div></label>
+    <label class="opt"><input type="checkbox" name="q14" value="d">D. Have the coordinator validate regional coverage, claim-to-source attribution, dates, required fields and reported errors; block completion and re-delegate a targeted, self-contained follow-up when a gap remains.<div class="pt">Fazer o coordinator validar cobertura regional, atribuição claim→fonte, datas, campos obrigatórios e erros relatados; bloquear a conclusão e re-delegar um follow-up direcionado e autocontido quando restar uma lacuna.</div></label>
+    <label class="opt"><input type="checkbox" name="q14" value="e">E. Put "verification is mandatory" only in the researcher's description, since that field enforces runtime behavior.<div class="pt">Colocar "a verificação é obrigatória" apenas na description do pesquisador, já que esse campo garante o comportamento em runtime.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B e D.</strong> B separa as camadas: regras duráveis na AgentDefinition e handoff específico na Task call, com contexto completo e liberdade tática. D fornece observabilidade e enforcement no fechamento: o coordinator valida o retorno, impede conclusão com lacuna e re-delega com o contexto necessário. A fixa a tática e ainda pressupõe herança de histórico, que não existe. C confunde formato e status com correção verificada. E confunde description, usada na seleção do subagent, com enforcement.<span class="ts">Domínio 1 · TS 1.3 — Handoff, autonomia e verificação</span></div>
 </div>
 
 <div class="concluir">

@@ -262,9 +262,9 @@ dela — conserte a descrição antes de tirar tools do agente ou escrever regra
 <h3>3.1 Tabela de seleção</h3>
 <table class="gloss">
   <tr><th>Tool</th><th>Pergunta que ela responde</th><th>Exemplo</th></tr>
-  <tr><td class="en">Grep</td><td>onde está este <strong>conteúdo</strong>?</td><td>todos os callers de <code>process_refund</code>, onde a mensagem de erro X é lançada, imports de um módulo</td></tr>
+  <tr><td class="en">Grep</td><td>onde está este <strong>conteúdo</strong>?</td><td>call sites candidatos de <code>process_refund</code>, onde a mensagem de erro X é lançada, imports de um módulo</td></tr>
   <tr><td class="en">Glob</td><td>onde estão os <strong>arquivos</strong> com este nome/padrão?</td><td><code>**/*.test.tsx</code>, <code>src/**/index.ts</code></td></tr>
-  <tr><td class="en">Read</td><td>o que há <strong>neste arquivo inteiro</strong>?</td><td>carregar um arquivo para entender ou reescrever</td></tr>
+  <tr><td class="en">Read</td><td>o que há <strong>neste arquivo ou trecho delimitado</strong>?</td><td>ler a função encontrada; carregar o arquivo inteiro quando necessário</td></tr>
   <tr><td class="en">Write</td><td>gravar conteúdo <strong>completo</strong> em arquivo</td><td>criar arquivo novo ou sobrescrever após Read</td></tr>
   <tr><td class="en">Edit</td><td>modificação <strong>cirúrgica</strong> via texto âncora <strong>único</strong></td><td>trocar o corpo de uma função cujo trecho aparece uma só vez</td></tr>
 </table>
@@ -278,21 +278,68 @@ certa <strong>não</strong> é insistir no mesmo Edit nem apelar para <code>sed<
 confiável é o fallback: <strong>Read do arquivo inteiro → modificar → Write de volta</strong>. Mais
 tokens, mas confiável.</p>
 
-<h3>3.3 Exploração incremental de codebase</h3>
-<p>O anti-padrão é ler tudo de uma vez ("leia os 200 arquivos do repo e me explique"). A exploração
-eficiente é <strong>incremental</strong>:</p>
+<h3>3.3 Funil operacional de exploração sob contexto limitado</h3>
+<p>O anti-padrão é ler tudo de uma vez ("leia os 200 arquivos do repo e me explique"). Escolher Grep,
+Glob e Read corretamente é só o começo: a exploração eficiente é um <strong>funil de evidências</strong>,
+com escopo e orçamento explícitos.</p>
 <ol>
-  <li><strong>Grep</strong> para achar entry points (ex.: onde a rota é registrada, onde a função pública
-      é exportada)</li>
-  <li><strong>Read</strong> nos arquivos encontrados, <strong>seguindo os imports</strong> para rastrear o
-      fluxo</li>
-  <li>Repita: cada Read revela os próximos arquivos relevantes</li>
+  <li><strong>Formule a pergunta e o critério de conclusão.</strong> Antes de buscar, escreva o que precisa
+      ser respondido e quais evidências bastam para terminar. Ex.: ligar uma rota à implementação e listar os
+      call sites <em>confirmados estaticamente</em>, cada um com <code>arquivo:linha</code>. O critério deve
+      incluir o que será feito com pendências, não apenas "quando eu tiver uma resposta".</li>
+  <li><strong>Delimite candidatos com Glob e Grep.</strong> Use Glob para restringir diretórios, extensões e
+      nomes prováveis; use Grep para localizar a rota, o símbolo ou a mensagem dentro desse recorte. Comece
+      pelo padrão mais específico disponível, não por uma varredura indiscriminada do repositório.</li>
+  <li><strong>Refine escopo e padrões conforme os resultados.</strong> Se houver matches demais, restrinja
+      caminho, extensão e regex; se houver zero, revise hipóteses de nome, diretório e grafia antes de ampliar.
+      Zero matches significa apenas "não encontrado <em>neste escopo, com este padrão</em>", nunca prova de
+      inexistência.</li>
+  <li><strong>Leia trechos mínimos antes de ampliar.</strong> Abra primeiro as linhas ao redor do match, o
+      bloco de imports ou a função relevante. Amplie o intervalo — ou leia o arquivo inteiro — somente quando
+      uma dúvida concreta exigir; cada Read deve justificar o próximo passo.</li>
+  <li><strong>Siga as evidências entre módulos.</strong> Percorra imports, arquivos barrel, reexportações e
+      aliases para ligar rota → wrapper → implementação → usos. Não trate uma linha de import como chamada:
+      leia o trecho do uso para confirmar que há invocação.</li>
+  <li><strong>Registre buscas, decisões e pendências.</strong> Mantenha uma nota curta com padrões e caminhos
+      pesquisados, aliases descobertos, candidatos confirmados ou descartados (e por quê), evidências
+      <code>arquivo:linha</code> e o que ainda falta. Isso evita repetir buscas e transforma "não achei" em
+      informação delimitada.</li>
+  <li><strong>Controle o orçamento.</strong> Estabeleça limites adequados à tarefa para contexto, Reads,
+      linhas ou chamadas e reserve parte para verificação e síntese. Se o orçamento acabar, pare de ampliar:
+      entregue o que está confirmado, as buscas já cobertas e as pendências, sem preencher lacunas por
+      suposição.</li>
+  <li><strong>Preserve evidências na compactação.</strong> Antes que o contexto seja compactado, deixe um
+      handoff autocontido com pergunta, critério de parada, cadeia de imports e aliases, evidências
+      <code>arquivo:linha</code>, escopo pesquisado e próximos passos. Depois, retome dessa nota e releia
+      apenas um trecho se for necessário verificar algo; não reinicie a exploração do zero.</li>
+  <li><strong>Feche com evidência e limites de completude.</strong> Separe achados confirmados, itens não
+      encontrados no escopo pesquisado e caminhos não inspecionados. Cite <code>arquivo:linha</code> para a
+      cadeia e os usos, declare exclusões (testes, generated code, outros repos etc.) e identifique chamadas
+      dinâmicas ou não resolvidas estaticamente como limitação, não como ausência.</li>
 </ol>
-<p>Para rastrear o uso de uma função através de módulos wrapper: primeiro liste todos os
-<strong>nomes exportados</strong> do wrapper, depois faça <strong>Grep de cada nome</strong> no codebase —
-procurar só o nome original da função perde os call sites que importam via re-export.
-Regra de bolso: <em>ponto de entrada → Read → imports, nunca "ler tudo antes"; e, para achar todos os
-chamadores, levante primeiro todos os nomes exportados.</em></p>
+<p>Regra de bolso: <em>pergunta e critério de parada → candidatos delimitados → buscas refinadas → Reads
+mínimos → evidências e pendências registradas → fechamento com <code>arquivo:linha</code> e limites.</em></p>
+
+<h3>3.4 Reexportação, alias local e o limite da busca estática</h3>
+<p>Listar nomes exportados e pesquisá-los produz <strong>candidatos</strong>; não garante todos os chamadores.
+Além do nome na implementação e de cada reexportação, é preciso seguir o <strong>alias local do import</strong>
+até o uso:</p>
+<pre><code>// src/billing/index.ts — barrel com reexportação renomeada
+export { generateInvoiceNumber as nextInvoiceNumber } from "./numbering";
+
+// src/api/invoices.ts — import renomeado novamente, agora localmente
+import { nextInvoiceNumber as allocateNumber } from "../billing";
+const invoiceNumber = allocateNumber(); // call site: nenhum dos nomes anteriores aparece aqui</code></pre>
+<p>Nesse exemplo, buscar só <code>generateInvoiceNumber</code> ou só <code>nextInvoiceNumber</code> perde a
+chamada. A cadeia correta é acompanhar a reexportação, registrar
+<code>nextInvoiceNumber → allocateNumber</code>, buscar o alias no módulo importador e ler o trecho para
+distinguir o import da invocação.</p>
+<p>Mesmo percorrendo todas as reexportações e aliases, busca textual continua sendo análise estática limitada.
+Despacho computado, callbacks em registries, reflexão, injeção de dependência e alguns imports dinâmicos podem
+não revelar estaticamente qual função será chamada — por exemplo, <code>handlers[request.method](...)</code>.
+Nesses casos, registre o dispatch e os candidatos como pendência e diga que a lista cobre os usos
+<strong>confirmados no escopo inspecionado</strong>; não prometa "todos os chamadores" apenas porque pesquisou
+todos os nomes exportados.</p>
 
 <h2>4. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
 <table class="gloss">
@@ -316,7 +363,10 @@ chamadores, levante primeiro todos os nomes exportados.</em></p>
   <tr><td class="en">anchor text</td><td>texto âncora único exigido pelo Edit</td><td class="uso">"Edit fails when the anchor text is not unique"</td></tr>
   <tr><td class="en">Grep / Glob</td><td>busca no conteúdo dos arquivos / busca de arquivos por padrão de caminho</td><td class="uso">"Glob for finding files matching naming patterns (e.g., **/*.test.tsx)"</td></tr>
   <tr><td class="en">entry point</td><td>ponto de entrada do fluxo no código</td><td class="uso">"start with Grep to find entry points, then use Read to follow imports"</td></tr>
-  <tr><td class="en">wrapper module / re-export</td><td>módulo intermediário que reexporta a função (às vezes com outro nome)</td><td class="uso">"identify all exported names, then search for each name across the codebase"</td></tr>
+  <tr><td class="en">wrapper module / re-export</td><td>módulo intermediário que reexporta a função (às vezes com outro nome)</td><td class="uso">"follow re-exports and local aliases; report confirmed call sites, not guaranteed exhaustive callers"</td></tr>
+  <tr><td class="en">import alias</td><td>nome local dado a um import, que pode diferir do nome exportado e da implementação</td><td class="uso">"trace the imported alias to the invocation instead of searching only the exported name"</td></tr>
+  <tr><td class="en">investigation log</td><td>registro de escopo, padrões buscados, evidências, decisões e pendências</td><td class="uso">"preserve the investigation log and file:line evidence across compaction"</td></tr>
+  <tr><td class="en">completeness boundary</td><td>limite do que foi confirmado, em qual escopo, e do que ficou fora ou sem resolução estática</td><td class="uso">"state completeness boundaries for dynamic or statically unresolved calls"</td></tr>
 </table>
 
 <div class="card pegadinha">
@@ -329,6 +379,11 @@ chamadores, levante primeiro todos os nomes exportados.</em></p>
   Regra de bolso: <em>o agente só se recupera bem se o erro disser a categoria e a retryability —
   "Operation failed" não diz nada; consulta bem-sucedida sem matches não é erro, é resposta; falha de acesso
   nunca vira vazio.</em></p>
+  <p>Em exploração de código, a pegadinha é transformar cobertura de busca em garantia de completude:
+  <strong>todos os nomes exportados não equivalem a todos os chamadores</strong>. Imports podem usar aliases
+  locais, uma referência importada pode nunca ser invocada e despachos dinâmicos podem ficar sem resolução
+  estática. Regra de bolso: <em>siga a cadeia até o uso, confirme com Read e feche com
+  <code>arquivo:linha</code>, escopo pesquisado e pendências.</em></p>
 </div>
 
 <h2>5. Questões <span class="pt">— stem em inglês (como na prova), tradução embaixo. Marque e confira.</span></h2>
@@ -464,28 +519,42 @@ chamadores, levante primeiro todos os nomes exportados.</em></p>
 
 <div class="q" data-correct="a,d" data-ts="2.5" data-dom="2">
   <div class="qnum">Questão 10 · múltipla resposta <span class="multi-hint">(select TWO / marque DUAS)</span> <span class="cenario">Developer Productivity with Claude</span></div>
-  <div class="stem">An agent has to explain how invoice numbers are generated in an unfamiliar repository of about 4,000 files, and then list every place that calls the numbering function. Which TWO practices should it follow?</div>
-  <div class="pt-block pt">Um agente precisa explicar como os números de fatura são gerados num repositório desconhecido de cerca de 4.000 arquivos e, depois, listar todos os lugares que chamam a função de numeração. Quais DUAS práticas ele deve seguir?</div>
+  <div class="stem">An agent has to explain how invoice numbers are generated in an unfamiliar repository of about 4,000 files, and then report the statically discoverable call sites with evidence and stated completeness limits. Which TWO practices should it follow?</div>
+  <div class="pt-block pt">Um agente precisa explicar como os números de fatura são gerados num repositório desconhecido de cerca de 4.000 arquivos e, depois, relatar os call sites descobríveis estaticamente, com evidências e limites de completude declarados. Quais DUAS práticas ele deve seguir?</div>
   <div class="opts">
-    <label class="opt"><input type="checkbox" name="q10" value="a">A. Grep for entry points such as the numbering function, Read those files, and follow their imports to trace the flow.<div class="pt">Fazer Grep dos pontos de entrada, como a função de numeração, ler esses arquivos com Read e seguir os imports para rastrear o fluxo.</div></label>
+    <label class="opt"><input type="checkbox" name="q10" value="a">A. Grep for narrowly scoped entry points, Read only the relevant sections, and follow imports and re-exports to trace the flow.<div class="pt">Fazer Grep de pontos de entrada com escopo restrito, ler só as seções relevantes com Read e seguir imports e reexportações para rastrear o fluxo.</div></label>
     <label class="opt"><input type="checkbox" name="q10" value="b">B. Read every file under src/ before answering anything, so that no relevant module can be missed along the way.<div class="pt">Ler todos os arquivos de src/ antes de responder qualquer coisa, para que nenhum módulo relevante fique de fora.</div></label>
     <label class="opt"><input type="checkbox" name="q10" value="c">C. Glob all source files and Read them in batches of 100, writing a short summary of each batch as it goes.<div class="pt">Fazer Glob de todos os arquivos-fonte e lê-los com Read em lotes de 100, escrevendo um resumo curto de cada lote.</div></label>
-    <label class="opt"><input type="checkbox" name="q10" value="d">D. Identify every name the function is exported under, including re-exports in wrapper modules, and Grep each one.<div class="pt">Identificar todos os nomes sob os quais a função é exportada, inclusive reexportações em módulos wrapper, e fazer Grep de cada um.</div></label>
+    <label class="opt"><input type="checkbox" name="q10" value="d">D. Search re-exported names and local import aliases, Read candidate uses to distinguish imports from invocations, and mark dynamic or statically unresolved dispatch as a completeness limit.<div class="pt">Buscar nomes reexportados e aliases locais de import, ler os usos candidatos com Read para distinguir imports de invocações e marcar despachos dinâmicos ou não resolvidos estaticamente como limite de completude.</div></label>
     <label class="opt"><input type="checkbox" name="q10" value="e">E. Answer from general knowledge of how invoicing systems are usually built, and check only the final answer in code.<div class="pt">Responder com base no conhecimento geral de como sistemas de faturamento costumam ser feitos e conferir no código só a resposta final.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: A e D.</strong> O guide descreve a exploração incremental: Grep acha os pontos de entrada, Read carrega esses arquivos e os imports levam ao resto do fluxo (A). Para achar todos os chamadores, primeiro levante todos os nomes exportados — inclusive reexportações em módulos wrapper — e busque cada um (D); procurar só o nome original perde quem importa pelo apelido. B e C são variações de "ler tudo antes": gastam o contexto com arquivos irrelevantes e atrasam a resposta. E troca evidência por suposição: o sistema real raramente é o "típico", e conferir só no fim não reconstrói o fluxo.<span class="ts">Domínio 2 · TS 2.5 — Tools nativas (Read, Write, Edit, Bash, Grep, Glob)</span></div>
+  <div class="feedback"><strong>Gabarito: A e D.</strong> A aplica o funil: delimita os pontos de entrada, lê só os trechos necessários e segue as evidências entre módulos. D cobre reexportações e aliases locais, mas também exige confirmar a invocação e declarar o que a análise estática não resolveu. Pesquisar nomes exportados, isoladamente, <strong>não garante todos os chamadores</strong>: o call site pode usar outro alias, e um dispatch dinâmico pode continuar pendente. B e C são variações de "ler tudo antes": gastam o contexto com arquivos irrelevantes e atrasam a resposta. E troca evidência por suposição: o sistema real raramente é o "típico", e conferir só no fim não reconstrói o fluxo.<span class="ts">Domínio 2 · TS 2.5 — Tools nativas (Read, Write, Edit, Bash, Grep, Glob)</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="2.5" data-dom="2">
+  <div class="qnum">Questão 11 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">For an exercise, you must trace POST /invoices to the invoice-numbering implementation and deliver confirmed static call sites. A barrel re-exports generateInvoiceNumber as nextInvoiceNumber, and an importer may rename it again. The required delivery contains file:line evidence for the route → re-export → implementation chain and each confirmed invocation, plus searched paths, pending items and completeness limits. For this exercise only, the budget is four Read calls and 240 returned lines in total, and compaction may occur. Which plan best satisfies the task? (These numbers are exercise constraints, not an official Claude Code rule.)</div>
+  <div class="pt-block pt">Num exercício, você deve rastrear POST /invoices até a implementação da numeração de faturas e entregar os call sites estáticos confirmados. Um barrel reexporta generateInvoiceNumber as nextInvoiceNumber, e um importador pode renomeá-lo novamente. A entrega obrigatória contém evidências arquivo:linha da cadeia rota → reexportação → implementação e de cada invocação confirmada, além dos caminhos pesquisados, pendências e limites de completude. Somente neste exercício, o orçamento é de quatro chamadas Read e 240 linhas retornadas no total, e pode haver compactação. Qual plano atende melhor à tarefa? (Esses números são restrições do exercício, não uma regra oficial do Claude Code.)</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q11" value="a">A. Read the full route file and then full importing files in dependency order until the budget runs out. If compaction occurs, restart from the route; finish with only the implementation name so the answer stays short.<div class="pt">Ler o arquivo de rota inteiro e depois os arquivos importadores inteiros na ordem das dependências até acabar o orçamento. Se houver compactação, reiniciar pela rota; terminar só com o nome da implementação para manter a resposta curta.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="b">B. Grep only generateInvoiceNumber and nextInvoiceNumber across the repository, count every import as a call, and declare the caller list exhaustive; aliases and dynamic dispatch do not need separate treatment once exported names are covered.<div class="pt">Fazer Grep apenas de generateInvoiceNumber e nextInvoiceNumber em todo o repositório, contar cada import como chamada e declarar a lista de chamadores exaustiva; aliases e despachos dinâmicos não precisam de tratamento separado quando os nomes exportados foram cobertos.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="c">C. Define the question and stop criterion; delimit likely route and billing paths with Glob/Grep and refine the patterns; Read only the matched route, barrel, implementation and candidate-use ranges within budget; follow nextInvoiceNumber to any local alias and confirm actual invocations; preserve a search/evidence/pending log for compaction; then deliver file:line evidence, searched scope, unresolved dynamic calls and uninspected paths.<div class="pt">Definir a pergunta e o critério de parada; delimitar caminhos prováveis de rota e billing com Glob/Grep e refinar os padrões; ler com Read apenas os trechos encontrados da rota, do barrel, da implementação e dos usos candidatos dentro do orçamento; seguir nextInvoiceNumber até qualquer alias local e confirmar as invocações reais; preservar um registro de buscas, evidências e pendências para a compactação; então entregar evidências arquivo:linha, escopo pesquisado, chamadas dinâmicas não resolvidas e caminhos não inspecionados.</div></label>
+    <label class="opt"><input type="radio" name="q11" value="d">D. Avoid Read entirely to protect the budget, return raw Grep matches without line references as proof of every caller, and omit the investigation log because a compacted session can reconstruct the searches from its final answer.<div class="pt">Evitar Read completamente para proteger o orçamento, devolver matches brutos de Grep sem referências de linha como prova de todos os chamadores e omitir o registro da investigação porque uma sessão compactada pode reconstruir as buscas a partir da resposta final.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> A resposta está na <strong>sequência</strong>, não apenas na escolha das tools: pergunta/critério → escopo e padrões → Reads mínimos → aliases e invocações confirmadas → registro preservado → entrega com evidências e limites. O orçamento de quatro Reads/240 linhas pertence só a este exercício; na prática, ele deve ser adequado à tarefa e incluir margem para verificação e síntese. A gasta contexto com arquivos inteiros, reinicia após a compactação e não entrega as evidências exigidas. B repete a falsa garantia de completude, perde aliases locais e confunde import com chamada. D não confirma os usos, não fornece <code>arquivo:linha</code> e descarta justamente o registro que permite retomar sem repetir buscas.<span class="ts">Domínio 2 · TS 2.5 — Exploração incremental de codebase sob contexto limitado</span></div>
 </div>
 
 <div class="q" data-correct="a" data-ts="2.4" data-dom="2">
-  <div class="qnum">Questão 11 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="qnum">Questão 12 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
   <div class="stem">Your team commits a project-level .mcp.json for an internal ticketing server that reads its token from ${TICKETS_TOKEN}. For most engineers, Claude Code uses the ticketing tools without trouble. One new engineer reports that Claude never calls them and answers ticket questions by grepping the repository instead. What should you check first?</div>
   <div class="pt-block pt">Seu time commita um .mcp.json de projeto para um server interno de tickets que lê o token de ${TICKETS_TOKEN}. Para a maioria dos engenheiros, o Claude Code usa as tools de tickets sem problema. Um engenheiro novo relata que o Claude nunca as chama e responde perguntas sobre tickets fazendo grep no repositório. O que você deve verificar primeiro?</div>
   <div class="opts">
-    <label class="opt"><input type="radio" name="q11" value="a">A. Run /mcp in that engineer's session to see whether the server connected and how many tools it exposed.<div class="pt">Rodar /mcp na sessão desse engenheiro para ver se o server conectou e quantas tools ele expôs.</div></label>
-    <label class="opt"><input type="radio" name="q11" value="b">B. Rewrite the ticketing tool descriptions so that the agent prefers them over the built-in Grep on ticket questions.<div class="pt">Reescrever as descrições das tools de tickets para o agente preferi-las ao Grep nativo em perguntas sobre tickets.</div></label>
-    <label class="opt"><input type="radio" name="q11" value="c">C. Copy the server definition into that engineer's ~/.claude.json, so the setup also loads in the user scope.<div class="pt">Copiar a definição do server para o ~/.claude.json desse engenheiro, para o setup carregar também no escopo de usuário.</div></label>
-    <label class="opt"><input type="radio" name="q11" value="d">D. Add a CLAUDE.md rule telling Claude to always call the ticketing tools first for any question about tickets.<div class="pt">Adicionar uma regra no CLAUDE.md dizendo ao Claude para sempre chamar primeiro as tools de tickets em qualquer pergunta sobre tickets.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="a">A. Run /mcp in that engineer's session to see whether the server connected and how many tools it exposed.<div class="pt">Rodar /mcp na sessão desse engenheiro para ver se o server conectou e quantas tools ele expôs.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="b">B. Rewrite the ticketing tool descriptions so that the agent prefers them over the built-in Grep on ticket questions.<div class="pt">Reescrever as descrições das tools de tickets para o agente preferi-las ao Grep nativo em perguntas sobre tickets.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="c">C. Copy the server definition into that engineer's ~/.claude.json, so the setup also loads in the user scope.<div class="pt">Copiar a definição do server para o ~/.claude.json desse engenheiro, para o setup carregar também no escopo de usuário.</div></label>
+    <label class="opt"><input type="radio" name="q12" value="d">D. Add a CLAUDE.md rule telling Claude to always call the ticketing tools first for any question about tickets.<div class="pt">Adicionar uma regra no CLAUDE.md dizendo ao Claude para sempre chamar primeiro as tools de tickets em qualquer pergunta sobre tickets.</div></label>
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: A.</strong> O mesmo <code>.mcp.json</code> funciona para o resto do time, então o que muda é o ambiente desse engenheiro — o suspeito número um é a variável <code>TICKETS_TOKEN</code> não definida: a config fica com o texto literal, o server não autentica e não expõe tool nenhuma. O outro suspeito é o server de projeto ainda pendente de aprovação na máquina dele. <code>/mcp</code> mostra o status de cada server, a contagem de tools e o aviso com o nome da variável que falta; é o diagnóstico antes de qualquer reescrita. B ataca a seleção de tools, mas o problema é de descoberta: com zero tools expostas não há o que preferir, e as mesmas descrições funcionam para os outros. C duplica a config num escopo pessoal e não cria a variável que falta — o server continua sem token. D manda chamar tools que não existem na sessão; instrução não conserta conexão.<span class="ts">Domínio 2 · TS 2.4 — Integração de MCP servers</span></div>
