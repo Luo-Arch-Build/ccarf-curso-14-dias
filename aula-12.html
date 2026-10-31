@@ -276,19 +276,57 @@ tamanho. Um teto de custo exige orçamento de tokens e política de corte, não 
 é o começo da conversa. Se o cliente disse no turno 3 "só posso receber depois do dia 20" e isso não foi para o bloco,
 no turno 30 o fato já saiu da janela, e o agente agenda a entrega para o dia 15. Por isso a janela precisa ser combinada
 com extração de fatos no momento em que eles aparecem.</p>
-<p><strong>Retenção seletiva.</strong> Em vez de tratar o histórico como uma coisa só, classifique:</p>
+<p><strong>Retenção seletiva.</strong> O histórico cresce, mas nem tudo nele continua útil. Em vez de tratá-lo como uma
+coisa só, a aplicação classifica o conteúdo antes de montar o próximo request. A pergunta é o que precisa sobreviver e
+em que forma:</p>
+<table class="gloss">
+  <tr><th>Classe</th><th>O que preserva</th><th>Exemplos no suporte</th></tr>
+  <tr><td class="en">extrair, persistir e reinjetar</td><td>o fato exato, que não pode sumir nem mudar na compactação</td><td class="uso">IDs, valores, datas e prazos, decisões, acordos e compromissos feitos, restrições e expectativas declaradas pelo cliente</td></tr>
+  <tr><td class="en">resumir</td><td>o significado: qual foi a decisão e por quê, não cada mensagem que levou a ela</td><td class="uso">a negociação que terminou num acordo cujos fatos exatos já estão no bloco</td></tr>
+  <tr><td class="en">sair do contexto</td><td>nada no contexto: o conteúdo já cumpriu sua função</td><td class="uso">tool results antigos já usados, respostas intermediárias, buscas sem resultado, exploração concluída, logs</td></tr>
+</table>
+<p>Um caso só, do começo ao fim. No turno 3 o cliente diz "o pedido é o #4821 e só posso receber depois do dia 20". No
+mesmo turno, antes de qualquer resumo, a aplicação grava no bloco de fatos o valor exato e de onde ele veio:</p>
+<pre><code>{
+  "order_id": "4821",
+  "constraints": [
+    {"kind": "receive_after", "value": "2026-11-20",
+     "source": "turn-3", "basis": "declared_by_customer"}
+  ],
+  "decisions": [
+    {"decision": "delivery on 2026-11-26 (Thu)", "reason": "no Friday route available",
+     "accepted_by": "customer", "source": "turn-14"}
+  ]
+}</code></pre>
+<p>Do turno 9 ao 14 o cliente pediu sexta, a transportadora só tinha quinta e ele aceitou quinta. Essas seis mensagens
+podem ser resumidas, porque o que importa delas (a data, o motivo e quem aceitou) já virou registro de decisão no
+bloco. O <code>lookup_order</code> de 40 campos chamado no turno 5 pode sair do contexto depois que status e rastreio
+foram para o bloco. Duas ressalvas:</p>
 <ul>
-  <li><strong>Extrair, persistir e reinjetar enquanto necessário</strong>: IDs, valores, datas, acordos e compromissos
-      feitos, restrições e expectativas declaradas pelo cliente.</li>
-  <li><strong>Pode ser resumido</strong>: a discussão que levou a uma decisão, cujos fatos exatos já foram verificados e
-      registrados no bloco.</li>
-  <li><strong>Pode sair</strong>: tool results antigos já usados (o <code>lookup_order</code> de 40 campos de dez
-      turnos atrás), saídas verbosas de exploração, tentativas que falharam e já foram resolvidas — depois de preservar
-      os fatos exatos ainda necessários.</li>
+  <li><strong>Sair do contexto não é apagar.</strong> O conteúdo deixa de ir no request; o registro durável e o log de
+      auditoria continuam onde estavam. Se uma fala tem valor de registro (contestação, consentimento, proposta aceita),
+      guarde o original fora do contexto, não só o resumo.</li>
+  <li><strong>Cada fato carrega origem e base.</strong> De que turno ou tool veio, quando vale e se foi declarado,
+      inferido ou verificado. Quando o cliente muda de ideia ("agora só depois do dia 25"), o fato novo substitui o
+      antigo com a nova origem; os dois não ficam no bloco competindo em silêncio.</li>
 </ul>
+<p>Quatro coisas diferentes que é comum misturar:</p>
+<table class="gloss">
+  <tr><th>Termo</th><th>O que é</th></tr>
+  <tr><td class="en">histórico</td><td>todas as mensagens e tool results já trocados, guardados pela aplicação</td></tr>
+  <tr><td class="en">contexto</td><td>o que vai no request desta chamada; é tudo o que o modelo vê</td></tr>
+  <tr><td class="en">estado estruturado</td><td>fatos e decisões persistidos fora do histórico, com origem; só ajudam se forem injetados</td></tr>
+  <tr><td class="en">resumo</td><td>versão compactada de parte do histórico; perde detalhe por definição</td></tr>
+</table>
+<p>O request seguinte leva <strong>bloco de fatos + resumo do que foi resumido + os últimos turnos inteiros</strong>: menos
+tokens, sem perder o que o agente precisa honrar. No turno 30, quando o cliente pede para antecipar a entrega, a fala do
+turno 3 já não está no contexto, mas a restrição está. <strong>Ausência da mensagem não é ausência do fato</strong>: por
+isso o bloco é reinjetado antes da decisão, e não consultado só se o modelo lembrar de pedir. Se a extração falhou ou
+ficou ambígua, o trecho original continua no contexto até o fato ser recuperado.</p>
 <p>Regra de bolso: <em>o que o agente pode ter de honrar mais tarde é extraído para o bloco de fatos no turno em que
-aparece, antes de qualquer descarte ou resumo; a aplicação precisa incluir esse bloco nos requests relevantes. Aumentar a
-janela só adia a perda, e estado durável fora do transcript não está automaticamente presente no contexto.</em></p>
+aparece, antes de qualquer descarte ou resumo; a aplicação precisa incluir esse bloco nos requests relevantes. Nada sai do
+contexto antes de o que precisa sobreviver estar extraído, persistido e verificado. Aumentar a janela só adia a perda, e
+estado durável fora do transcript não está automaticamente presente no contexto.</em></p>
 
 <h2>2. Escalonamento e resolução de ambiguidade (Task Statement 5.2)</h2>
 <p>A prova cobra a <strong>calibração</strong>: escalar demais derruba o first-contact resolution; escalar
