@@ -170,12 +170,13 @@ com metadados para a síntese interpretar cada número sem adivinhar. Um objeto 
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["source", "locator"],
+              "required": ["source", "locator", "excerpt"],
               "properties": {
                 "source": {"type": "string", "minLength": 1},
                 "locator": {"type": "string", "minLength": 1},
                 "published": {"type": "string", "format": "date"},
-                "excerpt": {"type": "string"}
+                "excerpt": {"type": "string", "minLength": 1},
+                "content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
               }
             }
           },
@@ -203,16 +204,45 @@ com metadados para a síntese interpretar cada número sem adivinhar. Um objeto 
 <ul>
   <li><strong>Validação estrutural:</strong> fazer parse do JSON e validar o resultado contra o schema; rejeitar ou repetir
       a tarefa se faltar campo obrigatório, houver tipo inválido ou status fora do enum.</li>
-  <li><strong>Validação semântica:</strong> abrir as fontes e conferir se cada citação realmente sustenta sua
-      <code>claim</code>, incluindo valor, data e recorte metodológico. Passar no schema não prova que uma afirmação é
-      verdadeira nem que a fonte existe.</li>
+  <li><strong>Validação semântica:</strong> conferir se cada citação realmente sustenta sua <code>claim</code>,
+      incluindo valor, data e recorte metodológico. Passar no schema não prova que uma afirmação é verdadeira nem que a
+      fonte existe.</li>
 </ul>
+<p><strong>Conferir não é refazer a pesquisa.</strong> O upstream produz a análise; o coordinator decide se ela é
+confiável o bastante para ser consumida. Se cada citação traz a fonte, a localização (<code>locator</code>) e o trecho
+exato que sustenta a claim (<code>excerpt</code>), o coordinator abre aquele ponto e confere aquele trecho, sem buscar
+fontes de novo nem reextrair os dados. Por isso o schema acima exige <code>excerpt</code>: é o trecho que torna a
+conferência barata. Sem ele, conferir uma claim vira repetir a investigação, e o sistema paga duas vezes em tokens e
+latência pelo mesmo trabalho.</p>
+<table class="gloss">
+  <tr><th>Atividade</th><th>Upstream (subagent)</th><th>Coordinator</th></tr>
+  <tr><td>buscar fontes e extrair os dados</td><td>sim</td><td>não</td></tr>
+  <tr><td>formular cada claim com fonte, localização e trecho</td><td>sim</td><td>não</td></tr>
+  <tr><td>validar parse, schema e coerência dos metadados</td><td>não</td><td>sim</td></tr>
+  <tr><td>conferir se a fonte existe e se o trecho sustenta a claim</td><td>não</td><td>sim</td></tr>
+  <tr><td>decidir o que entra na síntese, o que vai para quarentena e o que é re-delegado</td><td>não</td><td>sim</td></tr>
+</table>
+<p>A profundidade da conferência é <strong>proporcional ao risco da claim</strong>. Um dado trivial e diretamente
+verificável não deve consumir o mesmo orçamento que um valor financeiro, jurídico ou estatístico que decide a
+conclusão:</p>
+<table class="gloss">
+  <tr><th>Nível</th><th>O que confere</th><th>Quando</th></tr>
+  <tr><td class="en">L1 · estrutura</td><td>parse, schema, tipos, IDs e coerência dos metadados (status, data, citação presente)</td><td class="uso">todo resultado; custo baixo</td></tr>
+  <tr><td class="en">L2 · trecho</td><td>a fonte abre no <code>locator</code>, o <code>excerpt</code> está lá e sustenta valor, data e recorte da claim</td><td class="uso">toda claim que entra na síntese; custo médio</td></tr>
+  <tr><td class="en">L3 · aprofundada</td><td>metodologia, contradições entre fontes e confirmação em fonte independente, só daquela claim</td><td class="uso">claims de alto impacto e conflitos entre subagents; custo alto</td></tr>
+</table>
+<p>O <code>content_hash</code> registra o conteúdo que o upstream leu: se a fonte mudou desde a coleta, o hash não bate e o
+trecho precisa ser conferido no conteúdo atual. Ele mostra que o conteúdo mudou ou não; não prova que a fonte é autêntica
+nem que a claim é correta. Quando L2 ou L3 falha, a claim vai para quarentena, a lacuna entra em <code>errors</code> e a
+verificação pode ser re-delegada a um subagent; o coordinator não tapa o buraco com pesquisa própria.</p>
 <p>Se a busca termina sem dados, <code>findings</code> fica vazio e o <code>summary</code> declara a ausência; se houve
 falha ou lacuna de cobertura, use <code>partial</code>/<code>failed</code> e <code>errors</code>. Nunca preencha o vazio
 com valor ou citação inventados. As <code>citations</code> desse JSON são <strong>metadados customizados da aplicação</strong>,
 não o recurso nativo <strong>Citations</strong> da API; um não ativa o outro nem implica compatibilidade entre eles.</p>
 <p><strong>Regra de bolso:</strong> <em>o downstream recebe o resultado validado, não o raciocínio — e cada afirmação viaja
-com origem verificável ou uma lacuna explícita.</em></p>
+com origem verificável ou uma lacuna explícita. O upstream responde pela pesquisa e pelas evidências; o coordinator, pela
+admissibilidade; o downstream, pela síntese. Verify, don't repeat: confira o trabalho do upstream, não o execute de
+novo.</em></p>
 
 <h3>Tool results acumulam tokens desproporcionalmente</h3>
 <p>Um <code>tool_result</code> permanece no histórico <strong>enquanto a aplicação continuar reenviando-o sem edição</strong>;
@@ -431,8 +461,9 @@ cair. A síntese final precisa preservar evidências e expor falhas parciais.</p
 recoveries e a síntese final com falhas parciais.</p>
 <p><strong>Critérios de aprovação:</strong></p>
 <ul>
-  <li>Campos obrigatórios, status, IDs, tentativas e erros passam na validação estrutural; cada claim tem citação cuja fonte
-      foi aberta e confere com a afirmação.</li>
+  <li>Campos obrigatórios, status, IDs, tentativas e erros passam na validação estrutural; cada claim da síntese passou ao
+      menos pelo L2 (o trecho citado foi conferido no <code>locator</code> e sustenta a afirmação), as de alto impacto pelo
+      L3, e o coordinator não refez a pesquisa dos subagents.</li>
   <li>O recovery usa checkpoint atômico, reconcilia artefato órfão e artefato ausente, controla tentativas, impede efeito
       duplicado e valida o estado antes de retomar.</li>
   <li>Objetivo, restrições, caminhos, citações, decisões, pendências e próxima ação sobrevivem verificados à compactação.</li>
