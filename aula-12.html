@@ -357,16 +357,76 @@ de menos gera violação de política. Os gatilhos legítimos de escalonamento s
       roteamento — a confidence self-reportada de LLMs é mal calibrada; o agente já está confiante demais
       exatamente nos casos difíceis</li>
 </ul>
-<p>A correção proporcional para descalibração de escalonamento: <strong>critérios explícitos de escalonamento
-no system prompt + few-shot examples</strong> mostrando quando escalar vs. resolver autonomamente. É a
-resposta da Questão 3 oficial do guide: ataca a causa raiz (fronteiras de decisão não especificadas) antes
-de qualquer infraestrutura nova (classificador ML separado é over-engineering nesse estágio).</p>
+<h3>A correção proporcional: critérios explícitos + few-shot</h3>
+<p>Descalibração de escalonamento é o agente não saber quando resolver sozinho e quando passar o caso adiante. A causa
+raiz quase nunca é falta de um classificador mais sofisticado; é falta de critério de decisão escrito. Um system prompt
+como "resolva da melhor forma possível e, se necessário, transfira para um atendente" deixa o "se necessário" para o
+modelo interpretar, e ele interpreta diferente conforme a formulação do pedido, o contexto e os exemplos anteriores. O
+resultado são dois erros, que muitas vezes aparecem juntos no mesmo agente:</p>
+<table class="gloss">
+  <tr><th>Erro</th><th>O que o agente faz</th><th>No suporte</th><th>Como aparece na medição</th></tr>
+  <tr><td class="en">over-escalation</td><td>escala demais: transfere o que poderia resolver</td><td class="uso">a troca padrão de item danificado, com foto anexada, vai para a fila humana</td><td>baixa precisão do escalonamento: dos casos que escalou, muitos não precisavam</td></tr>
+  <tr><td class="en">under-escalation</td><td>escala de menos: resolve sozinho o que deveria transferir</td><td class="uso">aprova o price matching com concorrente, que a política não cobre</td><td>baixo recall do escalonamento: dos casos que deviam escalar, muitos não escalaram</td></tr>
+</table>
+<p><strong>Primeira correção: critérios explícitos, escritos como condições observáveis</strong>, coisas que o agente
+verifica na conversa ou num tool result, e não "se o caso for complexo". Os critérios de escalar são os três gatilhos
+acima, na forma em que aparecem no atendimento: o pedido de humano; a falta de autoridade, quando o pedido está fora da
+política escrita ou ela não o cobre; e a incapacidade de progredir, quando as fontes continuam em conflito depois de
+consultadas ou um dado continua faltando depois das tentativas permitidas. Os critérios de <em>não</em> escalar pesam o
+mesmo, porque são eles que cortam o escalonamento excessivo: o que uma tool responde, o que um dado do cliente
+desbloqueia (a ambiguidade de identidade, logo abaixo) e a operação rotineira que a política autoriza. Fronteira que é
+regra de negócio determinística, como valor acima da alçada, vai também para um hook (veja a pegadinha do dia).</p>
+<p><strong>Segunda correção: few-shot examples</strong>, que mostram como aplicar a regra. Cada exemplo nomeia a ação
+(consultar tool, pedir dado, resolver ou escalar) e o motivo, e há exemplos dos dois lados da fronteira:</p>
+<pre><code>ESCALATION RULES
+Escalate (escalate_to_human, with a case summary) when you observe:
+- The customer asks for a human. Transfer now; do not investigate first.
+- The request is outside written policy, or policy is silent on it.
+  You have no authority to grant an exception.
+- You cannot progress: sources still conflict after you checked them,
+  or a required detail is still missing after 2 requests.
+Do not escalate when:
+- A tool answers it (order status, tracking, policy text).
+- One detail from the customer unblocks you. Several matches for a
+  name: ask for email or order number; never pick by heuristic.
+- It is a routine operation that policy authorizes and the data supports.
+- The customer is frustrated but the case is simple. Acknowledge it and
+  offer to resolve; escalate if they say again they want a human.
+Sentiment and your own confidence are not escalation criteria.
+
+EXAMPLES
+"Where is order #4821?" → CONSULT TOOL: lookup_order has the answer.
+"Blender arrived cracked, photo attached." → RESOLVE: routine, authorized.
+"I'm João Silva, check my order." (2 matches) → ASK: email or order number.
+"Absurd! I just need the invoice for #4821." → RESOLVE: acknowledge, send it.
+"Store X is R$ 80 cheaper. Match it." → ESCALATE: policy covers our prices only.
+"My refund never came." (refunded, no transaction id) → ESCALATE after checking:
+  the records do not settle it; hand off what you found.
+"I want to talk to a person." → ESCALATE now, no investigation first.</code></pre>
+<p><strong>Por que não começar por um classificador ML separado.</strong> Ele traz outro modelo para manter, dados
+rotulados, threshold e calibração, monitoramento de falsos positivos e negativos, latência e custo em cada atendimento e
+uma fronteira de falha nova, para um problema que pode ser só um system prompt mal especificado. É a resposta da Questão 3
+oficial do guide: critérios explícitos + few-shot atacam a causa raiz (fronteiras de decisão não especificadas) antes de
+qualquer infraestrutura nova, e o classificador nesse estágio é over-engineering.</p>
+<p><strong>Como saber se funcionou.</strong> Monte um conjunto de cenários de teste com a decisão esperada de cada um: os
+casos acima e variações que não estão nos exemplos (outro concorrente, outro item danificado, três clientes com o mesmo
+nome), para medir a regra e não a memória dos exemplos. Conte os dois erros separados: escalonamentos desnecessários
+derrubam a precisão; escalonamentos que faltaram derrubam o recall. A taxa de resolução autônoma sozinha não prova
+calibração, porque ela também sobe quando o agente aprova o price matching que não podia. Na prática, a sequência é:
+identificar os tipos de pedido descalibrados → escrever critérios observáveis → colocá-los no system prompt → acrescentar
+few-shot de escalar e de não escalar → testar nos cenários conhecidos → medir os dois erros e ajustar a fronteira → só
+então, com evidência de que isso não bastou, considerar um classificador separado.</p>
+<p>Regra de bolso: <em>antes de treinar um segundo modelo para decidir quando o primeiro precisa de ajuda, ensine ao
+primeiro exatamente quando pedir: critérios observáveis no system prompt, few-shot que separam consultar, pedir dado,
+resolver e escalar, e cenários de teste que medem o escalonamento excessivo e o insuficiente em separado. Governança da
+decisão vem antes de complexidade de arquitetura.</em></p>
 
 <h3>Ambiguidade de identidade</h3>
 <p>Quando uma tool retorna <strong>múltiplos matches</strong> para um cliente (dois "João Silva" na base),
 a ação correta é <strong>pedir um identificador adicional</strong> (e-mail, CPF, número do pedido) —
 nunca selecionar por heurística ("o mais recente", "o do mesmo estado"). Escolher o cliente errado vaza
-dados de uma pessoa para outra.</p>
+dados de uma pessoa para outra. Nos critérios acima, é o caso de <em>pedir dado</em>: o identificador desbloqueia o
+atendimento, então não é motivo para escalar nem para adivinhar.</p>
 
 <h2>3. Contexto em exploração de codebases grandes (Task Statement 5.4)</h2>
 <p>O sintoma assinatura: em sessões longas de exploração, o modelo começa a dar respostas inconsistentes e
