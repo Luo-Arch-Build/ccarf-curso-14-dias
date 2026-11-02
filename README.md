@@ -22,7 +22,7 @@ Curso de estudo para a prova **Claude Certified Architect – Foundations (CCAR-
 - O progresso fica salvo no navegador, inclusive onde você parou na narração de cada aula.
 - **Fichamento (study notes)**: página separada, em inglês, com as afirmações factuais da aula (sem
   explicação), tradução por seção que dá para mostrar, e narração só em inglês. Veja a seção
-  [Fichamento](#fichamento-study-notes-em-inglês). Por enquanto, aula 12.
+  [Fichamento](#fichamento-study-notes-em-inglês). Por enquanto, aulas 06 e 12.
 
 ## Como usar
 
@@ -53,7 +53,7 @@ mas não oficial: pode mudar ou parar sem aviso.
 Além da aula, algumas aulas têm uma página de **fichamento** separada (`fichamento-NN.html`): afirmações
 factuais 100% em inglês (não explicação — para quem já estudou a aula), com botão **"ver tradução"** por
 seção que mostra o pt-BR (escondido por padrão), e narração 100% em inglês. O link aparece no `index.html`
-na aula correspondente. Até agora existe o fichamento da **aula 12**.
+na aula correspondente. Até agora existem os fichamentos das **aulas 06 e 12**.
 
 A página é gerada por um builder a partir de um JSON de conteúdo, para ser reproduzível:
 
@@ -79,6 +79,9 @@ Notas de operação:
 - `narrar_lento.py` é resumível: salva partes em `audio/.fichamento-NN-parts/` e retoma de onde parou.
   Limpe essa pasta e o `audio/fichamento-NN.txt` antes do commit. O MP3 fica fora do git (só na release);
   versiona-se a página, o `narracao/fichamento-NN.js` (marcações) e o JSON de conteúdo.
+- O edge-tts às vezes esgota as tentativas numa linha comum (puro throttling, não defeito de conteúdo) e
+  o gerador aborta. Nesse caso, dê uma pausa de alguns segundos e **rode o mesmo comando de novo**: ele pula
+  as partes já salvas e retoma daquela linha. Pode ajudar subir `NARRAR_TENTATIVAS` e `PAUSA` na retomada.
 - `&` cru trava o edge-tts (SSML); o `normalizar` já troca por "and"/"e".
 
 ## Fonte e limites
