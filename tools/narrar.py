@@ -18,6 +18,7 @@ import asyncio
 import bisect
 import hashlib
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -25,14 +26,15 @@ from pathlib import Path
 import edge_tts
 import html5lib
 
-VOZ = "pt-BR-ThalitaMultilingualNeural"
+VOZ = "pt-BR-ThalitaMultilingualNeural"  # sobrescrito por --voz
+IDIOMA = "pt"  # "pt" ou "en"; definido por --en (normalização adequada ao idioma)
 RAIZ = Path(__file__).resolve().parent.parent
 AUDIO = RAIZ / "audio"
 SYNC = RAIZ / "narracao"
-EM_PARALELO = 4
-TENTATIVAS = 3
-LIMITE_PEDACO = 3000  # bytes; abaixo dos 4096 em que o edge-tts corta sozinho
-TEMPO_MAXIMO = 360  # segundos por pedaço; o serviço às vezes pendura a conexão sem dar erro
+EM_PARALELO = int(os.environ.get("NARRAR_PARALELO", 4))
+TENTATIVAS = int(os.environ.get("NARRAR_TENTATIVAS", 3))
+LIMITE_PEDACO = int(os.environ.get("NARRAR_LIMITE", 3000))  # bytes; abaixo dos 4096 em que o edge-tts corta sozinho
+TEMPO_MAXIMO = int(os.environ.get("NARRAR_TIMEOUT", 360))  # segundos por pedaço; o serviço às vezes pendura a conexão sem dar erro
 BYTES_POR_SEGUNDO = 6000  # o MP3 do serviço tem 48 kbit/s constantes, então bytes dão a duração exata
 AVISO_CODIGO = "Trecho de código: veja na página."
 
@@ -97,10 +99,17 @@ def segmentos(body):
 
 def normalizar(texto):
     texto = re.sub(r"[\U0001F000-\U0001FFFF☀-➿️]", "", texto)  # emojis
-    texto = texto.replace("·", "\n").replace("→", ";").replace("×", " versus ")
+    versus = " versus " if IDIOMA == "pt" else " vs "
+    e_comercial = " e " if IDIOMA == "pt" else " and "
+    texto = texto.replace("&", e_comercial)  # edge-tts pode recusar o '&' cru (SSML)
+    texto = texto.replace("·", "\n").replace("→", ";").replace("×", versus)
     texto = re.sub(r"\s*—\s*", ", ", texto)
-    texto = re.sub(r"(\d)\s*–\s*(\d)", r"\1 a \2", texto)
-    texto = re.sub(r"~\s*(\d)", r"cerca de \1", texto)
+    if IDIOMA == "pt":
+        texto = re.sub(r"(\d)\s*–\s*(\d)", r"\1 a \2", texto)
+        texto = re.sub(r"~\s*(\d)", r"cerca de \1", texto)
+    else:
+        texto = re.sub(r"(\d)\s*–\s*(\d)", r"\1 to \2", texto)
+        texto = re.sub(r"~\s*(\d)", r"approximately \1", texto)
     linhas = []
     for linha in texto.split("\n"):
         linha = re.sub(r"\s+", " ", linha).strip(" ,;")
@@ -243,5 +252,13 @@ async def main(aulas):
 if __name__ == "__main__":
     argumentos = sys.argv[1:]
     modo_conferir = "--conferir" in argumentos
-    aulas = [Path(a).resolve() for a in argumentos if a != "--conferir"] or sorted(RAIZ.glob("aula-*.html"))
+    if "--en" in argumentos:
+        IDIOMA = "en"
+        VOZ = "en-US-AndrewNeural"  # Andrew (masculina, neutra); a variante Multilingual anda instável no edge-tts
+    if "--voz" in argumentos:
+        i = argumentos.index("--voz")
+        VOZ = argumentos[i + 1]
+        argumentos = argumentos[:i] + argumentos[i + 2:]
+    arquivos = [a for a in argumentos if not a.startswith("--")]
+    aulas = [Path(a).resolve() for a in arquivos] or sorted(RAIZ.glob("aula-*.html"))
     sys.exit(conferir(aulas) if modo_conferir else asyncio.run(main(aulas)))

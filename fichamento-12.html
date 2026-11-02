@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Notes 12 — Context Management &amp; Escalation · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  .lead { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  section.ficha { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px 20px; margin: 18px 0; border-left: 3px solid var(--accent); }
+  section.ficha > h2 { font-size: 18px; margin: 0 0 4px; border: none; padding: 0; }
+  .ficha-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  ul.assert { margin: 10px 0 0; padding-left: 20px; }
+  ul.assert li { margin: 8px 0; }
+  .ver-traducao { flex: none; background: var(--card2); border: 1px solid var(--border);
+    color: var(--muted); border-radius: 999px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+    white-space: nowrap; transition: border-color .15s, color .15s; }
+  .ver-traducao:hover { color: var(--text); border-color: var(--accent); }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 12px 0 0;
+    display: none; }
+  .pt-block.pt { color: var(--pt); font-size: 13.5px; }
+  section.ficha.show-pt .pt-block { display: block; }
+  ul.assert.pt-block li { margin: 7px 0; }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px;
+    text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.ptm { color: var(--pt); font-size: 13px; }
+  section.ficha.gloss-sec table.gloss td.ptm { display: none; }
+  section.ficha.gloss-sec.show-pt table.gloss td.ptm { display: table-cell; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px;
+    border-top: 1px solid var(--border); font-size: 14px; gap: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / <a href="aula-12.html">Aula 12</a> / Study Notes (EN)</div>
+  <h1>Study Notes 12 — Context Management &amp; Escalation</h1>
+  <div class="meta">
+    <span class="tag">Domain 5 · Context Management &amp; Reliability (15%)</span>
+    <span class="tag">English · narrated</span>
+  </div>
+  <p class="lead">Factual assertions in English for review. Each section has a translation button that
+  reveals the pt-BR version. The audio narration is English only.</p>
+</header>
+
+<section class="ficha" id="progressive-summarization-case-facts">
+  <div class="ficha-head">
+    <h2>Progressive summarization and the case-facts block (TS 5.1)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Sumarização progressiva e o bloco de case facts (TS 5.1)</strong></div>
+  <ul class="assert">
+    <li>The API keeps no state between requests; the application must resend the messages, responses and tool results needed for coherence across turns, and sending only the last message makes the agent forget whatever was not otherwise preserved.</li>
+    <li>Progressive summarization can lose critical data, and successive rounds can degrade exactly the data that matters; a summary of a summary turns an exact amount, percentage, date and a customer-declared expectation into vague prose, so the agent starts violating terms it agreed to.</li>
+    <li>The architectural fix is to extract and verify transactional facts before summarizing or discarding the evidence, persist them in a case-facts block outside the summarized history, and inject that block into the requests that need those facts.</li>
+    <li>State written to the database is durable but does not automatically enter the context; persisting and injecting are distinct steps, and the exact-facts block must not be replaced by a summary.</li>
+    <li>In sessions with multiple problems, a separate structured layer of IDs, amounts and per-order status helps keep the agent from mixing cases, provided it is maintained and actually sent in the prompt.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>A API não guarda estado entre requests; a aplicação precisa reenviar as mensagens, respostas e tool results necessários à coerência entre turnos, e mandar só a última mensagem faz o agente esquecer o que não foi preservado de outra forma.</li>
+    <li>A sumarização progressiva pode perder dados críticos, e rodadas sucessivas podem degradar exatamente os dados que importam; um resumo de um resumo transforma um valor, percentual, data e uma expectativa declarada pelo cliente em prosa vaga, e o agente passa a violar acordos que ele mesmo fez.</li>
+    <li>A correção arquitetural é extrair e verificar os fatos transacionais antes de resumir ou descartar a evidência, persisti-los num bloco de case facts fora do histórico resumido e injetá-lo nos requests que precisam desses fatos.</li>
+    <li>Estado gravado no banco é durável, mas não entra automaticamente no contexto; persistir e injetar são passos distintos, e o bloco de fatos exatos não deve ser substituído por um resumo.</li>
+    <li>Em sessões com múltiplos problemas, uma camada estruturada separada de IDs, valores e status por pedido ajuda a impedir que o agente misture os casos, desde que seja mantida e efetivamente enviada no prompt.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="lost-in-the-middle">
+  <div class="ficha-head">
+    <h2>Lost in the middle</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Perdido no meio</strong></div>
+  <ul class="assert">
+    <li>Models tend to process the beginning and end of long inputs more reliably and may omit findings from the middle sections.</li>
+    <li>The two mitigations the guide prescribes are placing a key-findings summary at the start of the aggregated input and organizing the detailed results under explicit section headers rather than one running block.</li>
+    <li>Metadata and structured data from subagents help synthesis and the context budget, but the positional-effect mitigation is summary-at-the-start plus headers, not those metadata by themselves.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Modelos tendem a aproveitar melhor o início e o fim de inputs longos e podem omitir findings das seções do meio.</li>
+    <li>As duas mitigações que o guia prescreve são colocar um resumo dos findings-chave no início do input agregado e organizar os resultados detalhados sob headers de seção explícitos, em vez de um bloco corrido.</li>
+    <li>Metadados e dado estruturado dos subagents ajudam a síntese e o orçamento de contexto, mas a mitigação do efeito posicional é o resumo no início mais os headers, não esses metadados por si sós.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="lean-upstream-subagentresult">
+  <div class="ficha-head">
+    <h2>Lean upstream when downstream has little context (SubagentResult)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Upstream enxuto quando o downstream tem pouco contexto (SubagentResult)</strong></div>
+  <ul class="assert">
+    <li>When the synthesis agent has a short context budget, every token the upstream agents send competes with the findings, so the fix is upstream: each agent returns a structured contract with summary, key facts, citations, errors and status instead of verbose reasoning.</li>
+    <li>A single example object is not enough; the SubagentResult schema defines IDs, required fields, types and permitted enum values so the contract can be validated.</li>
+    <li>The coordinator applies two gates before synthesis: structural validation parses the JSON and checks it against the schema, and semantic validation checks whether each citation actually supports its claim, including value, date and methodological scope.</li>
+    <li>Passing the schema does not prove a claim is true nor that the source exists.</li>
+    <li>Verify, don't repeat: the coordinator confirms the upstream work rather than redoing it, and because each citation carries source, locator and the exact excerpt, the coordinator opens that point and checks that excerpt without searching for sources again or re-extracting the data.</li>
+    <li>The excerpt is what makes checking cheap; without it, checking a claim becomes repeating the investigation and the system pays twice in tokens and latency for the same work.</li>
+    <li>Finding sources, extracting data and formulating each claim with source, locator and excerpt belong to the upstream subagent; validating parse, schema and metadata coherence, checking that the source exists and the excerpt supports the claim, and deciding what enters synthesis, what goes to quarantine and what is re-delegated belong to the coordinator.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Quando o agente de síntese tem orçamento de contexto curto, cada token que os agentes upstream mandam compete com os findings, então a correção é no upstream: cada agente devolve um contrato estruturado com resumo, fatos-chave, citações, erros e status, em vez de raciocínio verboso.</li>
+    <li>Um objeto de exemplo não basta; o schema SubagentResult define IDs, campos obrigatórios, tipos e valores de enum permitidos para que o contrato possa ser validado.</li>
+    <li>O coordinator aplica dois gates antes da síntese: a validação estrutural faz o parse do JSON e o confere contra o schema, e a validação semântica confere se cada citação realmente sustenta sua claim, incluindo valor, data e recorte metodológico.</li>
+    <li>Passar no schema não prova que uma claim é verdadeira nem que a fonte existe.</li>
+    <li>Verify, don't repeat: o coordinator confere o trabalho do upstream em vez de refazê-lo, e como cada citação traz fonte, locator e o excerpt exato, o coordinator abre aquele ponto e confere aquele trecho sem buscar fontes de novo nem reextrair os dados.</li>
+    <li>O excerpt é o que torna a conferência barata; sem ele, conferir uma claim vira repetir a investigação e o sistema paga duas vezes em tokens e latência pelo mesmo trabalho.</li>
+    <li>Buscar fontes, extrair dados e formular cada claim com fonte, locator e excerpt são do subagent upstream; validar parse, schema e coerência dos metadados, conferir se a fonte existe e se o excerpt sustenta a claim, e decidir o que entra na síntese, o que vai para quarentena e o que é re-delegado são do coordinator.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="verification-depth-content-hash">
+  <div class="ficha-head">
+    <h2>L1/L2/L3 verification depth and content_hash</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Profundidade de verificação L1/L2/L3 e content_hash</strong></div>
+  <ul class="assert">
+    <li>Verification depth is proportional to the risk of the claim: a trivial, directly verifiable datum should not consume the same budget as a financial, legal or statistical value that decides the conclusion.</li>
+    <li>L1 checks structure (parse, schema, types, IDs and metadata coherence) on every result at low cost; L2 checks that the source opens at the locator and the excerpt is there and supports the claim's value, date and scope, for every claim entering synthesis, at medium cost; L3 checks methodology, cross-source contradictions and independent confirmation of that one claim, for high-impact claims and subagent conflicts, at high cost.</li>
+    <li>The content_hash records the content the upstream read; if the source changed since collection the hash does not match and the excerpt must be rechecked against the current content.</li>
+    <li>The content_hash shows whether the content changed; it does not prove the source is authentic nor that the claim is correct.</li>
+    <li>When L2 or L3 fails, the claim goes to quarantine, the gap is recorded in errors and verification can be re-delegated to a subagent; the coordinator does not plug the hole with its own research.</li>
+    <li>If the search ends with no data, findings stays empty and the summary declares the absence; failure or coverage gaps use partial or failed plus errors, and the gap is never filled with an invented value or citation.</li>
+    <li>The citations field in this JSON is a custom application metadata, not the API's native Citations feature; one does not activate or imply compatibility with the other.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>A profundidade da verificação é proporcional ao risco da claim: um dado trivial e diretamente verificável não deve consumir o mesmo orçamento que um valor financeiro, jurídico ou estatístico que decide a conclusão.</li>
+    <li>O L1 confere a estrutura (parse, schema, tipos, IDs e coerência dos metadados) em todo resultado, a custo baixo; o L2 confere que a fonte abre no locator e que o excerpt está lá e sustenta o valor, a data e o recorte da claim, para toda claim que entra na síntese, a custo médio; o L3 confere metodologia, contradições entre fontes e confirmação independente só daquela claim, para claims de alto impacto e conflitos entre subagents, a custo alto.</li>
+    <li>O content_hash registra o conteúdo que o upstream leu; se a fonte mudou desde a coleta o hash não bate e o excerpt precisa ser conferido no conteúdo atual.</li>
+    <li>O content_hash mostra se o conteúdo mudou; não prova que a fonte é autêntica nem que a claim é correta.</li>
+    <li>Quando o L2 ou o L3 falha, a claim vai para quarentena, a lacuna entra em errors e a verificação pode ser re-delegada a um subagent; o coordinator não tapa o buraco com pesquisa própria.</li>
+    <li>Se a busca termina sem dados, findings fica vazio e o summary declara a ausência; falha ou lacuna de cobertura usa partial ou failed mais errors, e o vazio nunca é preenchido com valor ou citação inventados.</li>
+    <li>O campo citations desse JSON é um metadado customizado da aplicação, não o recurso nativo Citations da API; um não ativa o outro nem implica compatibilidade entre eles.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="tool-results-four-techniques">
+  <div class="ficha-head">
+    <h2>Tool results accumulate tokens; the four retention techniques</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Tool results acumulam tokens; as quatro técnicas de retenção</strong></div>
+  <ul class="assert">
+    <li>A tool_result stays in the history only while the application keeps resending it unedited; the API does not retain it automatically forever, and a lookup that returns 40-plus fields when only 5 are relevant inflates the context on each resent iteration.</li>
+    <li>The first trim happens in the tool or integration layer, before the result enters the context, and is not the prompt's job; old results can later be summarized or dropped, but only after the exact facts still needed are extracted and persisted.</li>
+    <li>The four techniques are summarization, structured state object, sliding window and selective retention; they do not compete and can be combined according to the facts that must survive, and the case-facts block is the structured state object.</li>
+    <li>Summarization trades old history for a summary but can degrade or omit values, dates and agreements, above all in successive rounds; the structured state object persists facts outside the history but only keeps what was extracted and writing does not guarantee presence in context.</li>
+    <li>A sliding window keeps only the last N turns whole, but N turns do not bound tokens or cost since messages and tool results vary in size, so a cost ceiling needs a token budget and a cut policy, not just a turn count.</li>
+    <li>A fact stated early in the conversation falls out of a sliding window, so the window must be combined with extracting facts the moment they appear.</li>
+    <li>Selective retention classifies content before building the next request into extract-persist-reinject (the exact fact that cannot vanish or change), summarize (the meaning: which decision and why) and leave the context (content that already served its purpose).</li>
+    <li>Each fact carries its origin and basis (which turn or tool, when it holds, and whether it was declared, inferred or verified); when the customer changes their mind the new fact replaces the old with its new origin rather than both sitting in the block in silent conflict.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Um tool_result permanece no histórico só enquanto a aplicação continuar reenviando-o sem edição; a API não o retém automaticamente para sempre, e um lookup que retorna mais de 40 campos quando só 5 são relevantes incha o contexto a cada iteração reenviada.</li>
+    <li>O primeiro corte acontece na tool ou na camada de integração, antes de o resultado entrar no contexto, e não é trabalho do prompt; resultados antigos podem depois ser resumidos ou removidos, mas só depois de extrair e persistir os fatos exatos ainda necessários.</li>
+    <li>As quatro técnicas são sumarização, estado estruturado, janela deslizante e retenção seletiva; elas não competem e podem ser combinadas conforme os fatos que precisam sobreviver, e o bloco de case facts é o estado estruturado.</li>
+    <li>A sumarização troca o histórico antigo por um resumo mas pode degradar ou omitir valores, datas e acordos, sobretudo em rodadas sucessivas; o estado estruturado persiste fatos fora do histórico mas só guarda o que foi extraído e gravar não garante presença no contexto.</li>
+    <li>A janela deslizante mantém inteiros só os últimos N turnos, mas N turnos não limitam tokens nem custo, já que mensagens e tool results variam de tamanho, então um teto de custo exige orçamento de tokens e política de corte, não apenas contagem de turnos.</li>
+    <li>Um fato declarado no começo da conversa sai da janela deslizante, por isso a janela precisa ser combinada com a extração de fatos no momento em que eles aparecem.</li>
+    <li>A retenção seletiva classifica o conteúdo antes de montar o próximo request em extrair-persistir-reinjetar (o fato exato que não pode sumir nem mudar), resumir (o significado: qual decisão e por quê) e sair do contexto (conteúdo que já cumpriu sua função).</li>
+    <li>Cada fato carrega origem e base (de que turno ou tool, quando vale e se foi declarado, inferido ou verificado); quando o cliente muda de ideia, o fato novo substitui o antigo com a nova origem, em vez de os dois ficarem no bloco em conflito silencioso.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="history-context-state-summary">
+  <div class="ficha-head">
+    <h2>History, context, structured state and summary are distinct</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Histórico, contexto, estado estruturado e resumo são distintos</strong></div>
+  <ul class="assert">
+    <li>History is all the messages and tool results already exchanged and stored by the application; context is what goes in this call's request and is everything the model sees.</li>
+    <li>Structured state is facts and decisions persisted outside the history with their origin, and it only helps if injected; a summary is a compacted version of part of the history that loses detail by definition.</li>
+    <li>Leaving the context is not deleting: the content stops going in the request while the durable record and audit log stay where they were, and a statement with record value should be kept in the original outside the context, not only as a summary.</li>
+    <li>Absence of the message is not absence of the fact, so the facts block is reinjected before the decision rather than consulted only if the model remembers to ask.</li>
+    <li>If extraction failed or was ambiguous, the original passage stays in the context until the fact is recovered, and enlarging the window only postpones the loss.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Histórico são todas as mensagens e tool results já trocados e guardados pela aplicação; contexto é o que vai no request desta chamada e é tudo o que o modelo vê.</li>
+    <li>Estado estruturado são fatos e decisões persistidos fora do histórico, com origem, e só ajudam se forem injetados; resumo é uma versão compactada de parte do histórico que perde detalhe por definição.</li>
+    <li>Sair do contexto não é apagar: o conteúdo deixa de ir no request enquanto o registro durável e o log de auditoria continuam onde estavam, e uma fala com valor de registro deve ser guardada no original fora do contexto, não só como resumo.</li>
+    <li>Ausência da mensagem não é ausência do fato, por isso o bloco de fatos é reinjetado antes da decisão, e não consultado só se o modelo lembrar de pedir.</li>
+    <li>Se a extração falhou ou ficou ambígua, o trecho original continua no contexto até o fato ser recuperado, e aumentar a janela só adia a perda.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="escalation-calibration">
+  <div class="ficha-head">
+    <h2>Escalation and ambiguity resolution (TS 5.2)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Escalonamento e resolução de ambiguidade (TS 5.2)</strong></div>
+  <ul class="assert">
+    <li>Escalating too much lowers first-contact resolution and escalating too little causes policy violations, so the exam tests calibration, and the three legitimate triggers are an explicit human request, a policy exception or gap, and inability to make meaningful progress.</li>
+    <li>An explicit I-want-a-human request is escalated immediately, without investigating first; a frustrated customer with a simple in-scope case gets acknowledgement and an offer to resolve, escalating only if they restate the preference for a human, because frustration is not complexity.</li>
+    <li>Policy that is ambiguous or silent on the request is escalated because the agent must not invent policy.</li>
+    <li>Sentiment analysis is an unreliable escalation trigger because sentiment does not correlate with case complexity, the real problem.</li>
+    <li>Self-reported confidence with a routing threshold is unreliable because LLM self-reported confidence is poorly calibrated and the agent is already overconfident exactly on the hard cases.</li>
+    <li>Over-escalation transfers what it could resolve and shows up as low escalation precision (many escalated cases did not need it); under-escalation resolves alone what it should transfer and shows up as low escalation recall (many cases that should have escalated did not).</li>
+    <li>The proportional fix is explicit criteria written as observable conditions the agent checks in the conversation or a tool result, with equal weight on the do-not-escalate criteria, plus few-shot examples naming the action (consult tool, ask for a detail, resolve or escalate) and the reason on both sides of the boundary.</li>
+    <li>An ML classifier should not be the first step because it adds another model, labeled data, threshold and calibration, false-positive and false-negative monitoring, latency and cost per interaction, and a new failure boundary, for a problem that may be just an underspecified system prompt, so it is over-engineering at that stage.</li>
+    <li>Autonomous resolution rate alone does not prove calibration because it also rises when the agent approves the price match it should not, so the two errors are counted separately; the practical sequence is identify the miscalibrated request types, write observable criteria, add them to the system prompt, add escalate and do-not-escalate few-shot, test on known scenarios, measure both errors and tune the boundary, and only then consider a separate classifier.</li>
+    <li>When a tool returns multiple matches for a customer, the correct action is to ask for an additional identifier (email, tax ID, order number) and never to pick by heuristic such as most recent or same state, because choosing the wrong customer leaks one person's data to another; in the criteria this is ask-for-a-detail, not a reason to escalate or guess.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Escalar demais derruba o first-contact resolution e escalar de menos gera violação de política, então a prova cobra a calibração, e os três gatilhos legítimos são o pedido explícito de humano, a exceção ou lacuna de política e a incapacidade de progredir de forma significativa.</li>
+    <li>Um pedido explícito de humano é escalado imediatamente, sem investigar antes; um cliente frustrado com caso simples e dentro da capacidade recebe reconhecimento e oferta de resolver, escalando só se reiterar a preferência por humano, porque frustração não é complexidade.</li>
+    <li>Política ambígua ou silenciosa sobre o pedido é escalada, porque o agente não deve inventar política.</li>
+    <li>A análise de sentimento é um gatilho de escalonamento não confiável, porque sentimento não se correlaciona com a complexidade do caso, que é o problema real.</li>
+    <li>Confidence self-reportada com threshold de roteamento é não confiável, porque a confidence self-reportada de LLMs é mal calibrada e o agente já está confiante demais exatamente nos casos difíceis.</li>
+    <li>A over-escalation transfere o que poderia resolver e aparece como baixa precisão do escalonamento (muitos casos escalados não precisavam); a under-escalation resolve sozinho o que deveria transferir e aparece como baixo recall do escalonamento (muitos casos que deviam escalar não escalaram).</li>
+    <li>A correção proporcional são critérios explícitos escritos como condições observáveis que o agente confere na conversa ou num tool result, com peso igual nos critérios de não escalar, mais few-shot examples que nomeiam a ação (consultar tool, pedir dado, resolver ou escalar) e o motivo nos dois lados da fronteira.</li>
+    <li>Um classificador ML não deve ser o primeiro passo porque traz outro modelo, dados rotulados, threshold e calibração, monitoramento de falsos positivos e negativos, latência e custo por atendimento e uma fronteira de falha nova, para um problema que pode ser só um system prompt mal especificado, sendo over-engineering nesse estágio.</li>
+    <li>A taxa de resolução autônoma sozinha não prova calibração, porque sobe também quando o agente aprova o price matching que não podia, então os dois erros são contados separados; a sequência prática é identificar os tipos de pedido descalibrados, escrever critérios observáveis, colocá-los no system prompt, acrescentar few-shot de escalar e de não escalar, testar nos cenários conhecidos, medir os dois erros e ajustar a fronteira, e só então considerar um classificador separado.</li>
+    <li>Quando uma tool retorna múltiplos matches para um cliente, a ação correta é pedir um identificador adicional (e-mail, CPF, número do pedido) e nunca escolher por heurística como o mais recente ou o do mesmo estado, porque escolher o cliente errado vaza dados de uma pessoa para outra; nos critérios isso é pedir dado, não motivo para escalar nem para adivinhar.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="large-codebase-exploration">
+  <div class="ficha-head">
+    <h2>Context in large-codebase exploration (TS 5.4)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Contexto em exploração de codebases grandes (TS 5.4)</strong></div>
+  <ul class="assert">
+    <li>The signature symptom of context degradation is the model giving inconsistent answers and talking about typical patterns instead of the specific classes and files it discovered earlier, because the real detail was squeezed out or lost in the middle.</li>
+    <li>Scratchpad files store key findings outside the context and must be reread or injected to influence the agent again; subagents absorb verbose grep and read output and return contractual results so the main agent preserves context for high-level coordination.</li>
+    <li>Phase summaries condense phase N's findings (entry points, shared abstractions, names) and inject that summary into the initial prompt of phase N+1 subagents, since those subagents inherit nothing from the previous phase, and sending the raw transcript instead of the summary blows up the context the same way.</li>
+    <li>Directed /compact gives explicit preservation instructions and later verification; the workflow is to extract exact IDs, values, dates, decisions and constraints into the scratchpad or manifest first, compact with explicit instructions, then compare the generated summary against the scratchpad and manifest item by item and restore any omission before acting.</li>
+    <li>A SessionStart hook with the compact matcher can print a summary of the working files after compaction and that stdout returns to the context, which reinjects durable notes but does not guarantee fidelity nor replace scratchpad, manifest, checkpoint or verification.</li>
+    <li>Compaction reduces context but does not guarantee fidelity and does not write an execution checkpoint.</li>
+    <li>For multi-agent pipelines that can crash mid-run, each agent writes results to versioned artifacts and the coordinator keeps a durable RunManifest; injecting the manifest provides context but does not prove what finished nor guarantee correct resumption, so manifest, artifacts and side effects must be reconciled before continuing.</li>
+    <li>The RunManifest task state machine is pending (not started), in_progress (records the active attempt), completed (requires a valid artifact) and failed (keeps the last error); attempts increments on each new try and an in_progress state from a crash is never treated as completed.</li>
+    <li>An atomic checkpoint writes the state before the work on starting an attempt, and on completion first persists the artifact with an immutable reference, version and hash, then writes the full manifest to a temporary file, flushes and renames it atomically so a read never finds half a JSON or a partial checkpoint.</li>
+    <li>An artifact written before the crash but still absent from the manifest is an orphan artifact, not automatic success; validate run_id, task_id, inputs, schema, version and hash before adopting it, and if the manifest says completed but the artifact is missing or invalid, mark the task for recovery instead of trusting the state.</li>
+    <li>An in_progress task may have produced an external effect before the crash, so a stable idempotency_key per task, consumer-side deduplication or a transaction or outbox prevents duplicating a write, notification or charge on retry, and blind retry is not safe for non-idempotent effects.</li>
+    <li>Post-recovery verification reloads the manifest, validates states, attempts, dependencies, artifacts, versions and hashes, reconciles orphans and checks external effects, runs a sanity check of the next step, and only then injects the reconciled state into the subagents and resumes eligible tasks.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>O sintoma assinatura da degradação de contexto é o modelo dar respostas inconsistentes e falar de typical patterns em vez das classes e arquivos específicos que ele mesmo descobriu antes, porque o detalhe real foi espremido para fora ou perdido no miolo.</li>
+    <li>Scratchpad files guardam os findings-chave fora do contexto e precisam ser relidos ou injetados para voltar a influenciar o agente; subagents absorvem a saída verbosa de grep e leitura e devolvem resultados contratuais, para o agente principal preservar contexto para a coordenação de alto nível.</li>
+    <li>Sumários entre fases condensam os findings da fase N (pontos de entrada, abstrações compartilhadas, nomes) e injetam esse resumo no prompt inicial dos subagents da fase N+1, já que esses subagents não herdam nada da fase anterior, e mandar o transcript bruto no lugar do resumo estoura o contexto do mesmo jeito.</li>
+    <li>O /compact dirigido dá instruções explícitas de preservação e verificação posterior; o fluxo é extrair antes os IDs, valores, datas, decisões e restrições exatas para o scratchpad ou manifest, compactar com instruções explícitas e depois comparar o resumo gerado com o scratchpad e o manifest item por item, repondo qualquer omissão antes de agir.</li>
+    <li>Um hook SessionStart com o matcher compact pode imprimir um resumo dos arquivos de trabalho após a compactação, e esse stdout volta ao contexto, o que reinjeta notas duráveis mas não garante fidelidade nem substitui scratchpad, manifest, checkpoint ou verificação.</li>
+    <li>A compactação reduz contexto mas não garante fidelidade e não grava um checkpoint de execução.</li>
+    <li>Para pipelines multi-agent que podem cair no meio, cada agente grava resultados em artefatos versionados e o coordinator mantém um RunManifest durável; injetar o manifest fornece contexto mas não prova o que terminou nem garante retomada correta, então manifest, artefatos e efeitos colaterais precisam ser reconciliados antes de continuar.</li>
+    <li>A máquina de estados de tarefa do RunManifest é pending (não começou), in_progress (registra a tentativa ativa), completed (exige artefato válido) e failed (conserva o último erro); attempts é incrementado a cada nova tentativa e um in_progress vindo de um crash nunca é tratado como concluído.</li>
+    <li>Um checkpoint atômico grava o estado antes do trabalho ao iniciar uma tentativa, e ao concluir primeiro persiste o artefato com referência imutável, versão e hash, depois grava o manifest completo em arquivo temporário, faz flush e o renomeia atomicamente, para que a leitura nunca encontre meio JSON nem um checkpoint parcial.</li>
+    <li>Um artefato gravado antes do crash mas ainda ausente do manifest é um artefato órfão, não sucesso automático; valide run_id, task_id, inputs, schema, versão e hash antes de adotá-lo, e se o manifest diz completed mas o artefato falta ou é inválido, marque a tarefa para recuperação em vez de confiar no estado.</li>
+    <li>Uma tarefa in_progress pode ter produzido um efeito externo antes do crash, então uma idempotency_key estável por tarefa, deduplicação no consumidor ou uma transação ou outbox impede duplicar escrita, notificação ou cobrança no retry, e o retry cego não é seguro para efeitos não idempotentes.</li>
+    <li>A verificação pós-recovery recarrega o manifest, valida estados, tentativas, dependências, artefatos, versões e hashes, reconcilia órfãos e confere efeitos externos, executa uma checagem de sanidade do próximo passo e só então injeta o estado reconciliado nos subagents e retoma as tarefas elegíveis.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="pegadinha-do-dia">
+  <div class="ficha-head">
+    <h2>Trap of the day: the escalation distractors and the guarantees that do not match</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Pegadinha do dia: os distratores de escalonamento e as garantias que não se confundem</strong></div>
+  <ul class="assert">
+    <li>Escalation questions almost always carry the same three distractors: sentiment analysis, self-reported confidence with a threshold, and a separate ML classifier trained on historical tickets; the first two are unreliable proxies for complexity and the third is over-engineering before the cheap fix.</li>
+    <li>The correct answer is almost always explicit escalation criteria plus few-shot examples in the system prompt, because agent decision miscalibration is first corrected by specifying the decision boundary in the prompt, with new infrastructure as a last resort rather than a first.</li>
+    <li>The exception is that when escalation comes from a deterministic business rule (an amount above a limit, identity before a financial operation) a prompt is not enough, and the answer is a hook or a programmatic prerequisite; criteria plus few-shot calibrate judgment but do not guarantee compliance.</li>
+    <li>Four guarantees must not be confused: valid JSON is not a true claim, an injected manifest is not a verified recovery, /compact is not guaranteed preservation, and persisted state is not state automatically present in the context.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>As questões de escalonamento quase sempre trazem os mesmos três distratores: análise de sentimento, confidence self-reportada com threshold e um classificador ML separado treinado em tickets históricos; os dois primeiros são proxies não confiáveis de complexidade e o terceiro é over-engineering antes do fix barato.</li>
+    <li>A resposta certa quase sempre é critérios explícitos de escalonamento mais few-shot examples no system prompt, porque a descalibração de decisão do agente se corrige primeiro especificando a fronteira da decisão no prompt, com infraestrutura nova como último recurso, não o primeiro.</li>
+    <li>A exceção é que, quando o escalonamento vem de uma regra de negócio determinística (um valor acima de um limite, identidade antes de uma operação financeira), o prompt não basta, e a resposta é um hook ou um pré-requisito programático; critérios mais few-shot calibram julgamento mas não garantem compliance.</li>
+    <li>Quatro garantias não se confundem: JSON válido não é claim verdadeira, manifest injetado não é recovery verificado, /compact não é preservação garantida, e estado persistido não é estado automaticamente presente no contexto.</li>
+  </ul>
+</section>
+
+<section class="ficha gloss-sec" id="glossary">
+  <div class="ficha-head">
+    <h2>Glossary</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <table class="gloss">
+    <tr><th>Term (EN)</th><th>Meaning (EN)</th><th class="ptm pt">Significado (PT-BR)</th></tr>
+    <tr><td class="en">progressive summarization</td><td>Repeatedly summarizing already-summarized history; risks condensing amounts, dates and agreed terms into vague prose.</td><td class="ptm pt">Resumir repetidamente um histórico já resumido; arrisca condensar valores, datas e termos acordados em prosa vaga.</td></tr>
+    <tr><td class="en">case facts block</td><td>A persistent block of exact case facts extracted before summarizing, kept outside the summary and injected into requests that need them.</td><td class="ptm pt">Um bloco persistente de fatos exatos do caso extraídos antes do resumo, mantido fora dele e injetado nos requests que precisam deles.</td></tr>
+    <tr><td class="en">lost in the middle</td><td>Models process the start and end of long inputs more reliably and may omit middle sections; mitigated by a summary at the start plus explicit section headers.</td><td class="ptm pt">Modelos aproveitam melhor o início e o fim de inputs longos e podem omitir o miolo; mitigado por resumo no início mais headers de seção explícitos.</td></tr>
+    <tr><td class="en">tool result trimming</td><td>Cutting irrelevant fields from a verbose tool result in the tool or integration layer, before it enters and accumulates in the resent context.</td><td class="ptm pt">Cortar campos irrelevantes de um tool result verboso na tool ou na camada de integração, antes de ele entrar e acumular no contexto reenviado.</td></tr>
+    <tr><td class="en">escalation trigger</td><td>A legitimate reason to hand off to a human: an explicit human request, a policy exception or gap, or inability to make meaningful progress.</td><td class="ptm pt">Um motivo legítimo para passar o caso a um humano: pedido explícito de humano, exceção ou lacuna de política, ou incapacidade de progredir de forma significativa.</td></tr>
+    <tr><td class="en">policy gap</td><td>A request the written policy is ambiguous or silent on; an escalation trigger because the agent must not invent policy.</td><td class="ptm pt">Um pedido sobre o qual a política escrita é ambígua ou omissa; gatilho de escalonamento porque o agente não deve inventar política.</td></tr>
+    <tr><td class="en">self-reported confidence</td><td>A model's own confidence score; an unreliable escalation proxy because LLM self-reported confidence is poorly calibrated, often highest on the hard cases.</td><td class="ptm pt">O score de confiança que o próprio modelo reporta; proxy de escalonamento não confiável porque a confidence self-reportada de LLM é mal calibrada, muitas vezes alta nos casos difíceis.</td></tr>
+    <tr><td class="en">sentiment-based escalation</td><td>Routing to a human based on emotional tone; unreliable because sentiment does not correlate with case complexity.</td><td class="ptm pt">Rotear para um humano com base no tom emocional; não confiável porque o sentimento não se correlaciona com a complexidade do caso.</td></tr>
+    <tr><td class="en">additional identifier</td><td>An extra identifier (email, tax ID, order number) requested to disambiguate when a tool returns multiple matches, instead of guessing by heuristic.</td><td class="ptm pt">Um identificador extra (e-mail, CPF, número do pedido) pedido para desambiguar quando uma tool retorna múltiplos matches, em vez de adivinhar por heurística.</td></tr>
+    <tr><td class="en">context degradation</td><td>In long sessions the model gives inconsistent answers and cites typical patterns instead of the specific classes and files it discovered earlier.</td><td class="ptm pt">Em sessões longas o modelo dá respostas inconsistentes e cita typical patterns em vez das classes e arquivos específicos que descobriu antes.</td></tr>
+    <tr><td class="en">scratchpad file</td><td>A persistent file (e.g. findings.md) where agents store key findings and reread or inject them across context boundaries.</td><td class="ptm pt">Um arquivo persistente (ex.: findings.md) onde os agentes guardam os findings-chave e os releem ou injetam através dos limites de contexto.</td></tr>
+    <tr><td class="en">directed /compact</td><td>Claude Code compaction run with explicit preservation instructions and later verified against durable notes; reduces context without guaranteeing fidelity.</td><td class="ptm pt">Compactação do Claude Code rodada com instruções explícitas de preservação e verificada depois contra notas duráveis; reduz contexto sem garantir fidelidade.</td></tr>
+    <tr><td class="en">RunManifest</td><td>A durable, versioned manifest of task states, attempts and artifacts; must be reconciled with artifacts and side effects before resuming after a crash.</td><td class="ptm pt">Um manifesto durável e versionado de estados de tarefa, tentativas e artefatos; deve ser reconciliado com artefatos e efeitos colaterais antes de retomar após um crash.</td></tr>
+    <tr><td class="en">atomic checkpoint</td><td>Writing the full manifest atomically (temp file, flush, rename) after the artifact is durable, so a read never finds a partial checkpoint.</td><td class="ptm pt">Gravar o manifest completo atomicamente (arquivo temporário, flush, rename) depois de o artefato ser durável, para que a leitura nunca encontre um checkpoint parcial.</td></tr>
+    <tr><td class="en">orphan artifact</td><td>An artifact written before a crash but not yet recorded in the manifest; must be validated (IDs, inputs, schema, version, hash) before being adopted.</td><td class="ptm pt">Um artefato gravado antes de um crash mas ainda não registrado no manifest; deve ser validado (IDs, inputs, schema, versão, hash) antes de ser adotado.</td></tr>
+    <tr><td class="en">idempotency key</td><td>A stable per-task key used with deduplication or a transaction/outbox so a recovered task does not repeat an external side effect on retry.</td><td class="ptm pt">Uma chave estável por tarefa usada com deduplicação ou transação/outbox para que uma tarefa recuperada não repita um efeito colateral externo no retry.</td></tr>
+    <tr><td class="en">structural vs. semantic validation</td><td>Structural checks parse and schema; semantic checks whether a citation truly supports its claim. Schema validity does not prove a claim is true.</td><td class="ptm pt">A validação estrutural confere parse e schema; a semântica confere se a citação realmente sustenta a claim. Validade de schema não prova que a claim é verdadeira.</td></tr>
+    <tr><td class="en">few-shot examples</td><td>Examples in the system prompt that demonstrate the decision boundary (when to resolve versus escalate), paired with explicit escalation criteria.</td><td class="ptm pt">Exemplos no system prompt que demonstram a fronteira de decisão (quando resolver versus escalar), combinados com critérios explícitos de escalonamento.</td></tr>
+    <tr><td class="en">context budget</td><td>The limited context a downstream agent has; upstream agents must return lean structured results so their tokens do not crowd out the findings.</td><td class="ptm pt">O contexto limitado que um agente downstream tem; os agentes upstream devem devolver resultados estruturados e enxutos para seus tokens não espremerem os findings.</td></tr>
+    <tr><td class="en">relevance score</td><td>A per-finding relevance value returned in the structured result instead of verbose content, helping the synthesis agent weigh each fact.</td><td class="ptm pt">Um valor de relevância por finding devolvido no resultado estruturado em vez de conteúdo verboso, ajudando o agente de síntese a pesar cada fato.</td></tr>
+    <tr><td class="en">phase summary</td><td>A summary of the previous phase's key findings injected into the initial prompt of the next phase's subagents, since they inherit nothing otherwise.</td><td class="ptm pt">Um resumo dos findings-chave da fase anterior injetado no prompt inicial dos subagents da fase seguinte, já que eles não herdam nada de outra forma.</td></tr>
+    <tr><td class="en">sliding window</td><td>Keeping only the last N whole turns; a turn count does not bound tokens or cost, and facts stated earlier fall out of the window.</td><td class="ptm pt">Manter inteiros só os últimos N turnos; a contagem de turnos não limita tokens nem custo, e fatos declarados antes saem da janela.</td></tr>
+    <tr><td class="en">selective retention</td><td>Classifying content by type into extract-persist-reinject, summarize, or leave the context; depends on correctly identifying and extracting what is critical.</td><td class="ptm pt">Classificar o conteúdo por tipo em extrair-persistir-reinjetar, resumir ou sair do contexto; depende de identificar e extrair corretamente o que é crítico.</td></tr>
+  </table>
+</section>
+
+<nav class="prevnext">
+  <span><a href="index.html">← Índice</a></span>
+  <span><a href="aula-12.html">Aula 12 — versão completa (PT)</a></span>
+  <span><a href="aula-12.html">Aula 12 (completa) →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('section.ficha .ver-traducao').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var sec = btn.closest('section.ficha');
+      var on = sec.classList.toggle('show-pt');
+      btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+      btn.textContent = on ? '🇧🇷 ocultar tradução' : '🇧🇷 ver tradução';
+    });
+  });
+})();
+</script>
+<script src="narracao/fichamento-12.js"></script>
+<script src="narracao/player.js"></script>
+</body>
+</html>

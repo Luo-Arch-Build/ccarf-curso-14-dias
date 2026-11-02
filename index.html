@@ -30,6 +30,9 @@
   .tit small { display: block; color: var(--muted); font-size: 12.5px; }
   .status { font-size: 12px; color: var(--muted); white-space: nowrap; }
   .status.done { color: var(--ok); }
+  .ficha-link { display: inline-block; margin: 2px 0 10px 64px; font-size: 12px; color: var(--accent2);
+    text-decoration: none; border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+  .ficha-link:hover { border-color: var(--accent2); }
   .reset { margin-top: 24px; background: none; border: 1px solid var(--border); color: var(--muted);
     border-radius: 8px; padding: 8px 16px; font-size: 12.5px; cursor: pointer; }
   .reset:hover { border-color: #f87171; color: #f87171; }
@@ -85,6 +88,7 @@
   ];
   var lista = document.getElementById('lista');
   var doneCount = 0;
+  var fichamentos = { '12': 1 };  // aulas com fichamento em inglês (Study Notes)
   aulas.forEach(function (a, i) {
     var n = ('0' + (i + 1)).slice(-2);
     var rec = localStorage.getItem('ccarf-aula-' + n);
@@ -95,6 +99,9 @@
       '<span class="tit">' + a[1] + '<small>' + a[2] + '</small></span>' +
       '<span class="status' + (rec ? ' done' : '') + '">' + (rec ? '✓ ' + rec : 'pendente') + '</span>' +
       '</a>';
+    if (fichamentos[n]) {
+      li.innerHTML += '<a class="ficha-link" href="fichamento-' + n + '.html">📄 Study Notes (EN) · narrado</a>';
+    }
     lista.appendChild(li);
   });
   var pct = Math.round(doneCount / aulas.length * 100);
