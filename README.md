@@ -20,6 +20,9 @@ Curso de estudo para a prova **Claude Certified Architect – Foundations (CCAR-
   o inglês das questões como inglês) e rola a página junto, destacando o parágrafo que está sendo lido.
   Rolar com a mão solta o acompanhamento; com o áudio tocando, clicar num parágrafo leva a narração até ele.
 - O progresso fica salvo no navegador, inclusive onde você parou na narração de cada aula.
+- **Fichamento (study notes)**: página separada, em inglês, com as afirmações factuais da aula (sem
+  explicação), tradução por seção que dá para mostrar, e narração só em inglês. Veja a seção
+  [Fichamento](#fichamento-study-notes-em-inglês). Por enquanto, aula 12.
 
 ## Como usar
 
@@ -44,6 +47,39 @@ gh release upload narracao audio/aula-03.mp3 --clobber                        # 
 
 A voz vem do serviço do Microsoft Edge via [`edge-tts`](https://github.com/rany2/edge-tts), que é gratuito,
 mas não oficial: pode mudar ou parar sem aviso.
+
+## Fichamento (study notes em inglês)
+
+Além da aula, algumas aulas têm uma página de **fichamento** separada (`fichamento-NN.html`): afirmações
+factuais 100% em inglês (não explicação — para quem já estudou a aula), com botão **"ver tradução"** por
+seção que mostra o pt-BR (escondido por padrão), e narração 100% em inglês. O link aparece no `index.html`
+na aula correspondente. Até agora existe o fichamento da **aula 12**.
+
+A página é gerada por um builder a partir de um JSON de conteúdo, para ser reproduzível:
+
+```bash
+# 1. Conteúdo: um JSON fiel à aula (seções, afirmações paralelas EN/pt, glossário).
+#    tools/fichamento-NN-content.json  (autoria assistida; fiel a aula-NN.html)
+# 2. Gerar a página:
+python3 tools/fichamento.py NN                                                # -> fichamento-NN.html
+# 3. Narração 100% EN (resumível, uma requisição por linha — evita o throttle do edge-tts):
+PAUSA=4 NARRAR_TIMEOUT=60 NARRAR_TENTATIVAS=8 \
+  uv run --with edge-tts --with html5lib python tools/narrar_lento.py fichamento-NN.html --en
+# 4. Publicar o MP3 na release:
+gh release upload narracao audio/fichamento-NN.mp3 --clobber
+# 5. Registrar o link: adicionar 'NN': 1 ao mapa `fichamentos` no index.html
+```
+
+Notas de operação:
+
+- Voz EN padrão: `en-US-AndrewNeural`. O `en-US-AndrewMultilingualNeural` pedido originalmente retornava
+  `NoAudioReceived` no edge-tts na época; se voltar a funcionar, use `--voz en-US-AndrewMultilingualNeural`.
+- A narração pula o que tem classe `pt`/`pt-block` (as traduções), então o áudio sai só em inglês.
+  As células pt do glossário precisam da classe `pt` (só `ptm` não é pulado).
+- `narrar_lento.py` é resumível: salva partes em `audio/.fichamento-NN-parts/` e retoma de onde parou.
+  Limpe essa pasta e o `audio/fichamento-NN.txt` antes do commit. O MP3 fica fora do git (só na release);
+  versiona-se a página, o `narracao/fichamento-NN.js` (marcações) e o JSON de conteúdo.
+- `&` cru trava o edge-tts (SSML); o `normalizar` já troca por "and"/"e".
 
 ## Fonte e limites
 
