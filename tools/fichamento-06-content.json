@@ -1,0 +1,249 @@
+{
+  "lesson": "06",
+  "title_en": "CLAUDE.md: hierarchy, @import and rules with glob",
+  "title_pt": "CLAUDE.md: hierarquia, @import e rules com glob",
+  "domain_en": "Domain 3 · Claude Code Configuration & Workflows (20%)",
+  "sections": [
+    {
+      "id": "claude-md-hierarchy",
+      "heading_en": "The three-level CLAUDE.md hierarchy (TS 3.1)",
+      "heading_pt": "A hierarquia de CLAUDE.md em três níveis (TS 3.1)",
+      "assertions_en": [
+        "Claude Code loads instructions from three levels that add up in the session context: user-level, project-level and directory-level.",
+        "The user-level CLAUDE.md lives at ~/.claude/CLAUDE.md, holds your personal preferences across all of your projects, and applies only to you.",
+        "Because the user-level CLAUDE.md sits in your home directory, outside the repository, it is not shared with the team through version control.",
+        "The project-level CLAUDE.md is the CLAUDE.md at the repo root (or .claude/CLAUDE.md), committed to version control so the whole team receives the same project standards, test conventions and build commands.",
+        "A directory-level CLAUDE.md lives in a subdirectory (for example packages/billing/CLAUDE.md) and loads when Claude works on files in that directory, carrying conventions specific to that part of the tree."
+      ],
+      "assertions_pt": [
+        "O Claude Code carrega instruções de três níveis que se somam no contexto da sessão: user-level, project-level e directory-level.",
+        "O CLAUDE.md user-level fica em ~/.claude/CLAUDE.md, guarda suas preferências pessoais em todos os seus projetos e vale só para você.",
+        "Como o CLAUDE.md user-level fica no seu diretório home, fora do repositório, ele não é compartilhado com o time via controle de versão.",
+        "O CLAUDE.md project-level é o CLAUDE.md na raiz do repo (ou .claude/CLAUDE.md), commitado no controle de versão para que o time inteiro receba os mesmos padrões do projeto, convenções de teste e comandos de build.",
+        "Um CLAUDE.md directory-level fica num subdiretório (por exemplo packages/billing/CLAUDE.md) e carrega quando o Claude trabalha em arquivos daquele diretório, trazendo convenções específicas daquela parte da árvore."
+      ]
+    },
+    {
+      "id": "new-teammate-diagnosis",
+      "heading_en": "The new-teammate diagnosis the exam tests",
+      "heading_pt": "O diagnóstico do colega novo que a prova cobra",
+      "assertions_en": [
+        "Task Statement 3.1 explicitly cites a new team member not receiving instructions because they are in user-level rather than project-level configuration.",
+        "The scenario is that the team conventions work on your machine, but a new colleague clones the repo and their Claude ignores everything, because the instructions live in ~/.claude/CLAUDE.md, which does not travel through git.",
+        "The fix is to move the team rules to the project-level CLAUDE.md at the repo root or .claude/CLAUDE.md, which is versioned and reaches the whole team."
+      ],
+      "assertions_pt": [
+        "O Task Statement 3.1 cita explicitamente um membro novo do time que não recebe as instruções porque elas estão em configuração user-level e não project-level.",
+        "O cenário é que as convenções do time funcionam na sua máquina, mas o colega novo clona o repo e o Claude dele ignora tudo, porque as instruções estão em ~/.claude/CLAUDE.md, que não viaja pelo git.",
+        "A correção é mover as regras do time para o CLAUDE.md project-level na raiz do repo ou em .claude/CLAUDE.md, que é versionado e chega ao time inteiro."
+      ]
+    },
+    {
+      "id": "memory-vs-context",
+      "heading_en": "/memory versus /context for diagnosing loaded memory",
+      "heading_pt": "/memory versus /context para diagnosticar memória carregada",
+      "assertions_en": [
+        "When Claude behaves inconsistently, start with the configuration rather than rewriting the instructions.",
+        "/memory lists memory file locations and lets you open or create them in the editor; it is not the inventory of what the session loaded.",
+        "To check which CLAUDE.md and rules loaded at launch, use /context and look at its Memory files section.",
+        "On-demand files need a different diagnosis: reproduce the case by working with a file that matches the path, since a subdirectory CLAUDE.md does not appear in the initial /context list.",
+        "When an on-demand file loads, its path appears on a Loaded line in the terminal, and an InstructionsLoaded hook can record what loaded, when and why, including path-scoped rules.",
+        "Do not expect a single /context call to list every file that may still enter the context later during the work."
+      ],
+      "assertions_pt": [
+        "Quando o Claude se comporta de forma inconsistente, comece pela configuração em vez de reescrever as instruções.",
+        "O /memory lista as localizações dos arquivos de memória e permite abri-los ou criá-los no editor; ele não é o inventário do que a sessão carregou.",
+        "Para verificar quais CLAUDE.md e rules carregaram no início, use o /context e olhe a seção Memory files dele.",
+        "Arquivos sob demanda pedem outro diagnóstico: reproduza o caso trabalhando com um arquivo que dá match no path, já que um CLAUDE.md de subdiretório não aparece na lista inicial do /context.",
+        "Quando um arquivo sob demanda carrega, seu caminho aparece numa linha Loaded no terminal, e um hook InstructionsLoaded pode registrar o que carregou, quando e por quê, inclusive rules por path.",
+        "Não espere que uma única chamada a /context liste todos os arquivos que ainda podem entrar no contexto depois, durante o trabalho."
+      ]
+    },
+    {
+      "id": "modularizing-import-rules",
+      "heading_en": "Modularizing with @import and .claude/rules/ (TS 3.1)",
+      "heading_pt": "Modularizar com @import e .claude/rules/ (TS 3.1)",
+      "assertions_en": [
+        "A monolithic 2,000-line CLAUDE.md is impossible to maintain and weighs on every session, so the Exam Guide offers two complementary organization strategies.",
+        "Modularizing alone does not cut context: imported files and rules without paths keep loading in every session, and it is glob scope that saves tokens.",
+        "The @path/to/file syntax inside a CLAUDE.md imports another file at that point, keeping the CLAUDE.md lean and pulling in only the relevant standards for each package.",
+        "The guide's @import example is each package of a monorepo importing the standards of its own domain.",
+        ".claude/rules/ is the structural alternative: break the giant CLAUDE.md into focused per-topic files such as testing.md, api-conventions.md and deployment.md, each versioned on its own.",
+        "These .claude/rules/ files can gain glob scope so that each rule lives in its own versioned file instead of one document that mixes everything."
+      ],
+      "assertions_pt": [
+        "Um CLAUDE.md monolítico de 2.000 linhas é impossível de manter e pesa em toda sessão, por isso o Exam Guide oferece duas estratégias de organização complementares.",
+        "Modularizar sozinho não corta contexto: arquivos importados e rules sem paths continuam carregando em toda sessão, e é o escopo por glob que economiza tokens.",
+        "A sintaxe @caminho/do/arquivo dentro de um CLAUDE.md importa outro arquivo naquele ponto, mantendo o CLAUDE.md enxuto e trazendo só os standards relevantes para cada pacote.",
+        "O exemplo de @import do guia é cada pacote de um monorepo importar os standards do seu próprio domínio.",
+        "O .claude/rules/ é a alternativa estrutural: quebrar o CLAUDE.md gigante em arquivos focados por tópico como testing.md, api-conventions.md e deployment.md, cada um versionado por si.",
+        "Esses arquivos em .claude/rules/ podem ganhar escopo por glob, de modo que cada regra viva no seu próprio arquivo versionado em vez de um documento único que mistura tudo."
+      ]
+    },
+    {
+      "id": "rules-glob-conditional-loading",
+      "heading_en": "Rules with glob: conditional loading by path (TS 3.3)",
+      "heading_pt": "Rules com glob: carregamento condicional por path (TS 3.3)",
+      "assertions_en": [
+        "Files in .claude/rules/ accept YAML frontmatter with a paths field, a list of glob patterns.",
+        "When paths is present, the rule enters the context only when Claude works with files that match the glob, instead of staying loaded all the time.",
+        "Conditional loading covers Read, Write and Edit plus recognized Bash reads such as cat or head on a single file, so it is not only on editing.",
+        "A path-scoped testing rule only occupies tokens when you are actually working with a *.test.tsx file, including on a read, whereas an always-loaded rule is irrelevant context on most turns.",
+        "A glob like **/*.test.tsx applies the convention by file type regardless of directory, which beats a directory-bound subdirectory CLAUDE.md that would have to be replicated across dozens of folders for scattered test files.",
+        "Selection and loading by path can be deterministic, but the model's adherence to the instruction stays probabilistic, so enforcement of a convention still needs a programmatic mechanism."
+      ],
+      "assertions_pt": [
+        "Arquivos em .claude/rules/ aceitam YAML frontmatter com um campo paths, uma lista de glob patterns.",
+        "Quando o paths está presente, a regra entra no contexto só quando o Claude trabalha com arquivos que dão match no glob, em vez de ficar carregada o tempo todo.",
+        "O carregamento condicional cobre Read, Write e Edit mais leituras reconhecidas via Bash como cat ou head em um único arquivo, por isso não é somente ao editar.",
+        "Uma regra de testes com escopo por path só ocupa tokens quando você está de fato trabalhando com um arquivo *.test.tsx, inclusive numa leitura, enquanto uma regra sempre carregada é contexto irrelevante na maioria dos turnos.",
+        "Um glob como **/*.test.tsx aplica a convenção por tipo de arquivo independentemente do diretório, o que vence um CLAUDE.md de subdiretório directory-bound, que teria de ser replicado em dezenas de pastas para arquivos de teste espalhados.",
+        "A seleção e o carregamento pelo path podem ser determinísticos, mas a aderência do modelo à instrução continua probabilística, então o enforcement de uma convenção ainda precisa de um mecanismo programático."
+      ]
+    },
+    {
+      "id": "decision-map-guidance-vs-guarantee",
+      "heading_en": "Decision map: guidance versus guarantee",
+      "heading_pt": "Mapa de decisão: orientação versus garantia",
+      "assertions_en": [
+        "CLAUDE.md, @import and rules provide context: the model reads it and tends to follow, but its adherence is probabilistic even when path selection is deterministic.",
+        "A Skill packages a reusable on-demand procedure, invoked explicitly or loaded automatically when Claude judges it relevant; automatic selection does not make it always-on guidance nor replace persistent CLAUDE.md context.",
+        "Permission rules and hooks live in the settings files: user ~/.claude/settings.json, versioned project .claude/settings.json, and local .claude/settings.local.json.",
+        "settings.permissions with allow, ask and deny lets you permit, request approval or block targets such as tools, commands and paths.",
+        "Permission rules are evaluated in the order deny then ask then allow, so a deny beats any allow.",
+        "Across settings files the precedence is managed, then command line, then local, then project, then user, and the rule lists add up between files instead of one replacing the other.",
+        "Command hooks run code on events, for example validating or blocking an action before it happens, or formatting and checking style after an edit, and can also come from plugins and from skill and subagent frontmatter.",
+        "Permission modes control the session's overall autonomy and approval level, and are not an allow/ask/deny rule for a specific target nor a check run on an event.",
+        "Rule of thumb: what Claude should know goes in CLAUDE.md or rules; a reusable on-demand procedure goes in a Skill; per-target permission goes in settings.permissions; an action or check on an event goes in a command hook; overall autonomy goes in the permission mode.",
+        "A deny covers the native tools and the commands Claude Code recognizes, such as cat, head and redirects, but not a Python or Node script that opens the file on its own, which needs an OS-level sandbox.",
+        "Read(./.env) matches only the .env in the current directory, while Read(**/.env) matches every .env in the repository."
+      ],
+      "assertions_pt": [
+        "CLAUDE.md, @import e rules fornecem contexto: o modelo lê e tende a seguir, mas sua aderência é probabilística mesmo quando a seleção pelo path é determinística.",
+        "Uma Skill empacota um procedimento reutilizável sob demanda, invocado explicitamente ou carregado automaticamente quando o Claude o considera relevante; a seleção automática não a torna orientação always-on nem substitui o contexto persistente do CLAUDE.md.",
+        "Regras de permissão e hooks ficam nos arquivos de settings: usuário ~/.claude/settings.json, projeto versionado .claude/settings.json e local .claude/settings.local.json.",
+        "O settings.permissions com allow, ask e deny permite permitir, pedir aprovação ou bloquear alvos como tools, comandos e paths.",
+        "As regras de permissão são avaliadas na ordem deny, depois ask, depois allow, então um deny vence qualquer allow.",
+        "Entre os arquivos de settings a precedência é managed, depois linha de comando, depois local, depois projeto, depois usuário, e as listas de regras se somam entre os arquivos em vez de uma substituir a outra.",
+        "Hooks de comando executam código em eventos, por exemplo validar ou bloquear uma ação antes de ela ocorrer, ou formatar e verificar estilo depois de uma edição, e também podem vir de plugins e do frontmatter de skills e subagents.",
+        "Permission modes controlam o nível geral de autonomia e aprovação da sessão, e não são uma regra allow/ask/deny para um alvo específico nem uma verificação executada em um evento.",
+        "Regra de bolso: o que o Claude deve saber vai no CLAUDE.md ou nas rules; um procedimento reutilizável sob demanda vai numa Skill; permissão por alvo vai em settings.permissions; uma ação ou verificação em evento vai num hook de comando; a autonomia geral vai no permission mode.",
+        "Um deny cobre as tools nativas e os comandos que o Claude Code reconhece, como cat, head e redirecionamentos, mas não um script Python ou Node que abre o arquivo por conta própria, que pede um sandbox no nível do sistema operacional.",
+        "Read(./.env) casa só com o .env do diretório atual, enquanto Read(**/.env) casa com todos os .env do repositório."
+      ]
+    },
+    {
+      "id": "pegadinha-do-dia",
+      "heading_en": "Trap of the day",
+      "heading_pt": "Pegadinha do dia",
+      "assertions_en": [
+        "Configuration questions love the distractor of consolidating everything in the root CLAUDE.md and letting Claude infer which section applies.",
+        "A rule's selection and loading by path can be deterministic, but adherence to the instruction stays probabilistic, so enforcement needs another mechanism.",
+        "A common distractor is putting team rules in ~/.claude/CLAUDE.md, but a user-level file does not travel through git.",
+        "Do not treat a Skill as a synonym for manual invocation: it can also load by relevance, but it stays on-demand, not always-on.",
+        "Style and naming can be guidance in CLAUDE.md or rules, or a check, format or block in a command hook when there is an executable criterion.",
+        "In diagnosis, /context checks the start of the session, /memory locates and edits memories, and on-demand files require reproducing the matching access."
+      ],
+      "assertions_pt": [
+        "Questões de configuração adoram o distrator de consolidar tudo no CLAUDE.md raiz e deixar o Claude inferir qual seção se aplica.",
+        "A seleção e o carregamento de uma rule pelo path podem ser determinísticos, mas a aderência à instrução continua probabilística, então o enforcement exige outro mecanismo.",
+        "Um distrator comum é colocar as regras do time em ~/.claude/CLAUDE.md, mas um arquivo user-level não viaja pelo git.",
+        "Não trate uma Skill como sinônimo de invocação manual: ela também pode carregar por relevância, mas continua sob demanda, não always-on.",
+        "Estilo e nomes podem ser orientação em CLAUDE.md ou rules, ou uma verificação, formatação ou bloqueio num hook de comando quando houver um critério executável.",
+        "No diagnóstico, o /context verifica o início da sessão, o /memory localiza e edita memórias, e os arquivos sob demanda exigem reproduzir o acesso correspondente."
+      ]
+    }
+  ],
+  "glossary": [
+    {
+      "term_en": "user-level CLAUDE.md",
+      "meaning_en": "~/.claude/CLAUDE.md, personal and not version-controlled; instructions here are not shared with teammates.",
+      "meaning_pt": "~/.claude/CLAUDE.md, pessoal e não versionado; instruções aqui não são compartilhadas com o time."
+    },
+    {
+      "term_en": "project-level CLAUDE.md",
+      "meaning_en": "CLAUDE.md at the root or in .claude/, committed so the whole team receives the instructions.",
+      "meaning_pt": "CLAUDE.md na raiz ou em .claude/, commitado para que o time inteiro receba as instruções."
+    },
+    {
+      "term_en": "directory-level CLAUDE.md",
+      "meaning_en": "A CLAUDE.md in a subdirectory, loaded when working in that part of the tree.",
+      "meaning_pt": "Um CLAUDE.md em subdiretório, carregado ao trabalhar naquela parte da árvore."
+    },
+    {
+      "term_en": "@import",
+      "meaning_en": "Syntax to import an external file into a CLAUDE.md to keep it modular.",
+      "meaning_pt": "Sintaxe para importar um arquivo externo no CLAUDE.md e mantê-lo modular."
+    },
+    {
+      "term_en": ".claude/rules/",
+      "meaning_en": "Directory of per-topic rule files, the alternative to a monolithic CLAUDE.md.",
+      "meaning_pt": "Diretório de arquivos de regra por tópico, a alternativa ao CLAUDE.md monolítico."
+    },
+    {
+      "term_en": "YAML frontmatter",
+      "meaning_en": "A metadata block delimited by --- at the top of a file.",
+      "meaning_pt": "Um bloco de metadados delimitado por --- no topo do arquivo."
+    },
+    {
+      "term_en": "paths field",
+      "meaning_en": "Frontmatter field holding the activation globs for a rule.",
+      "meaning_pt": "Campo do frontmatter com os globs de ativação de uma regra."
+    },
+    {
+      "term_en": "glob pattern",
+      "meaning_en": "A path-matching pattern using ** and *.",
+      "meaning_pt": "Um padrão de correspondência de caminhos usando ** e *."
+    },
+    {
+      "term_en": "conditional loading",
+      "meaning_en": "Loading a rule when working with a matching file, including on a read.",
+      "meaning_pt": "Carregar uma regra ao trabalhar com um arquivo que dá match, inclusive numa leitura."
+    },
+    {
+      "term_en": "probabilistic adherence",
+      "meaning_en": "The model's adherence to an instruction is not guaranteed, even with deterministic path-based loading.",
+      "meaning_pt": "A aderência do modelo à instrução não é garantida, mesmo com carregamento por path determinístico."
+    },
+    {
+      "term_en": "/memory",
+      "meaning_en": "Command that lists memory locations and lets you open or edit them.",
+      "meaning_pt": "Comando que lista as localizações de memórias e permite abri-las ou editá-las."
+    },
+    {
+      "term_en": "/context",
+      "meaning_en": "Command to check the CLAUDE.md and rules loaded at launch; on-demand files need a matching access.",
+      "meaning_pt": "Comando para verificar os CLAUDE.md e rules carregados no início; arquivos sob demanda exigem um acesso correspondente."
+    },
+    {
+      "term_en": "directory-bound",
+      "meaning_en": "Tied to its directory; the limitation of a subdirectory CLAUDE.md for files spread across many directories.",
+      "meaning_pt": "Preso ao diretório; a limitação do CLAUDE.md de subpasta para arquivos espalhados por muitos diretórios."
+    },
+    {
+      "term_en": "Skill",
+      "meaning_en": "A reusable on-demand procedure, invoked explicitly or loaded automatically by relevance; not always-on guidance.",
+      "meaning_pt": "Um procedimento reutilizável sob demanda, invocado explicitamente ou carregado automaticamente por relevância; não é orientação always-on."
+    },
+    {
+      "term_en": "settings.permissions (allow / ask / deny)",
+      "meaning_en": "Rules that permit, request approval for, or block a tool, command or path.",
+      "meaning_pt": "Regras que permitem, pedem aprovação ou bloqueiam uma tool, comando ou path."
+    },
+    {
+      "term_en": "command hook",
+      "meaning_en": "A command run on an event to act, validate, format or block.",
+      "meaning_pt": "Um comando executado em um evento para agir, validar, formatar ou bloquear."
+    },
+    {
+      "term_en": "permission mode",
+      "meaning_en": "A mode controlling the session's overall autonomy and approval level.",
+      "meaning_pt": "Um modo que controla o nível geral de autonomia e aprovação da sessão."
+    },
+    {
+      "term_en": "version control (VCS)",
+      "meaning_en": "Version control such as git; what is committed is shared with the team.",
+      "meaning_pt": "Controle de versão como o git; o que é commitado é compartilhado com o time."
+    }
+  ]
+}

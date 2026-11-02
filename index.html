@@ -88,7 +88,7 @@
   ];
   var lista = document.getElementById('lista');
   var doneCount = 0;
-  var fichamentos = { '12': 1 };  // aulas com fichamento em inglês (Study Notes)
+  var fichamentos = { '06': 1, '12': 1 };  // aulas com fichamento em inglês (Study Notes)
   aulas.forEach(function (a, i) {
     var n = ('0' + (i + 1)).slice(-2);
     var rec = localStorage.getItem('ccarf-aula-' + n);
