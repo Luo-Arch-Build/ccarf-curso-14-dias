@@ -176,6 +176,8 @@ de todo mundo — e commitar sua preferência pessoal é exatamente o anti-padr�
 <p>Se o stem diz "padrão que vale pra <strong>todo</strong> código do projeto" → CLAUDE.md. Se diz
 "workflow que roda <strong>às vezes</strong>, com parâmetros e output grande" → skill (provavelmente com
 <code>context: fork</code>).</p>
+<p>Uma skill pode ser invocada pelo nome ou carregada pelo Claude por relevância, mas nas duas formas continua <strong>sob demanda</strong>:
+carregada por relevância não vira orientação <em>always-on</em> como o CLAUDE.md.</p>
 
 <h3>Mapa rápido: qual mecanismo para cada necessidade</h3>
 <p>A prova gosta de listar várias necessidades e pedir o mecanismo de cada uma. O critério é sempre <strong>quando</strong> a orientação se aplica e <strong>quem</strong> deve recebê-la:</p>
@@ -187,6 +189,7 @@ de todo mundo — e commitar sua preferência pessoal é exatamente o anti-padr�
   <tr><td>Prompt padronizado que o time dispara pelo nome</td><td>Slash command em <code>.claude/commands/</code></td></tr>
   <tr><td>Atalho só seu</td><td><code>~/.claude/commands/</code> ou <code>~/.claude/skills/</code> (com nome próprio)</td></tr>
   <tr><td>Algo que precisa acontecer sempre, sem exceção (ex.: rodar o linter depois de toda edição)</td><td>Hook, configurado em <code>settings.json</code> — enforcement programático, não instrução; a lógica do TS 1.5 (aula 03)</td></tr>
+  <tr><td>Mudar a autonomia e a aprovação gerais da sessão (parar de pedir aprovação a cada edição, só planejar)</td><td>Permission mode da sessão (a Aula 08 enumera os modos)</td></tr>
   <tr><td>Bloquear sempre um comando ou um arquivo (ex.: o <code>.env</code>, a pasta <code>secrets/</code>)</td><td>Regra <code>deny</code> em <code>permissions</code> no <code>.claude/settings.json</code> do projeto (versionado)</td></tr>
 </table>
 <p>As <strong>regras de permissão</strong> ficam em <code>permissions</code> (<code>allow</code>, <code>ask</code>, <code>deny</code>) nos arquivos
@@ -194,7 +197,7 @@ de settings e são aplicadas pelo próprio Claude Code, antes de a tool rodar �
 <pre><code>// .claude/settings.json (no repo, vale para o time)
 {
   "permissions": {
-    "deny": ["Read(**/.env)", "Read(./secrets/**)"]
+    "deny": ["Read(**/.env)", "Read(./secrets/**)", "Bash(terraform apply:*)"]
   }
 }</code></pre>
 <ul>
@@ -207,11 +210,16 @@ de settings e são aplicadas pelo próprio Claude Code, antes de a tool rodar �
       o que um <code>deny</code> do projeto fechou.</li>
   <li><strong>Hooks</strong> também se configuram nos arquivos de settings (e ainda em plugins e no frontmatter de skills e
       subagents). Hook é para <em>executar</em> algo num evento; regra deny é para <em>impedir</em> uma tool call.</li>
+  <li><strong>Permission mode não é regra por alvo.</strong> O permission mode muda a autonomia e a aprovação gerais da sessão
+      (o que roda sem perguntar); a regra <code>allow</code>/<code>ask</code>/<code>deny</code> decide sobre um alvo específico (uma tool, um comando,
+      um caminho); o hook executa código num evento. São três controles diferentes que atuam juntos, e um não substitui o outro.
+      Os modos e o que cada um aceita estão na Aula 08.</li>
 </ul>
 <p>Regra de bolso: <em>sempre carregado → CLAUDE.md; depende do arquivo → rule com glob; sob demanda → skill ou comando;
 garantia → código, nunca texto: algo que tem de acontecer → hook; algo que nunca pode acontecer → regra deny. O caso oposto:
 a regra deny bloqueia sem olhar contexto — se a proibição depende de uma condição (só em produção, só acima de um valor),
-ela vira hook com lógica. E o deny cobre as tools nativas e os comandos que o Claude Code reconhece
+ela vira hook com lógica. Estilo e nomes seguem a mesma lógica: são orientação (CLAUDE.md ou rule) e só viram hook de comando quando existe
+um critério executável, como um formatter que roda ou um validador que bloqueia. E o deny cobre as tools nativas e os comandos que o Claude Code reconhece
 (<code>cat</code>, <code>head</code>), não um script que abre o arquivo por conta própria: para isso, sandbox.</em></p>
 
 <h2>3. Execução direta, plan mode e workflow multifásico (TS 3.4)</h2>
@@ -294,6 +302,7 @@ quantidade de etapas mencionadas que decide: procure artefatos, handoffs e gates
   <tr><td class="en">settings permissions</td><td>regras de permissão (allow / ask / deny) nos arquivos de settings</td><td class="uso">"select CLAUDE.md, rules, skills, hooks, or settings permissions"</td></tr>
   <tr><td class="en">deny rule</td><td>regra que bloqueia incondicionalmente uma tool, comando ou arquivo</td><td class="uso">"add a deny rule to block reading .env in every context"</td></tr>
   <tr><td class="en">conditional hook</td><td>hook com lógica para decidir conforme o contexto</td><td class="uso">"use a PreToolUse hook to deny deployment only when it targets production"</td></tr>
+  <tr><td class="en">command hook</td><td>hook que executa um comando de shell num evento (formatar, validar, bloquear)</td><td class="uso">"configure command hooks for PostToolUse and PreToolUse events"</td></tr>
   <tr><td class="en">settings precedence</td><td>ordem de prioridade entre arquivos de settings</td><td class="uso">"managed settings take precedence over project and user settings"</td></tr>
   <tr><td class="en">session resume / plan artifact</td><td>retomada da sessão / artefato do plano fornecido explicitamente</td><td class="uso">"a new headless run must resume the session or receive the approved plan"</td></tr>
   <tr><td class="en">risk level</td><td>nível de risco (produção, dados, irreversível)</td><td class="uso">"choose proportional controls; high risk alone does not make plan mode sufficient"</td></tr>
@@ -512,6 +521,34 @@ quantidade de etapas mencionadas que decide: procure artefatos, handoffs e gates
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: B.</strong> A decisão depende do destino, então o <strong>hook PreToolUse</strong> executa a lógica condicional antes da tool. A é o mecanismo adequado para proibição incondicional — como bloquear sempre a leitura de <code>.env</code> na Q8 — mas aqui bloquearia também o ambiente permitido. C é orientação, não enforcement. D controla a atuação do Claude no planejamento, não implementa uma política programática por ambiente. Em B, não ser negado por esse hook também não equivale a permissão automática: as demais regras continuam valendo.<span class="ts">Domínio 3 · TS 3.2 — Hook condicional vs deny incondicional</span></div>
+</div>
+
+<div class="q" data-correct="c" data-ts="3.2" data-dom="3">
+  <div class="qnum">Questão 15 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">The team wants ordinary project reads to be allowed, git push to require approval, and terraform apply to be denied, for every developer on the project. No custom logic and no action on an event is needed. Where should these three decisions be configured?</div>
+  <div class="pt-block pt">O time quer que leituras comuns do projeto sejam permitidas, que git push exija aprovação e que terraform apply seja negado, para todo dev do projeto. Não é necessária lógica customizada nem ação em um evento. Onde essas três decisões devem ser configuradas?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q15" value="a">A. A single permission mode that each developer selects at the start of every session.<div class="pt">Um único permission mode que cada dev seleciona no início de toda sessão.</div></label>
+    <label class="opt"><input type="radio" name="q15" value="b">B. Three imperative sentences in the project CLAUDE.md that name each command and its rule.<div class="pt">Três frases imperativas no CLAUDE.md do projeto que nomeiam cada comando e a sua regra.</div></label>
+    <label class="opt"><input type="radio" name="q15" value="c">C. allow, ask, and deny rules under permissions in the committed .claude/settings.json.<div class="pt">Regras allow, ask e deny em permissions no .claude/settings.json do projeto, commitado no repo.</div></label>
+    <label class="opt"><input type="radio" name="q15" value="d">D. A reusable skill that records which commands the assistant may run and under what conditions.<div class="pt">Uma skill reutilizável que registra quais comandos o assistente pode rodar e em que condições.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Permitir, pedir aprovação e negar alvos específicos é o papel das regras de <code>permissions</code>, avaliadas na ordem <code>deny → ask → allow</code> pelo próprio Claude Code antes de a tool rodar. No <code>.claude/settings.json</code> versionado, as três decisões chegam a todo dev que clona o repositório. A usa o permission mode, que muda a postura geral de autonomia da sessão (Aula 08), não codifica três alvos distintos e não viaja pelo repositório. B é orientação probabilística, não enforcement. D empacota um procedimento sob demanda e não decide permissão. Um hook só entraria se houvesse lógica condicional ou ação em um evento, o que o enunciado descarta.<span class="ts">Domínio 3 · TS 3.2 — allow/ask/deny em settings.permissions</span></div>
+</div>
+
+<div class="q" data-correct="a" data-ts="3.2" data-dom="3">
+  <div class="qnum">Questão 16 · múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="stem">The team has executable style and naming checks. A formatter must run after every successful file edit, and a validator must be able to block a matching action before it executes. Both must run every time, without relying on the model to remember instructions. Which mechanism meets these requirements?</div>
+  <div class="pt-block pt">O time tem checagens executáveis de estilo e de nomes. Um formatter deve rodar depois de toda edição de arquivo bem-sucedida, e um validador deve poder bloquear uma ação correspondente antes de ela executar. Os dois devem rodar sempre, sem depender de o modelo lembrar instruções. Qual mecanismo atende a esses requisitos?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q16" value="a">A. Command hooks for the matching events: one after file edits, one that can block an action before it runs.<div class="pt">Hooks de comando para os eventos correspondentes: um depois das edições de arquivo e outro que pode bloquear uma ação antes de ela rodar.</div></label>
+    <label class="opt"><input type="radio" name="q16" value="b">B. A rule in the project CLAUDE.md stating that the style and naming conventions are mandatory for every single change.<div class="pt">Uma regra no CLAUDE.md do projeto dizendo que as convenções de estilo e de nomes são obrigatórias em toda mudança.</div></label>
+    <label class="opt"><input type="radio" name="q16" value="c">C. A skill with the formatting procedure, loaded when the task seems relevant to the conversation.<div class="pt">Uma skill com o procedimento de formatação, carregada quando a tarefa parece relevante para a conversa.</div></label>
+    <label class="opt"><input type="radio" name="q16" value="d">D. deny rules under permissions for every path that violates the conventions.<div class="pt">Regras deny em permissions para todo caminho que viole as convenções.</div></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> Ação ou verificação executável em um evento é o caso de hook de comando: o formatter roda depois da edição (PostToolUse) e o validador bloqueia antes da ação (PreToolUse). Estilo e nomes cabem em hook quando há um critério executável; sem ele, continuam como orientação em CLAUDE.md ou rules. B é orientação probabilística, não garantia. C é sob demanda e depende de seleção, não de um evento. D bloqueia um alvo declarado sem olhar o conteúdo e não executa o formatter. Para uma proibição que depende de condição, o caminho também é o hook condicional.<span class="ts">Domínio 3 · TS 3.2 — Ação e verificação em evento com hooks de comando</span></div>
 </div>
 
 <div class="concluir">

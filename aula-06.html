@@ -382,9 +382,9 @@ do Agent SDK; os hooks desta seção são <strong>hooks de comando do Claude Cod
 </div>
 
 <div class="card objetivo">
-  <p><strong>Transfer exercise.</strong> For each of Questions 7–12, write your justification before answering:
+  <p><strong>Transfer exercise.</strong> For each of Questions 7–10, write your justification before answering:
   the primary mechanism, the guarantee it actually provides, and why each alternative does not fit. Do not answer by keyword recognition alone.</p>
-  <p class="pt"><strong>Exercício de transferência.</strong> Em cada uma das Questões 7–12, escreva sua justificativa
+  <p class="pt"><strong>Exercício de transferência.</strong> Em cada uma das Questões 7–10, escreva sua justificativa
   antes de responder: mecanismo principal, garantia que ele realmente oferece e por que cada alternativa não se encaixa.
   Não responda apenas por reconhecimento de palavras-chave.</p>
 </div>
@@ -431,43 +431,15 @@ do Agent SDK; os hooks desta seção são <strong>hooks de comando do Claude Cod
   <div class="feedback"><strong>Gabarito: A.</strong> Procedimento reutilizável e sob demanda é o caso positivo de Skill. Ela pode ser invocada explicitamente ou carregada automaticamente por relevância; nenhuma das duas formas a transforma em orientação always-on. B usa a premissa falsa de que Skill é somente manual e ainda colocaria o procedimento em toda sessão. C fornece orientação condicionada a arquivos, não um procedimento de tarefa. D controla permissão para um alvo, não empacota um workflow.<span class="ts">Domínio 3 · TS 3.2 — Procedimento reutilizável com Skill</span></div>
 </div>
 
-<div class="q" data-correct="d" data-ts="3.2" data-dom="3">
-  <div class="qnum">Questão 10 · transferência — múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
-  <div class="stem">For target-specific control, the team wants ordinary project reads allowed, git push to require approval, and terraform apply denied. No custom lifecycle logic is needed. Where do these three decisions belong?</div>
-  <div class="pt-block pt">Para controle por alvo, o time quer permitir leituras comuns do projeto, exigir aprovação para git push e negar terraform apply. Não é necessária lógica customizada de ciclo de vida. Onde essas três decisões pertencem?</div>
-  <div class="opts">
-    <label class="opt"><input type="radio" name="q10" value="a">A. A single permission mode, because it encodes separate allow, ask, and deny targets.<div class="pt">Um único permission mode, porque ele codifica alvos allow, ask e deny separados.</div></label>
-    <label class="opt"><input type="radio" name="q10" value="b">B. Three imperative sentences in CLAUDE.md.<div class="pt">Três frases imperativas no CLAUDE.md.</div></label>
-    <label class="opt"><input type="radio" name="q10" value="c">C. A reusable skill for permission decisions.<div class="pt">Uma skill reutilizável para decisões de permissão.</div></label>
-    <label class="opt"><input type="radio" name="q10" value="d">D. allow, ask, and deny rules under settings.permissions in the project settings.<div class="pt">Regras allow, ask e deny em settings.permissions nas configurações do projeto.</div></label>
-  </div>
-  <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: D.</strong> Permitir, pedir aprovação e negar alvos específicos é exatamente o papel de <code>settings.permissions</code>, com avaliação <code>deny → ask → allow</code>. A confunde modo geral de autonomia com regras por alvo. B fornece orientação probabilística, não enforcement pelo Claude Code. C empacota procedimento, não substitui a decisão de permissão. Um hook seria indicado se houvesse lógica ou ação customizada em evento, o que o enunciado descarta explicitamente.<span class="ts">Domínio 3 · TS 3.2 — allow/ask/deny em settings.permissions</span></div>
-</div>
-
-<div class="q" data-correct="c" data-ts="3.2" data-dom="3">
-  <div class="qnum">Questão 11 · transferência — múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
-  <div class="stem">The team has executable style and naming checks: a formatter must run after successful edits, and a validator must be able to block a matching action before it executes. Both must run at their configured events without relying on the model remembering instructions. Which mechanism is required?</div>
-  <div class="pt-block pt">O time tem checagens executáveis de estilo e nomes: um formatador deve rodar após edições bem-sucedidas, e um validador deve poder bloquear uma ação correspondente antes da execução. Ambos devem rodar nos eventos configurados sem depender de o modelo lembrar instruções. Qual mecanismo é necessário?</div>
-  <div class="opts">
-    <label class="opt"><input type="radio" name="q11" value="a">A. A CLAUDE.md rule stating that style and naming conventions are mandatory.<div class="pt">Uma regra no CLAUDE.md dizendo que as convenções de estilo e nomes são obrigatórias.</div></label>
-    <label class="opt"><input type="radio" name="q11" value="b">B. A skill containing the formatting procedure for relevant tasks.<div class="pt">Uma skill contendo o procedimento de formatação para tarefas relevantes.</div></label>
-    <label class="opt"><input type="radio" name="q11" value="c">C. Command hooks configured for the corresponding lifecycle events.<div class="pt">Hooks de comando configurados para os eventos de ciclo de vida correspondentes.</div></label>
-    <label class="opt"><input type="radio" name="q11" value="d">D. A permission mode with a higher level of autonomy.<div class="pt">Um permission mode com nível maior de autonomia.</div></label>
-  </div>
-  <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: C.</strong> Ação ou verificação executável em evento é o caso positivo de hook de comando: formatar depois da edição e validar/bloquear antes de uma ação são dois usos válidos. Estilo e nomes <em>cabem</em> em hook quando há código para verificá-los ou aplicá-los. A oferece apenas orientação probabilística. B é sob demanda e depende de seleção/invocação, não de um evento garantido. D altera autonomia geral e não executa as checagens.<span class="ts">Domínio 3 · TS 3.2 — Ação e verificação em evento com hook de comando</span></div>
-</div>
-
 <div class="q" data-correct="b" data-ts="3.4" data-dom="3">
-  <div class="qnum">Questão 12 · transferência — múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
+  <div class="qnum">Questão 10 · transferência — múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
   <div class="stem">An operator wants to change the session's overall autonomy and approval posture, rather than configure allow/ask/deny for one target or run a command at an event. Which mechanism should the operator select?</div>
   <div class="pt-block pt">Um operador quer mudar a postura geral de autonomia e aprovação da sessão, em vez de configurar allow/ask/deny para um alvo ou executar um comando num evento. Qual mecanismo o operador deve selecionar?</div>
   <div class="opts">
-    <label class="opt"><input type="radio" name="q12" value="a">A. A new settings.permissions rule for one command.<div class="pt">Uma nova regra em settings.permissions para um comando.</div></label>
-    <label class="opt"><input type="radio" name="q12" value="b">B. The appropriate permission mode for the session.<div class="pt">O permission mode apropriado para a sessão.</div></label>
-    <label class="opt"><input type="radio" name="q12" value="c">C. A command hook triggered after every edit.<div class="pt">Um hook de comando disparado depois de cada edição.</div></label>
-    <label class="opt"><input type="radio" name="q12" value="d">D. A stronger instruction in the project CLAUDE.md.<div class="pt">Uma instrução mais forte no CLAUDE.md do projeto.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="a">A. A new settings.permissions rule for one command.<div class="pt">Uma nova regra em settings.permissions para um comando.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="b">B. The appropriate permission mode for the session.<div class="pt">O permission mode apropriado para a sessão.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="c">C. A command hook triggered after every edit.<div class="pt">Um hook de comando disparado depois de cada edição.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="d">D. A stronger instruction in the project CLAUDE.md.<div class="pt">Uma instrução mais forte no CLAUDE.md do projeto.</div></label>
   </div>
   <button class="answer">Responder</button>
   <div class="feedback"><strong>Gabarito: B.</strong> Autonomia e aprovação gerais da sessão são controladas pelo permission mode. A trata um alvo específico, não a postura geral. C executa código em um evento, o que o enunciado não pede. D continua sendo orientação ao modelo, não seleção do modo de permissão. A escolha entre plan mode e execução é detalhada na Aula 7; aqui basta reconhecer a fronteira entre modo geral, regra por alvo e hook.<span class="ts">Domínio 3 · TS 3.4 — Autonomia/aprovação com permission mode</span></div>
