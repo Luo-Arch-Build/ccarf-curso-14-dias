@@ -22,7 +22,7 @@ Curso de estudo para a prova **Claude Certified Architect – Foundations (CCAR-
 - O progresso fica salvo no navegador, inclusive onde você parou na narração de cada aula.
 - **Fichamento (study notes)**: página separada, em inglês, com as afirmações factuais da aula (sem
   explicação), tradução por seção que dá para mostrar, e narração só em inglês. Veja a seção
-  [Fichamento](#fichamento-study-notes-em-inglês). Por enquanto, aulas 06 e 12.
+  [Fichamento](#fichamento-study-notes-em-inglês). Por enquanto, aulas 06, 07 e 12.
 
 ## Como usar
 
@@ -53,7 +53,7 @@ mas não oficial: pode mudar ou parar sem aviso.
 Além da aula, algumas aulas têm uma página de **fichamento** separada (`fichamento-NN.html`): afirmações
 factuais 100% em inglês (não explicação — para quem já estudou a aula), com botão **"ver tradução"** por
 seção que mostra o pt-BR (escondido por padrão), e narração 100% em inglês. O link aparece no `index.html`
-na aula correspondente. Até agora existem os fichamentos das **aulas 06 e 12**.
+na aula correspondente. Até agora existem os fichamentos das **aulas 06, 07 e 12**.
 
 A página é gerada por um builder a partir de um JSON de conteúdo, para ser reproduzível:
 

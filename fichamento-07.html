@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Notes 07 — Slash commands, skills and plan mode · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  .lead { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  section.ficha { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px 20px; margin: 18px 0; border-left: 3px solid var(--accent); }
+  section.ficha > h2 { font-size: 18px; margin: 0 0 4px; border: none; padding: 0; }
+  .ficha-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  ul.assert { margin: 10px 0 0; padding-left: 20px; }
+  ul.assert li { margin: 8px 0; }
+  .ver-traducao { flex: none; background: var(--card2); border: 1px solid var(--border);
+    color: var(--muted); border-radius: 999px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+    white-space: nowrap; transition: border-color .15s, color .15s; }
+  .ver-traducao:hover { color: var(--text); border-color: var(--accent); }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 12px 0 0;
+    display: none; }
+  .pt-block.pt { color: var(--pt); font-size: 13.5px; }
+  section.ficha.show-pt .pt-block { display: block; }
+  ul.assert.pt-block li { margin: 7px 0; }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px;
+    text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.ptm { color: var(--pt); font-size: 13px; }
+  section.ficha.gloss-sec table.gloss td.ptm { display: none; }
+  section.ficha.gloss-sec.show-pt table.gloss td.ptm { display: table-cell; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px;
+    border-top: 1px solid var(--border); font-size: 14px; gap: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / <a href="aula-07.html">Aula 07</a> / Study Notes (EN)</div>
+  <h1>Study Notes 07 — Slash commands, skills and plan mode</h1>
+  <div class="meta">
+    <span class="tag">Domain 3 · Claude Code Configuration &amp; Workflows (20%)</span>
+    <span class="tag">English · narrated</span>
+  </div>
+  <p class="lead">Factual assertions in English for review. Each section has a translation button that
+  reveals the pt-BR version. The audio narration is English only.</p>
+</header>
+
+<section class="ficha" id="slash-command-scope">
+  <div class="ficha-head">
+    <h2>Slash commands: project scope versus user scope (TS 3.2)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Slash commands: escopo de projeto versus escopo de usuário (TS 3.2)</strong></div>
+  <ul class="assert">
+    <li>A custom slash command is a Markdown file whose content becomes the prompt when you type /command-name.</li>
+    <li>The architectural decision the exam tests is where the file lives, and the answer depends on who should receive it.</li>
+    <li>.claude/commands/ inside the repository is project scope: it goes into version control, so every developer who clones or pulls receives the command automatically.</li>
+    <li>Project scope is the place for any standardized team workflow, such as /review, /deploy-check or /new-endpoint.</li>
+    <li>~/.claude/commands/ in the user's home directory is personal scope: it does not enter the repo, is not shared, and holds your individual shortcuts.</li>
+    <li>When the stem says available to every developer when they clone, or shared with the team, the answer is .claude/commands/ in the repository, and any option with ~/ is wrong because it does not pass through version control.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Um custom slash command é um arquivo Markdown cujo conteúdo vira o prompt quando você digita /nome-do-comando.</li>
+    <li>A decisão arquitetural que a prova cobra é onde o arquivo mora, e a resposta depende de quem deve recebê-lo.</li>
+    <li>.claude/commands/ dentro do repositório é escopo de projeto: vai para o controle de versão, então todo dev que clona ou dá pull recebe o comando automaticamente.</li>
+    <li>O escopo de projeto é o lugar de qualquer workflow padronizado do time, como /review, /deploy-check ou /novo-endpoint.</li>
+    <li>~/.claude/commands/ no home do usuário é escopo pessoal: não entra no repo, não é compartilhado e guarda os seus atalhos individuais.</li>
+    <li>Quando o stem diz disponível para todo dev ao clonar, ou compartilhado com o time, a resposta é .claude/commands/ no repositório, e qualquer opção com ~/ está errada porque não passa pelo controle de versão.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="skills-frontmatter">
+  <div class="ficha-head">
+    <h2>Skills: SKILL.md with frontmatter (TS 3.2)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Skills: SKILL.md com frontmatter (TS 3.2)</strong></div>
+  <ul class="assert">
+    <li>A skill is a package of specialized instructions that Claude loads on demand, when the task calls for it, instead of occupying context all the time.</li>
+    <li>A project skill lives in .claude/skills/&lt;name&gt;/SKILL.md, and a personal skill lives in ~/.claude/skills/&lt;name&gt;/SKILL.md.</li>
+    <li>SKILL.md has YAML frontmatter, and the exam names three of its fields: context, allowed-tools and argument-hint.</li>
+    <li>context: fork runs the skill in an isolated sub-agent, so verbose output such as a whole-codebase analysis stays out of the main conversation and only the result or summary comes back.</li>
+    <li>context: fork is the skill equivalent of the Explore subagent.</li>
+    <li>allowed-tools restricts which tools the skill can use during execution; the classic exam case is limiting a skill to file reads and writes to prevent destructive actions.</li>
+    <li>argument-hint is the text shown when a developer invokes the skill without its required parameters, reminding them what to pass.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Uma skill é um pacote de instruções especializadas que o Claude carrega sob demanda, quando a tarefa pede, em vez de ocupar contexto o tempo todo.</li>
+    <li>Uma skill de projeto vive em .claude/skills/&lt;nome&gt;/SKILL.md, e uma skill pessoal vive em ~/.claude/skills/&lt;nome&gt;/SKILL.md.</li>
+    <li>O SKILL.md tem frontmatter YAML, e a prova cobra nominalmente três campos: context, allowed-tools e argument-hint.</li>
+    <li>context: fork roda a skill num sub-agent isolado, então a saída verbosa, como a análise de um codebase inteiro, fica fora da conversa principal e só o resultado ou o resumo volta.</li>
+    <li>context: fork é o equivalente em skill do Explore subagent.</li>
+    <li>allowed-tools restringe quais tools a skill pode usar durante a execução; o caso clássico da prova é limitar uma skill a leitura e escrita de arquivos para impedir ações destrutivas.</li>
+    <li>argument-hint é o texto exibido quando um dev invoca a skill sem os parâmetros obrigatórios, lembrando o que passar.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="exam-vs-product">
+  <div class="ficha-head">
+    <h2>Exam versus current product (docs checked on 2026-10-22)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Prova versus produto atual (documentação conferida em 22/10/2026)</strong></div>
+  <ul class="assert">
+    <li>In the current product, custom commands were unified with skills, and files in .claude/commands/ keep working; the exam treats them as two distinct mechanisms.</li>
+    <li>The guide says allowed-tools restricts the tools during the skill, and that is how the exam tests it.</li>
+    <li>In the current product, allowed-tools only pre-approves the listed tools, which run without asking permission in the turn that invokes the skill, and it removes no tool from reach.</li>
+    <li>To remove tools while a skill is active, the current product has a separate field, disallowed-tools.</li>
+    <li>With context: fork, the skill runs in a subagent that does not see your conversation history and returns a summary when it finishes, which is the isolation the guide describes.</li>
+    <li>On the exam, answer as the guide does: allowed-tools restricts the skill's tools.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>No produto atual, os custom commands foram unificados com as skills, e os arquivos em .claude/commands/ continuam funcionando; a prova trata os dois como mecanismos distintos.</li>
+    <li>O guia diz que allowed-tools restringe as tools durante a skill, e é assim que a prova cobra.</li>
+    <li>No produto atual, allowed-tools só pré-aprova as tools listadas, que rodam sem pedir permissão no turno que invoca a skill, e não tira nenhuma tool do alcance.</li>
+    <li>Para remover tools enquanto uma skill está ativa, o produto atual tem outro campo, disallowed-tools.</li>
+    <li>Com context: fork, a skill roda num subagent que não vê o histórico da sua conversa e devolve um resumo ao terminar, que é o isolamento que o guia descreve.</li>
+    <li>Na prova, responda como o guia: allowed-tools restringe as tools da skill.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="personal-variant-skill-vs-claude-md">
+  <div class="ficha-head">
+    <h2>Personal variant, and Skill versus CLAUDE.md</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Variante pessoal, e Skill versus CLAUDE.md</strong></div>
+  <ul class="assert">
+    <li>To customize a project skill only for yourself, create a variant in ~/.claude/skills/ under a different name, for example analise-codebase-luo.</li>
+    <li>A different name does not collide with the team's skill and does not change your colleagues' behavior.</li>
+    <li>Editing the repo's skill would change everyone's workflow, and committing a personal preference is exactly the anti-pattern the exam tests.</li>
+    <li>A skill loads on demand when the task calls for it, while CLAUDE.md is always loaded in every session.</li>
+    <li>A skill suits task-specific workflows such as analysis, migration or release; CLAUDE.md suits universal project standards such as style, conventions and never-do-X rules.</li>
+    <li>A skill costs context only when used, while CLAUDE.md costs context permanently, and letting it grow too much pollutes everything.</li>
+    <li>When the stem says a standard that applies to all project code, the answer is CLAUDE.md; when it says a workflow that runs occasionally, with parameters and large output, the answer is a skill, probably with context: fork.</li>
+    <li>A skill can be invoked by name or loaded by Claude by relevance, but either way it stays on demand: loaded by relevance does not make it always-on guidance like CLAUDE.md.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Para customizar uma skill do projeto só para você, crie uma variante em ~/.claude/skills/ com um nome diferente, por exemplo analise-codebase-luo.</li>
+    <li>Um nome diferente não colide com a skill do time e não altera o comportamento dos colegas.</li>
+    <li>Editar a skill do repo mudaria o workflow de todo mundo, e commitar uma preferência pessoal é exatamente o anti-padrão que a prova testa.</li>
+    <li>Uma skill carrega sob demanda quando a tarefa pede, enquanto o CLAUDE.md é sempre carregado em toda sessão.</li>
+    <li>A skill serve a workflows específicos de uma tarefa, como análise, migração ou release; o CLAUDE.md serve a padrões universais do projeto, como estilo, convenções e regras de nunca fazer X.</li>
+    <li>Uma skill só custa contexto quando usada, enquanto o CLAUDE.md custa contexto permanentemente, e deixá-lo crescer demais polui tudo.</li>
+    <li>Quando o stem diz um padrão que vale para todo código do projeto, a resposta é CLAUDE.md; quando diz um workflow que roda às vezes, com parâmetros e saída grande, a resposta é uma skill, provavelmente com context: fork.</li>
+    <li>Uma skill pode ser invocada pelo nome ou carregada pelo Claude por relevância, mas nas duas formas continua sob demanda: carregada por relevância não vira orientação always-on como o CLAUDE.md.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="mechanism-map">
+  <div class="ficha-head">
+    <h2>Quick map: which mechanism for each need</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Mapa rápido: qual mecanismo para cada necessidade</strong></div>
+  <ul class="assert">
+    <li>The exam likes to list several needs and ask for the mechanism of each; the criterion is always when the guidance applies and who should receive it.</li>
+    <li>A standard for every developer in every session goes in the project CLAUDE.md, which is always loaded and versioned.</li>
+    <li>A convention for one file type spread across the repo goes in .claude/rules/ with a paths glob, covered in Lesson 6.</li>
+    <li>A workflow that runs occasionally, with parameters or large output, is a skill in .claude/skills/, with context: fork if it is verbose.</li>
+    <li>A standardized prompt the team fires by name is a slash command in .claude/commands/.</li>
+    <li>A shortcut that is only yours goes in ~/.claude/commands/ or ~/.claude/skills/, under its own name.</li>
+    <li>Something that must always happen without exception, such as running the linter after every edit, is a hook configured in settings.json: programmatic enforcement, not instruction, the logic of TS 1.5 from Lesson 3.</li>
+    <li>Changing the session's overall autonomy and approval, such as stopping approval prompts for every edit or only planning, is the session's permission mode, enumerated in Lesson 8.</li>
+    <li>Always blocking a command or a file, such as the .env file or the secrets/ folder, is a deny rule under permissions in the project's versioned .claude/settings.json.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>A prova gosta de listar várias necessidades e pedir o mecanismo de cada uma; o critério é sempre quando a orientação se aplica e quem deve recebê-la.</li>
+    <li>Um padrão para todo dev em toda sessão vai no CLAUDE.md do projeto, sempre carregado e versionado.</li>
+    <li>Uma convenção de um tipo de arquivo espalhado pelo repo vai em .claude/rules/ com glob em paths, tema da Aula 06.</li>
+    <li>Um workflow que roda às vezes, com parâmetros ou saída grande, é uma skill em .claude/skills/, com context: fork se for verboso.</li>
+    <li>Um prompt padronizado que o time dispara pelo nome é um slash command em .claude/commands/.</li>
+    <li>Um atalho só seu vai em ~/.claude/commands/ ou ~/.claude/skills/, com nome próprio.</li>
+    <li>Algo que precisa acontecer sempre, sem exceção, como rodar o linter depois de toda edição, é um hook configurado em settings.json: enforcement programático, não instrução, a lógica do TS 1.5 da Aula 03.</li>
+    <li>Mudar a autonomia e a aprovação gerais da sessão, como parar de pedir aprovação a cada edição ou só planejar, é o permission mode da sessão, que a Aula 08 enumera.</li>
+    <li>Bloquear sempre um comando ou um arquivo, como o .env ou a pasta secrets/, é uma regra deny em permissions no .claude/settings.json do projeto, versionado.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="permission-rules">
+  <div class="ficha-head">
+    <h2>Permission rules: allow, ask and deny in settings (TS 3.2)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Regras de permissão: allow, ask e deny nos settings (TS 3.2)</strong></div>
+  <ul class="assert">
+    <li>Permission rules live under permissions, with allow, ask and deny lists, in the settings files.</li>
+    <li>Claude Code itself applies permission rules before the tool runs, so they do not depend on the model following an instruction.</li>
+    <li>A deny rule in the project's .claude/settings.json, such as Read(**/.env), Read(./secrets/**) or Bash(terraform apply:*), applies to the whole team.</li>
+    <li>Rules are evaluated in the order deny, then ask, then allow, and among rules deny always wins.</li>
+    <li>Read(./.env) matches only the .env in the current directory, while Read(**/.env) matches all of them.</li>
+    <li>File precedence from strongest to weakest is: managed organization policy, command-line arguments, .claude/settings.local.json (personal, outside git), .claude/settings.json (project, versioned), and ~/.claude/settings.json (user).</li>
+    <li>Lists such as permissions.allow are combined across files instead of overriding each other, which is why a personal allow does not reopen what a project deny closed.</li>
+    <li>For a rule that the whole organization must follow and nobody can remove, there is the managed level.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>As regras de permissão ficam em permissions, com as listas allow, ask e deny, nos arquivos de settings.</li>
+    <li>O próprio Claude Code aplica as regras de permissão antes de a tool rodar, então elas não dependem de o modelo seguir uma instrução.</li>
+    <li>Uma regra deny no .claude/settings.json do projeto, como Read(**/.env), Read(./secrets/**) ou Bash(terraform apply:*), vale para o time inteiro.</li>
+    <li>As regras são avaliadas na ordem deny, depois ask, depois allow, e entre regras o deny sempre ganha.</li>
+    <li>Read(./.env) casa só com o .env do diretório atual, enquanto Read(**/.env) casa com todos.</li>
+    <li>A precedência dos arquivos, do mais forte ao mais fraco, é: política managed da organização, argumentos de linha de comando, .claude/settings.local.json (pessoal, fora do git), .claude/settings.json (projeto, versionado) e ~/.claude/settings.json (usuário).</li>
+    <li>Listas como permissions.allow se combinam entre os arquivos em vez de se sobrescreverem, e por isso um allow pessoal não reabre o que um deny do projeto fechou.</li>
+    <li>Para uma regra que a organização inteira deve seguir e que ninguém pode remover, existe o nível managed.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="hook-deny-mode">
+  <div class="ficha-head">
+    <h2>Hook, deny rule and permission mode are three different controls</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Hook, regra deny e permission mode são três controles diferentes</strong></div>
+  <ul class="assert">
+    <li>Hooks are also configured in the settings files, and additionally in plugins and in the frontmatter of skills and subagents.</li>
+    <li>A hook executes something on an event; a deny rule prevents a tool call.</li>
+    <li>A permission mode is not a per-target rule: it changes the session's overall autonomy and approval, meaning what runs without asking.</li>
+    <li>An allow, ask or deny rule decides about a specific target: a tool, a command or a path.</li>
+    <li>Permission mode, permission rules and hooks act together, and none of them replaces another; the modes are covered in Lesson 8.</li>
+    <li>Rule of thumb: always loaded is CLAUDE.md; depends on the file is a rule with glob; on demand is a skill or command; a guarantee is code, never text: what must happen is a hook, and what must never happen is a deny rule.</li>
+    <li>A deny rule blocks without looking at context, so when a prohibition depends on a condition, such as only in production or only above a value, it becomes a hook with logic.</li>
+    <li>A PreToolUse hook can inspect a command and its target, deny production calls, and leave development calls to the other permission rules; not being denied by that hook does not mean automatic permission.</li>
+    <li>The deny rule's reach covers the native tools and the commands Claude Code recognizes, such as cat, head and redirections, not a script that opens the file on its own; for that, use the sandbox.</li>
+    <li>Style and naming are guidance in CLAUDE.md or a rule, and they only become a command hook when there is an executable criterion, such as a formatter that runs or a validator that blocks.</li>
+    <li>With an executable criterion, the formatter runs after a successful edit in a PostToolUse hook, and the validator blocks the action before it runs in a PreToolUse hook.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Hooks também se configuram nos arquivos de settings e, além disso, em plugins e no frontmatter de skills e subagents.</li>
+    <li>Um hook executa algo num evento; uma regra deny impede uma tool call.</li>
+    <li>Um permission mode não é regra por alvo: ele muda a autonomia e a aprovação gerais da sessão, ou seja, o que roda sem perguntar.</li>
+    <li>Uma regra allow, ask ou deny decide sobre um alvo específico: uma tool, um comando ou um caminho.</li>
+    <li>Permission mode, regras de permissão e hooks atuam juntos, e um não substitui o outro; os modos estão na Aula 08.</li>
+    <li>Regra de bolso: sempre carregado é CLAUDE.md; depende do arquivo é rule com glob; sob demanda é skill ou comando; garantia é código, nunca texto: o que tem de acontecer é hook, e o que nunca pode acontecer é regra deny.</li>
+    <li>Uma regra deny bloqueia sem olhar contexto, então quando uma proibição depende de uma condição, como só em produção ou só acima de um valor, ela vira hook com lógica.</li>
+    <li>Um hook PreToolUse pode inspecionar um comando e seu destino, negar chamadas de produção e deixar as de desenvolvimento para as demais regras de permissão; não ser negado por esse hook não equivale a permissão automática.</li>
+    <li>O alcance da regra deny cobre as tools nativas e os comandos que o Claude Code reconhece, como cat, head e redirecionamentos, e não um script que abre o arquivo por conta própria; para isso, use o sandbox.</li>
+    <li>Estilo e nomes são orientação em CLAUDE.md ou rule, e só viram hook de comando quando existe um critério executável, como um formatter que roda ou um validador que bloqueia.</li>
+    <li>Com um critério executável, o formatter roda depois de uma edição bem-sucedida num hook PostToolUse, e o validador bloqueia a ação antes de ela rodar num hook PreToolUse.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="execution-architectures">
+  <div class="ficha-head">
+    <h2>Direct execution, plan mode and multi-phase workflow (TS 3.4)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Execução direta, plan mode e workflow multifásico (TS 3.4)</strong></div>
+  <ul class="assert">
+    <li>Direct execution, plan mode and a multi-phase workflow are three different choices, not three names for the same cycle.</li>
+    <li>Choose direct execution when the change is simple, well understood and well scoped, such as a bug with a clear stack trace, a validation in one function or renaming a variable.</li>
+    <li>In direct execution Claude edits and runs within the permissions; review can be manual, edit by edit or command by command, and supervision does not turn the task into plan mode.</li>
+    <li>Choose plan mode when the design is still uncertain: multiple valid approaches, unknown dependencies, an architectural decision or a change across many files.</li>
+    <li>In plan mode Claude reads and explores without modifying files, produces a plan, and implements only after that plan is approved.</li>
+    <li>Plan approval controls Claude's transition from planning to implementation; it does not authorize production or deployment.</li>
+    <li>Choose a multi-phase workflow when the process requires separate phases with independent owners or checks, such as discovery, approval, implementation, verification and release.</li>
+    <li>In a multi-phase workflow each phase delivers an artifact, such as a report, a plan, a diff or test evidence, passed on by a handoff, and human or programmatic gates decide whether the next phase can start.</li>
+    <li>A single plan-then-execute cycle is a useful combination of modes but is not enough to define a multi-phase workflow.</li>
+    <li>A multi-phase workflow can contain plan mode in its design phase, as long as it has other explicit phases, artifacts, handoffs and gates.</li>
+    <li>Planning before an uncertain change prevents costly rework, but planning an already understood three-line fix is process over-engineering.</li>
+    <li>The exam penalizes both planning everything and starting directly on a task whose complexity is already declared.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Execução direta, plan mode e workflow multifásico são três escolhas diferentes, não três nomes para o mesmo ciclo.</li>
+    <li>Escolha execução direta quando a mudança é simples, bem compreendida e bem delimitada, como um bug com stack trace claro, uma validação numa função ou renomear uma variável.</li>
+    <li>Na execução direta o Claude edita e executa dentro das permissions; a revisão pode ser manual, edição por edição ou comando por comando, e supervisão não transforma a tarefa em plan mode.</li>
+    <li>Escolha plan mode quando o desenho ainda é incerto: múltiplas abordagens válidas, dependências desconhecidas, uma decisão arquitetural ou uma mudança em muitos arquivos.</li>
+    <li>No plan mode o Claude lê e explora sem modificar arquivos, produz um plano e só implementa depois da aprovação desse plano.</li>
+    <li>A aprovação do plano controla a transição do Claude do planejamento para a implementação; ela não autoriza produção nem deploy.</li>
+    <li>Escolha workflow multifásico quando o processo exige fases separadas, com responsáveis ou verificações independentes, como discovery, aprovação, implementação, verificação e release.</li>
+    <li>No workflow multifásico cada fase entrega um artefato, como relatório, plano, diff ou evidência de testes, passado adiante por um handoff, e gates humanos ou programáticos decidem se a fase seguinte pode começar.</li>
+    <li>Um único ciclo plano e execução é uma combinação útil de modos, mas não basta para definir um workflow multifásico.</li>
+    <li>Um workflow multifásico pode conter plan mode na fase de desenho, desde que tenha outras fases explícitas, artefatos, handoffs e gates.</li>
+    <li>Planejar antes de uma mudança incerta previne retrabalho caro, mas planejar uma correção de três linhas já compreendida é over-engineering de processo.</li>
+    <li>A prova penaliza tanto planejar tudo quanto começar direto uma tarefa cuja complexidade já está declarada.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="plan-approval-vs-production-gate">
+  <div class="ficha-head">
+    <h2>Plan approval is not a production or deployment gate</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Aprovação do plano não é gate de produção ou deploy</strong></div>
+  <ul class="assert">
+    <li>Plan approval answers whether Claude can leave planning and implement this proposal.</li>
+    <li>A requirement from the data owner, a change advisory board or a release policy answers a different question: whether this change can reach the environment or produce an external effect.</li>
+    <li>That authorization needs the corresponding external process, such as an approval recorded in the change system, environment protection, a CI/CD gate or programmatic validation; plan mode alone does not provide it.</li>
+    <li>Risk and human review shape the design of the controls but do not create an automatic mode rule.</li>
+    <li>A simple edit can use direct execution supervised by ask permissions and manual review; a high-risk change may require plan mode and external gates; a process with independent approval, implementation and verification calls for a multi-phase workflow.</li>
+    <li>Risk or human approval, on their own, do not make plan mode sufficient.</li>
+    <li>claude -p --permission-mode plan can produce a plan without editing files, but a second headless run does not automatically inherit the session or the approved plan.</li>
+    <li>To implement the same proposal headless, explicitly resume the corresponding session or give the new run the approved plan artifact and the needed context; production and deployment approvals remain separate gates even then.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>A aprovação do plano responde se o Claude pode sair do planejamento e implementar esta proposta.</li>
+    <li>Uma exigência do dono do dado, do change advisory board ou de uma política de release responde outra pergunta: se esta mudança pode chegar ao ambiente ou produzir efeito externo.</li>
+    <li>Essa autorização precisa do processo externo correspondente, como aprovação registrada no sistema de mudanças, proteção de ambiente, gate de CI/CD ou validação programática; plan mode, sozinho, não a fornece.</li>
+    <li>Risco e revisão humana influenciam o desenho dos controles, mas não criam uma regra automática de modo.</li>
+    <li>Uma edição simples pode usar execução direta supervisionada por permissions ask e revisão manual; uma mudança de alto risco pode exigir plan mode e gates externos; um processo com aprovação, implementação e verificação independentes pede um workflow multifásico.</li>
+    <li>Risco ou aprovação humana, isoladamente, não tornam plan mode suficiente.</li>
+    <li>claude -p --permission-mode plan pode produzir um plano sem editar arquivos, mas uma segunda execução headless não herda automaticamente a sessão nem o plano aprovado.</li>
+    <li>Para implementar a mesma proposta em headless, retome explicitamente a sessão correspondente ou forneça à nova execução o artefato do plano aprovado e o contexto necessário; mesmo assim, aprovações de produção e deploy continuam sendo gates separados.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="explore-subagent">
+  <div class="ficha-head">
+    <h2>Explore subagent: protecting the context</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Explore subagent: protegendo o contexto</strong></div>
+  <ul class="assert">
+    <li>Discovery phases, such as finding where a function is used or mapping all callers, generate huge output: dozens of files read, greps and listings.</li>
+    <li>If that output enters the main conversation, the context window runs out before the implementation phase.</li>
+    <li>The Explore subagent runs the verbose search in an isolated context and returns only the summary, the same logic as context: fork in skills.</li>
+    <li>Lesson 12, section 3, returns to subagents for verbose exploration in large codebases.</li>
+    <li>In a multi-phase workflow, that summary can be the discovery artifact handed to the design phase, the approved plan becomes another artifact received by implementation, and an independent verification produces its own evidence before the release gate.</li>
+    <li>The Explore subagent protects the context but does not replace those handoffs and gates.</li>
+    <li>For a large task with an uncertain design, plan mode followed by direct execution can be enough; if the requirement also calls for a discovery report, formal approval, implementation and independent verification, the answer becomes a multi-phase workflow, possibly using plan mode in one phase.</li>
+    <li>Neither the size of the prompt nor the number of steps mentioned decides the architecture: look for explicit artifacts, handoffs and gates.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Fases de discovery, como achar onde uma função é usada ou mapear todos os callers, geram saída enorme: dezenas de arquivos lidos, greps e listagens.</li>
+    <li>Se essa saída entra na conversa principal, a janela de contexto acaba antes da fase de implementação.</li>
+    <li>O Explore subagent faz a busca verbosa num contexto isolado e devolve só o resumo, a mesma lógica do context: fork das skills.</li>
+    <li>A Aula 12, seção 3, retoma os subagents para exploração verbosa em codebases grandes.</li>
+    <li>Num workflow multifásico, esse resumo pode ser o artefato de discovery entregue à fase de desenho, o plano aprovado vira outro artefato recebido pela implementação, e uma verificação independente produz evidências próprias antes do gate de release.</li>
+    <li>O Explore subagent protege o contexto, mas não substitui esses handoffs e gates.</li>
+    <li>Para uma tarefa grande de desenho incerto, plan mode seguido de execução direta pode bastar; se o requisito também exigir relatório de discovery, aprovação formal, implementação e verificação independente, a resposta passa a ser workflow multifásico, possivelmente com plan mode numa das fases.</li>
+    <li>Nem o tamanho do prompt nem a quantidade de etapas mencionadas decidem a arquitetura: procure artefatos, handoffs e gates explícitos.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="pegadinha-do-dia">
+  <div class="ficha-head">
+    <h2>Trap of the day</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Pegadinha do dia</strong></div>
+  <ul class="assert">
+    <li>Wrong scope: something available to the whole team goes in the versioned repo, not in ~/.claude/.</li>
+    <li>Mode as a reflex: plan mode for every task is over-engineering, and starting directly on an already declared complexity is also an error.</li>
+    <li>False multi-phase: a plan followed by execution is not enough; look for phases with artifacts, handoffs and gates.</li>
+    <li>Approval or invisible memory: approving Claude's plan does not authorize production or deployment, and a new headless run does not inherit the plan without resuming the session or receiving the artifact.</li>
+    <li>Wrong text or wrong block: an instruction does not guarantee enforcement; use deny for an unconditional prohibition and a hook with logic when the decision depends on context.</li>
+    <li>Rule of thumb: shared means the versioned repo; a simple change means direct execution, even with per-edit review; an uncertain design means plan mode; a process with independent handoffs and gates means a multi-phase workflow.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Escopo errado: algo disponível para o time inteiro vai no repo versionado, não em ~/.claude/.</li>
+    <li>Modo como reflexo: plan mode para toda tarefa é over-engineering, e começar direto uma complexidade já declarada também é erro.</li>
+    <li>Falso multifásico: um plano seguido de execução não basta; procure fases com artefatos, handoffs e gates.</li>
+    <li>Aprovação ou memória invisível: aprovar o plano do Claude não autoriza produção nem deploy, e uma nova execução headless não herda o plano sem retomar a sessão ou receber o artefato.</li>
+    <li>Texto ou bloqueio errado: instrução não garante enforcement; use deny para proibição incondicional e hook com lógica quando a decisão depender do contexto.</li>
+    <li>Regra de bolso: compartilhado é o repo versionado; mudança simples é execução direta, mesmo com revisão por edição; desenho incerto é plan mode; processo com handoffs e gates independentes é workflow multifásico.</li>
+  </ul>
+</section>
+
+<section class="ficha gloss-sec" id="glossary">
+  <div class="ficha-head">
+    <h2>Glossary</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <table class="gloss">
+    <tr><th>Term (EN)</th><th>Meaning (EN)</th><th class="ptm pt">Significado (PT-BR)</th></tr>
+    <tr><td class="en">custom slash command</td><td>A Markdown file whose content becomes the prompt when invoked as /name.</td><td class="ptm pt">Um arquivo Markdown cujo conteúdo vira o prompt quando invocado como /nome.</td></tr>
+    <tr><td class="en">project-scoped</td><td>Lives in the repo, such as .claude/commands/, and is shared through version control.</td><td class="ptm pt">Mora no repo, como .claude/commands/, e é compartilhado pelo controle de versão.</td></tr>
+    <tr><td class="en">user-scoped</td><td>Lives in ~, such as ~/.claude/commands/, and is personal.</td><td class="ptm pt">Mora no ~, como ~/.claude/commands/, e é pessoal.</td></tr>
+    <tr><td class="en">SKILL.md</td><td>The skill definition file, in .claude/skills/&lt;name&gt;/ or ~/.claude/skills/&lt;name&gt;/.</td><td class="ptm pt">O arquivo de definição da skill, em .claude/skills/&lt;nome&gt;/ ou ~/.claude/skills/&lt;nome&gt;/.</td></tr>
+    <tr><td class="en">frontmatter</td><td>The YAML configuration block at the top of the file.</td><td class="ptm pt">O bloco YAML de configuração no topo do arquivo.</td></tr>
+    <tr><td class="en">context: fork</td><td>Runs the skill in an isolated sub-agent so its output does not pollute the main conversation.</td><td class="ptm pt">Roda a skill num sub-agent isolado para a saída não poluir a conversa principal.</td></tr>
+    <tr><td class="en">allowed-tools</td><td>On the exam, restricts the tools available during the skill.</td><td class="ptm pt">Na prova, restringe as tools disponíveis durante a skill.</td></tr>
+    <tr><td class="en">argument-hint</td><td>Prompts for the required parameters when the skill is invoked without them.</td><td class="ptm pt">Lembra os parâmetros obrigatórios quando a skill é invocada sem eles.</td></tr>
+    <tr><td class="en">on-demand invocation</td><td>Loaded only when the task calls for it, as skills are, versus always-loaded CLAUDE.md.</td><td class="ptm pt">Carregado só quando a tarefa pede, como as skills, versus o CLAUDE.md sempre carregado.</td></tr>
+    <tr><td class="en">always-loaded</td><td>Present in every session, as CLAUDE.md is.</td><td class="ptm pt">Presente em toda sessão, como o CLAUDE.md.</td></tr>
+    <tr><td class="en">settings permissions</td><td>allow, ask and deny rules in the settings files, applied by Claude Code before the tool runs.</td><td class="ptm pt">Regras allow, ask e deny nos arquivos de settings, aplicadas pelo Claude Code antes de a tool rodar.</td></tr>
+    <tr><td class="en">deny rule</td><td>Unconditionally blocks a tool, command or file.</td><td class="ptm pt">Bloqueia incondicionalmente uma tool, um comando ou um arquivo.</td></tr>
+    <tr><td class="en">settings precedence</td><td>Managed, then command line, then local, then project, then user settings.</td><td class="ptm pt">Managed, depois linha de comando, depois local, depois projeto, depois usuário.</td></tr>
+    <tr><td class="en">command hook</td><td>A hook that runs a shell command on an event, to format, validate or block.</td><td class="ptm pt">Um hook que executa um comando de shell num evento, para formatar, validar ou bloquear.</td></tr>
+    <tr><td class="en">conditional hook</td><td>A hook with logic that decides according to context, such as denying only production deploys.</td><td class="ptm pt">Um hook com lógica que decide conforme o contexto, como negar só deploys de produção.</td></tr>
+    <tr><td class="en">permission mode</td><td>The session's overall autonomy and approval posture, not a per-target rule.</td><td class="ptm pt">A postura geral de autonomia e aprovação da sessão, não uma regra por alvo.</td></tr>
+    <tr><td class="en">direct execution</td><td>Claude acts within the permissions, with or without manual per-edit review.</td><td class="ptm pt">O Claude age dentro das permissions, com ou sem revisão manual por edição.</td></tr>
+    <tr><td class="en">plan mode</td><td>Explores without modifying files and implements only after the plan is approved.</td><td class="ptm pt">Explora sem modificar arquivos e só implementa depois da aprovação do plano.</td></tr>
+    <tr><td class="en">multi-phase workflow</td><td>Explicit phases with artifacts, handoffs and gates.</td><td class="ptm pt">Fases explícitas com artefatos, handoffs e gates.</td></tr>
+    <tr><td class="en">artifact / handoff</td><td>A phase's output and its explicit passing to the next phase.</td><td class="ptm pt">O resultado de uma fase e a sua passagem explícita para a fase seguinte.</td></tr>
+    <tr><td class="en">deployment gate</td><td>A human or programmatic gate before deployment or production, separate from plan approval.</td><td class="ptm pt">Um gate humano ou programático antes de deploy ou produção, separado da aprovação do plano.</td></tr>
+    <tr><td class="en">Explore subagent</td><td>Runs verbose discovery in an isolated context and returns a summary.</td><td class="ptm pt">Roda o discovery verboso num contexto isolado e devolve um resumo.</td></tr>
+    <tr><td class="en">context window exhaustion</td><td>The context window running out, typically from verbose discovery output.</td><td class="ptm pt">O estouro da janela de contexto, tipicamente por saída verbosa de discovery.</td></tr>
+    <tr><td class="en">session resume / plan artifact</td><td>A new headless run must resume the session or receive the approved plan explicitly.</td><td class="ptm pt">Uma nova execução headless precisa retomar a sessão ou receber o plano aprovado explicitamente.</td></tr>
+    <tr><td class="en">costly rework</td><td>The cost planning prevents when dependencies are discovered late.</td><td class="ptm pt">O custo que o planejamento previne quando dependências são descobertas tarde.</td></tr>
+  </table>
+</section>
+
+<nav class="prevnext">
+  <span><a href="fichamento-06.html">← Fichamento 06</a></span>
+  <span><a href="aula-07.html">Aula 07 — versão completa (PT)</a></span>
+  <span><a href="aula-07.html">Aula 07 (completa) →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('section.ficha .ver-traducao').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var sec = btn.closest('section.ficha');
+      var on = sec.classList.toggle('show-pt');
+      btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+      btn.textContent = on ? '🇧🇷 ocultar tradução' : '🇧🇷 ver tradução';
+    });
+  });
+})();
+</script>
+<script src="narracao/fichamento-07.js"></script>
+<script src="narracao/player.js"></script>
+</body>
+</html>
