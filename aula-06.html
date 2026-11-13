@@ -207,39 +207,11 @@ probabilística.</strong> Quando a convenção precisa de enforcement, ainda é 
 <h2>4. Mapa de decisão rápido</h2>
 <p><strong>Orientação × garantia.</strong> CLAUDE.md, <code>@import</code> e rules fornecem <strong>contexto</strong>:
 o modelo lê e tende a seguir, mas sua aderência é probabilística — mesmo quando a seleção pelo path é determinística.
-Uma <strong>Skill</strong> empacota um <strong>procedimento reutilizável sob demanda</strong>: pode ser invocada
-explicitamente ou carregada automaticamente quando o Claude a considera relevante para a tarefa. Seleção automática
-não a torna orientação <em>always-on</em> nem substitui o contexto persistente do CLAUDE.md.</p>
-<p>Para controle de execução, o Claude Code oferece mecanismos distintos. Regras de permissão e hooks ficam nos
-arquivos de settings (usuário <code>~/.claude/settings.json</code>, projeto <code>.claude/settings.json</code>
-versionado, local <code>.claude/settings.local.json</code>):</p>
-<ul>
-  <li><strong>Regras de permissão</strong> (<code>settings.permissions</code> com <code>allow</code> / <code>ask</code> /
-      <code>deny</code>): permitem, pedem aprovação ou bloqueiam alvos como tools, comandos e paths. São avaliadas na
-      ordem <strong>deny → ask → allow</strong> — um <code>deny</code> vence qualquer <code>allow</code>. Entre arquivos,
-      a precedência é managed &gt; linha de comando &gt; local &gt; projeto &gt; usuário, e as listas de regras se
-      <em>somam</em> entre eles em vez de uma substituir a outra.</li>
-  <li><strong>Hooks de comando</strong>: executam código em eventos — por exemplo, validar ou bloquear uma ação antes
-      de ela ocorrer, ou formatar e verificar estilo depois de uma edição. Também podem vir de plugins e do frontmatter
-      de skills e subagents.</li>
-  <li><strong>Permission modes</strong>: controlam o nível geral de <strong>autonomia e aprovação</strong> da sessão.
-      Não são uma regra <code>allow/ask/deny</code> para um alvo específico nem uma verificação executada em um evento.</li>
-</ul>
-<pre><code>// .claude/settings.json  (commitado: vale para o time todo)
-{
-  "permissions": {
-    "deny": ["Read(**/.env)", "Read(./secrets/**)", "Bash(terraform apply:*)"]
-  }
-}</code></pre>
-<p>Regra de bolso: <em>o que o Claude deve saber ou considerar vai no CLAUDE.md/rules; um procedimento reutilizável
-sob demanda vai numa Skill; permissão por alvo vai em <code>settings.permissions</code>; ação ou verificação em evento
-vai num hook de comando; autonomia geral vai no permission mode. Convenção de estilo ou de nomes pode ser orientação
-em CLAUDE.md/rules, mas, se houver um critério executável, um hook de comando também pode validar, formatar ou bloquear
-em um evento. O <code>deny</code> tem alcance: cobre as tools nativas e os comandos que o Claude Code reconhece
-(<code>cat</code>, <code>head</code>, redirecionamentos), não um script Python ou Node que abre o arquivo por conta
-própria — bloqueio no nível do sistema operacional pede o sandbox.</em></p>
-<p>Detalhe de sintaxe: <code>Read(./.env)</code> casa só com o <code>.env</code> do diretório atual; para todos os
-<code>.env</code> do repositório, use <code>Read(**/.env)</code>.</p>
+Uma <strong>Skill</strong> é um procedimento reutilizável sob demanda: pode ser invocada pelo nome ou carregada por
+relevância, e mesmo assim não vira orientação <em>always-on</em>.</p>
+<p>Regra de bolso: <em>o que o Claude deve saber ou considerar vai no CLAUDE.md ou nas rules (as rules com
+<code>paths</code> quando a convenção segue o tipo do arquivo); o que tem de ser garantido não é contexto, e a escolha
+passa para outras aulas (tabela abaixo).</em></p>
 <table class="gloss">
   <tr><th>Situação</th><th>Mecanismo certo</th></tr>
   <tr><td>Preferência pessoal sua, todos os projetos</td><td><code>~/.claude/CLAUDE.md</code> (não versionado — nunca para regras do time)</td></tr>
@@ -247,16 +219,15 @@ própria — bloqueio no nível do sistema operacional pede o sandbox.</em></p>
   <tr><td>Convenção de um subdiretório específico</td><td><code>CLAUDE.md</code> naquele subdiretório</td></tr>
   <tr><td>CLAUDE.md gigante demais</td><td>Quebrar em <code>.claude/rules/*.md</code> e/ou <code>@import</code> (organização); para cortar contexto, <code>paths:</code> com glob nas rules específicas</td></tr>
   <tr><td><strong>Orientação por path</strong> ou tipo de arquivo, espalhada pelo repo</td><td><code>.claude/rules/</code> com <code>paths:</code> glob no frontmatter</td></tr>
-  <tr><td><strong>Procedimento reutilizável</strong> necessário apenas sob demanda</td><td><strong>Skill</strong>, invocada explicitamente ou carregada por relevância; não é orientação always-on</td></tr>
   <tr><td>Verificar memórias carregadas no início da sessão</td><td><code>/context</code>, seção Memory files; arquivos sob demanda exigem reproduzir o acesso correspondente</td></tr>
   <tr><td>Localizar, abrir ou editar arquivos de memória</td><td><code>/memory</code>; não usar como inventário do que está carregado</td></tr>
-  <tr><td>Permitir, pedir aprovação ou negar uma tool, comando ou path</td><td><code>settings.permissions</code> com <code>allow</code>, <code>ask</code> ou <code>deny</code></td></tr>
-  <tr><td><strong>Ação ou verificação em evento</strong> (ex.: formatar ou checar estilo após edição)</td><td><strong>Hook de comando</strong> configurado no <code>settings.json</code></td></tr>
-  <tr><td>Ajustar a <strong>autonomia/aprovação</strong> geral da sessão</td><td><strong>Permission mode</strong>, sem confundir com regras para alvos específicos</td></tr>
+  <tr><td>Procedimento sob demanda, permissões em settings, hooks de comando</td><td>Skill × CLAUDE.md, regras <code>allow</code>/<code>ask</code>/<code>deny</code> e hooks: <strong>Aula 7</strong></td></tr>
+  <tr><td>Autonomia e aprovação gerais da sessão</td><td>Permission mode: <strong>Aula 8</strong></td></tr>
 </table>
-<p><strong>Fronteiras com as outras aulas:</strong> aqui o objetivo é escolher o mecanismo. A Aula 3 aprofunda hooks
-do Agent SDK; os hooks desta seção são <strong>hooks de comando do Claude Code</strong>. A Aula 7 detalha
-<code>SKILL.md</code>, frontmatter, comandos e plan mode; não é preciso repetir essa implementação para decidir o mapa acima.</p>
+<p><strong>Fronteiras com as outras aulas:</strong> aqui o objetivo é escolher entre os mecanismos de orientação. A Aula 3
+aprofunda os hooks do Agent SDK. A Aula 7 é a casa das regras de permissão em settings, dos hooks de comando do Claude
+Code e da decisão Skill × CLAUDE.md, além de <code>SKILL.md</code>, comandos e plan mode. A Aula 8 é a casa dos
+permission modes.</p>
 
 <h2>5. Glossário do dia <span class="pt">— termo em inglês (como cai na prova) → português</span></h2>
 <table class="gloss">
@@ -275,9 +246,6 @@ do Agent SDK; os hooks desta seção são <strong>hooks de comando do Claude Cod
   <tr><td class="en">/context</td><td>comando para verificar CLAUDE.md/rules carregados no início</td><td class="uso">"use /context to check memory files loaded at launch; on-demand files need a matching access"</td></tr>
   <tr><td class="en">directory-bound</td><td>preso ao diretório (limitação do CLAUDE.md de subpasta)</td><td class="uso">"CLAUDE.md files are directory-bound and can't handle files spread across many directories"</td></tr>
   <tr><td class="en">Skill</td><td>procedimento reutilizável sob demanda, invocado ou carregado automaticamente por relevância</td><td class="uso">"use a skill for a reusable task procedure; skills are not always-on guidance"</td></tr>
-  <tr><td class="en">settings.permissions (allow / ask / deny)</td><td>regras que permitem, pedem aprovação ou bloqueiam tool, comando ou path</td><td class="uso">"configure allow, ask, or deny rules under settings.permissions"</td></tr>
-  <tr><td class="en">command hook</td><td>comando executado em evento para agir, validar, formatar ou bloquear</td><td class="uso">"use a command hook to validate naming or format files at a lifecycle event"</td></tr>
-  <tr><td class="en">permission mode</td><td>modo que controla autonomia e aprovação gerais da sessão</td><td class="uso">"choose a permission mode for overall autonomy, not a target-specific permission rule"</td></tr>
   <tr><td class="en">version control (VCS)</td><td>controle de versão (git)</td><td class="uso">"shared via version control"</td></tr>
 </table>
 
@@ -288,8 +256,8 @@ do Agent SDK; os hooks desta seção são <strong>hooks de comando do Claude Cod
   mas a aderência à instrução continua probabilística; enforcement exige outro mecanismo. Também aparece muito o
   distrator "instruções no <code>~/.claude/CLAUDE.md</code>" para regras de time — arquivo de usuário não viaja pelo git.</p>
   <p>Não trate Skill como sinônimo de invocação manual: ela também pode ser carregada por relevância, mas continua
-  sob demanda, não always-on. Estilo e nomes podem ser orientação em CLAUDE.md/rules <em>ou</em> verificação/formatação/
-  bloqueio em hook de comando quando houver critério executável. No diagnóstico, <code>/context</code> verifica o início
+  sob demanda, não always-on. Estilo e nomes são orientação em CLAUDE.md/rules; virar hook de comando, quando houver
+  critério executável, é assunto da Aula 7. No diagnóstico, <code>/context</code> verifica o início
   da sessão; <code>/memory</code> localiza e edita memórias; arquivos sob demanda exigem reproduzir o acesso correspondente.</p>
 </div>
 
@@ -431,18 +399,18 @@ do Agent SDK; os hooks desta seção são <strong>hooks de comando do Claude Cod
   <div class="feedback"><strong>Gabarito: A.</strong> Procedimento reutilizável e sob demanda é o caso positivo de Skill. Ela pode ser invocada explicitamente ou carregada automaticamente por relevância; nenhuma das duas formas a transforma em orientação always-on. B usa a premissa falsa de que Skill é somente manual e ainda colocaria o procedimento em toda sessão. C fornece orientação condicionada a arquivos, não um procedimento de tarefa. D controla permissão para um alvo, não empacota um workflow.<span class="ts">Domínio 3 · TS 3.2 — Procedimento reutilizável com Skill</span></div>
 </div>
 
-<div class="q" data-correct="b" data-ts="3.4" data-dom="3">
+<div class="q" data-correct="b" data-ts="3.2" data-dom="3">
   <div class="qnum">Questão 10 · transferência — múltipla escolha <span class="cenario">Code Generation with Claude Code</span></div>
-  <div class="stem">An operator wants to change the session's overall autonomy and approval posture, rather than configure allow/ask/deny for one target or run a command at an event. Which mechanism should the operator select?</div>
-  <div class="pt-block pt">Um operador quer mudar a postura geral de autonomia e aprovação da sessão, em vez de configurar allow/ask/deny para um alvo ou executar um comando num evento. Qual mecanismo o operador deve selecionar?</div>
+  <div class="stem">A developer is starting a two-hour refactoring session in a trusted directory and wants Claude Code to stop asking before each file edit, for the rest of this session only. Which mechanism should the developer use?</div>
+  <div class="pt-block pt">Um dev vai começar uma sessão de refatoração de duas horas num diretório confiável e quer que o Claude Code pare de perguntar antes de cada edição de arquivo, só pelo resto desta sessão. Qual mecanismo o dev deve usar?</div>
   <div class="opts">
-    <label class="opt"><input type="radio" name="q10" value="a">A. A new settings.permissions rule for one command.<div class="pt">Uma nova regra em settings.permissions para um comando.</div></label>
-    <label class="opt"><input type="radio" name="q10" value="b">B. The appropriate permission mode for the session.<div class="pt">O permission mode apropriado para a sessão.</div></label>
-    <label class="opt"><input type="radio" name="q10" value="c">C. A command hook triggered after every edit.<div class="pt">Um hook de comando disparado depois de cada edição.</div></label>
-    <label class="opt"><input type="radio" name="q10" value="d">D. A stronger instruction in the project CLAUDE.md.<div class="pt">Uma instrução mais forte no CLAUDE.md do projeto.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="a">A. An allow rule for file edits in the project's committed .claude/settings.json file.<div class="pt">Uma regra allow para edições de arquivo no .claude/settings.json do projeto, commitado no repo.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="b">B. Switching this session to the permission mode that accepts edits without asking.<div class="pt">Trocar esta sessão para o permission mode que aceita edições de arquivo sem perguntar.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="c">C. A command hook that runs after each edit and records the change as approved.<div class="pt">Um hook de comando depois de cada edição que registra a mudança como aprovada.</div></label>
+    <label class="opt"><input type="radio" name="q10" value="d">D. A line in the project CLAUDE.md saying that file edits do not need approval.<div class="pt">Uma linha no CLAUDE.md do projeto dizendo que as edições não precisam de aprovação.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: B.</strong> Autonomia e aprovação gerais da sessão são controladas pelo permission mode. A trata um alvo específico, não a postura geral. C executa código em um evento, o que o enunciado não pede. D continua sendo orientação ao modelo, não seleção do modo de permissão. A escolha entre plan mode e execução é detalhada na Aula 7; aqui basta reconhecer a fronteira entre modo geral, regra por alvo e hook.<span class="ts">Domínio 3 · TS 3.4 — Autonomia/aprovação com permission mode</span></div>
+  <div class="feedback"><strong>Gabarito: B.</strong> Parar de perguntar nas edições só por uma sessão é mudar a autonomia e a aprovação gerais dela, e isso é papel do permission mode. A Aula 8 é a casa dos modos: lá estão eles e o que cada um aceita sem perguntar (o que aceita edições também aceita comandos comuns de sistema de arquivos dentro do diretório de trabalho). A é uma regra por alvo (Aula 7) e até resolveria os prompts, mas, no arquivo versionado, muda o comportamento do time inteiro e não só desta sessão. C roda depois da edição, quando a aprovação já foi pedida, e não muda a postura da sessão. D é orientação ao modelo e não muda o que o Claude Code pede de aprovação. Modo geral, regra por alvo e hook são controles diferentes e atuam juntos: o modo não é uma allowlist, e as regras e os hooks continuam valendo.<span class="ts">Domínio 3 · TS 3.2 — Seleção de mecanismo: permission mode × regra por alvo × hook</span></div>
 </div>
 
 <div class="concluir">

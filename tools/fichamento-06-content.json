@@ -107,29 +107,17 @@
       "heading_pt": "Mapa de decisão: orientação versus garantia",
       "assertions_en": [
         "CLAUDE.md, @import and rules provide context: the model reads it and tends to follow, but its adherence is probabilistic even when path selection is deterministic.",
-        "A Skill packages a reusable on-demand procedure, invoked explicitly or loaded automatically when Claude judges it relevant; automatic selection does not make it always-on guidance nor replace persistent CLAUDE.md context.",
-        "Permission rules and hooks live in the settings files: user ~/.claude/settings.json, versioned project .claude/settings.json, and local .claude/settings.local.json.",
-        "settings.permissions with allow, ask and deny lets you permit, request approval or block targets such as tools, commands and paths.",
-        "Permission rules are evaluated in the order deny then ask then allow, so a deny beats any allow.",
-        "Across settings files the precedence is managed, then command line, then local, then project, then user, and the rule lists add up between files instead of one replacing the other.",
-        "Command hooks run code on events, for example validating or blocking an action before it happens, or formatting and checking style after an edit, and can also come from plugins and from skill and subagent frontmatter.",
-        "Permission modes control the session's overall autonomy and approval level, and are not an allow/ask/deny rule for a specific target nor a check run on an event.",
-        "Rule of thumb: what Claude should know goes in CLAUDE.md or rules; a reusable on-demand procedure goes in a Skill; per-target permission goes in settings.permissions; an action or check on an event goes in a command hook; overall autonomy goes in the permission mode.",
-        "A deny covers the native tools and the commands Claude Code recognizes, such as cat, head and redirects, but not a Python or Node script that opens the file on its own, which needs an OS-level sandbox.",
-        "Read(./.env) matches only the .env in the current directory, while Read(**/.env) matches every .env in the repository."
+        "A Skill is a reusable on-demand procedure: it can be invoked by name or loaded by relevance, and even then it does not become always-on guidance.",
+        "Rule of thumb: what Claude should know or consider goes in CLAUDE.md or rules, with paths when the convention follows the file type; what must be guaranteed is not context, and the choice moves to other lessons.",
+        "Permission rules (allow, ask and deny in settings), command hooks and the Skill versus CLAUDE.md decision are covered in Lesson 7.",
+        "Permission modes, which set the session's overall autonomy and approval, are covered in Lesson 8."
       ],
       "assertions_pt": [
         "CLAUDE.md, @import e rules fornecem contexto: o modelo lê e tende a seguir, mas sua aderência é probabilística mesmo quando a seleção pelo path é determinística.",
-        "Uma Skill empacota um procedimento reutilizável sob demanda, invocado explicitamente ou carregado automaticamente quando o Claude o considera relevante; a seleção automática não a torna orientação always-on nem substitui o contexto persistente do CLAUDE.md.",
-        "Regras de permissão e hooks ficam nos arquivos de settings: usuário ~/.claude/settings.json, projeto versionado .claude/settings.json e local .claude/settings.local.json.",
-        "O settings.permissions com allow, ask e deny permite permitir, pedir aprovação ou bloquear alvos como tools, comandos e paths.",
-        "As regras de permissão são avaliadas na ordem deny, depois ask, depois allow, então um deny vence qualquer allow.",
-        "Entre os arquivos de settings a precedência é managed, depois linha de comando, depois local, depois projeto, depois usuário, e as listas de regras se somam entre os arquivos em vez de uma substituir a outra.",
-        "Hooks de comando executam código em eventos, por exemplo validar ou bloquear uma ação antes de ela ocorrer, ou formatar e verificar estilo depois de uma edição, e também podem vir de plugins e do frontmatter de skills e subagents.",
-        "Permission modes controlam o nível geral de autonomia e aprovação da sessão, e não são uma regra allow/ask/deny para um alvo específico nem uma verificação executada em um evento.",
-        "Regra de bolso: o que o Claude deve saber vai no CLAUDE.md ou nas rules; um procedimento reutilizável sob demanda vai numa Skill; permissão por alvo vai em settings.permissions; uma ação ou verificação em evento vai num hook de comando; a autonomia geral vai no permission mode.",
-        "Um deny cobre as tools nativas e os comandos que o Claude Code reconhece, como cat, head e redirecionamentos, mas não um script Python ou Node que abre o arquivo por conta própria, que pede um sandbox no nível do sistema operacional.",
-        "Read(./.env) casa só com o .env do diretório atual, enquanto Read(**/.env) casa com todos os .env do repositório."
+        "Uma Skill é um procedimento reutilizável sob demanda: pode ser invocada pelo nome ou carregada por relevância, e mesmo assim não vira orientação always-on.",
+        "Regra de bolso: o que o Claude deve saber ou considerar vai no CLAUDE.md ou nas rules, com paths quando a convenção segue o tipo do arquivo; o que tem de ser garantido não é contexto, e a escolha passa para outras aulas.",
+        "As regras de permissão (allow, ask e deny nos settings), os hooks de comando e a decisão Skill × CLAUDE.md estão na Lesson 7.",
+        "Os permission modes, que definem a autonomia e a aprovação gerais da sessão, estão na Lesson 8."
       ]
     },
     {
@@ -141,7 +129,7 @@
         "A rule's selection and loading by path can be deterministic, but adherence to the instruction stays probabilistic, so enforcement needs another mechanism.",
         "A common distractor is putting team rules in ~/.claude/CLAUDE.md, but a user-level file does not travel through git.",
         "Do not treat a Skill as a synonym for manual invocation: it can also load by relevance, but it stays on-demand, not always-on.",
-        "Style and naming can be guidance in CLAUDE.md or rules, or a check, format or block in a command hook when there is an executable criterion.",
+        "Style and naming are guidance in CLAUDE.md or rules; turning them into a command hook when there is an executable criterion is a Lesson 7 topic.",
         "In diagnosis, /context checks the start of the session, /memory locates and edits memories, and on-demand files require reproducing the matching access."
       ],
       "assertions_pt": [
@@ -149,7 +137,7 @@
         "A seleção e o carregamento de uma rule pelo path podem ser determinísticos, mas a aderência à instrução continua probabilística, então o enforcement exige outro mecanismo.",
         "Um distrator comum é colocar as regras do time em ~/.claude/CLAUDE.md, mas um arquivo user-level não viaja pelo git.",
         "Não trate uma Skill como sinônimo de invocação manual: ela também pode carregar por relevância, mas continua sob demanda, não always-on.",
-        "Estilo e nomes podem ser orientação em CLAUDE.md ou rules, ou uma verificação, formatação ou bloqueio num hook de comando quando houver um critério executável.",
+        "Estilo e nomes são orientação em CLAUDE.md ou rules; transformá-los em hook de comando, quando houver um critério executável, é assunto da Lesson 7.",
         "No diagnóstico, o /context verifica o início da sessão, o /memory localiza e edita memórias, e os arquivos sob demanda exigem reproduzir o acesso correspondente."
       ]
     }
@@ -224,21 +212,6 @@
       "term_en": "Skill",
       "meaning_en": "A reusable on-demand procedure, invoked explicitly or loaded automatically by relevance; not always-on guidance.",
       "meaning_pt": "Um procedimento reutilizável sob demanda, invocado explicitamente ou carregado automaticamente por relevância; não é orientação always-on."
-    },
-    {
-      "term_en": "settings.permissions (allow / ask / deny)",
-      "meaning_en": "Rules that permit, request approval for, or block a tool, command or path.",
-      "meaning_pt": "Regras que permitem, pedem aprovação ou bloqueiam uma tool, comando ou path."
-    },
-    {
-      "term_en": "command hook",
-      "meaning_en": "A command run on an event to act, validate, format or block.",
-      "meaning_pt": "Um comando executado em um evento para agir, validar, formatar ou bloquear."
-    },
-    {
-      "term_en": "permission mode",
-      "meaning_en": "A mode controlling the session's overall autonomy and approval level.",
-      "meaning_pt": "Um modo que controla o nível geral de autonomia e aprovação da sessão."
     },
     {
       "term_en": "version control (VCS)",

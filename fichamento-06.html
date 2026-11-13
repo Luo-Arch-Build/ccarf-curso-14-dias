@@ -187,29 +187,17 @@
   <div class="pt-block pt" style="margin-top:2px"><strong>Mapa de decisão: orientação versus garantia</strong></div>
   <ul class="assert">
     <li>CLAUDE.md, @import and rules provide context: the model reads it and tends to follow, but its adherence is probabilistic even when path selection is deterministic.</li>
-    <li>A Skill packages a reusable on-demand procedure, invoked explicitly or loaded automatically when Claude judges it relevant; automatic selection does not make it always-on guidance nor replace persistent CLAUDE.md context.</li>
-    <li>Permission rules and hooks live in the settings files: user ~/.claude/settings.json, versioned project .claude/settings.json, and local .claude/settings.local.json.</li>
-    <li>settings.permissions with allow, ask and deny lets you permit, request approval or block targets such as tools, commands and paths.</li>
-    <li>Permission rules are evaluated in the order deny then ask then allow, so a deny beats any allow.</li>
-    <li>Across settings files the precedence is managed, then command line, then local, then project, then user, and the rule lists add up between files instead of one replacing the other.</li>
-    <li>Command hooks run code on events, for example validating or blocking an action before it happens, or formatting and checking style after an edit, and can also come from plugins and from skill and subagent frontmatter.</li>
-    <li>Permission modes control the session's overall autonomy and approval level, and are not an allow/ask/deny rule for a specific target nor a check run on an event.</li>
-    <li>Rule of thumb: what Claude should know goes in CLAUDE.md or rules; a reusable on-demand procedure goes in a Skill; per-target permission goes in settings.permissions; an action or check on an event goes in a command hook; overall autonomy goes in the permission mode.</li>
-    <li>A deny covers the native tools and the commands Claude Code recognizes, such as cat, head and redirects, but not a Python or Node script that opens the file on its own, which needs an OS-level sandbox.</li>
-    <li>Read(./.env) matches only the .env in the current directory, while Read(**/.env) matches every .env in the repository.</li>
+    <li>A Skill is a reusable on-demand procedure: it can be invoked by name or loaded by relevance, and even then it does not become always-on guidance.</li>
+    <li>Rule of thumb: what Claude should know or consider goes in CLAUDE.md or rules, with paths when the convention follows the file type; what must be guaranteed is not context, and the choice moves to other lessons.</li>
+    <li>Permission rules (allow, ask and deny in settings), command hooks and the Skill versus CLAUDE.md decision are covered in Lesson 7.</li>
+    <li>Permission modes, which set the session's overall autonomy and approval, are covered in Lesson 8.</li>
   </ul>
   <ul class="assert pt-block pt">
     <li>CLAUDE.md, @import e rules fornecem contexto: o modelo lê e tende a seguir, mas sua aderência é probabilística mesmo quando a seleção pelo path é determinística.</li>
-    <li>Uma Skill empacota um procedimento reutilizável sob demanda, invocado explicitamente ou carregado automaticamente quando o Claude o considera relevante; a seleção automática não a torna orientação always-on nem substitui o contexto persistente do CLAUDE.md.</li>
-    <li>Regras de permissão e hooks ficam nos arquivos de settings: usuário ~/.claude/settings.json, projeto versionado .claude/settings.json e local .claude/settings.local.json.</li>
-    <li>O settings.permissions com allow, ask e deny permite permitir, pedir aprovação ou bloquear alvos como tools, comandos e paths.</li>
-    <li>As regras de permissão são avaliadas na ordem deny, depois ask, depois allow, então um deny vence qualquer allow.</li>
-    <li>Entre os arquivos de settings a precedência é managed, depois linha de comando, depois local, depois projeto, depois usuário, e as listas de regras se somam entre os arquivos em vez de uma substituir a outra.</li>
-    <li>Hooks de comando executam código em eventos, por exemplo validar ou bloquear uma ação antes de ela ocorrer, ou formatar e verificar estilo depois de uma edição, e também podem vir de plugins e do frontmatter de skills e subagents.</li>
-    <li>Permission modes controlam o nível geral de autonomia e aprovação da sessão, e não são uma regra allow/ask/deny para um alvo específico nem uma verificação executada em um evento.</li>
-    <li>Regra de bolso: o que o Claude deve saber vai no CLAUDE.md ou nas rules; um procedimento reutilizável sob demanda vai numa Skill; permissão por alvo vai em settings.permissions; uma ação ou verificação em evento vai num hook de comando; a autonomia geral vai no permission mode.</li>
-    <li>Um deny cobre as tools nativas e os comandos que o Claude Code reconhece, como cat, head e redirecionamentos, mas não um script Python ou Node que abre o arquivo por conta própria, que pede um sandbox no nível do sistema operacional.</li>
-    <li>Read(./.env) casa só com o .env do diretório atual, enquanto Read(**/.env) casa com todos os .env do repositório.</li>
+    <li>Uma Skill é um procedimento reutilizável sob demanda: pode ser invocada pelo nome ou carregada por relevância, e mesmo assim não vira orientação always-on.</li>
+    <li>Regra de bolso: o que o Claude deve saber ou considerar vai no CLAUDE.md ou nas rules, com paths quando a convenção segue o tipo do arquivo; o que tem de ser garantido não é contexto, e a escolha passa para outras aulas.</li>
+    <li>As regras de permissão (allow, ask e deny nos settings), os hooks de comando e a decisão Skill × CLAUDE.md estão na Lesson 7.</li>
+    <li>Os permission modes, que definem a autonomia e a aprovação gerais da sessão, estão na Lesson 8.</li>
   </ul>
 </section>
 
@@ -224,7 +212,7 @@
     <li>A rule's selection and loading by path can be deterministic, but adherence to the instruction stays probabilistic, so enforcement needs another mechanism.</li>
     <li>A common distractor is putting team rules in ~/.claude/CLAUDE.md, but a user-level file does not travel through git.</li>
     <li>Do not treat a Skill as a synonym for manual invocation: it can also load by relevance, but it stays on-demand, not always-on.</li>
-    <li>Style and naming can be guidance in CLAUDE.md or rules, or a check, format or block in a command hook when there is an executable criterion.</li>
+    <li>Style and naming are guidance in CLAUDE.md or rules; turning them into a command hook when there is an executable criterion is a Lesson 7 topic.</li>
     <li>In diagnosis, /context checks the start of the session, /memory locates and edits memories, and on-demand files require reproducing the matching access.</li>
   </ul>
   <ul class="assert pt-block pt">
@@ -232,7 +220,7 @@
     <li>A seleção e o carregamento de uma rule pelo path podem ser determinísticos, mas a aderência à instrução continua probabilística, então o enforcement exige outro mecanismo.</li>
     <li>Um distrator comum é colocar as regras do time em ~/.claude/CLAUDE.md, mas um arquivo user-level não viaja pelo git.</li>
     <li>Não trate uma Skill como sinônimo de invocação manual: ela também pode carregar por relevância, mas continua sob demanda, não always-on.</li>
-    <li>Estilo e nomes podem ser orientação em CLAUDE.md ou rules, ou uma verificação, formatação ou bloqueio num hook de comando quando houver um critério executável.</li>
+    <li>Estilo e nomes são orientação em CLAUDE.md ou rules; transformá-los em hook de comando, quando houver um critério executável, é assunto da Lesson 7.</li>
     <li>No diagnóstico, o /context verifica o início da sessão, o /memory localiza e edita memórias, e os arquivos sob demanda exigem reproduzir o acesso correspondente.</li>
   </ul>
 </section>
@@ -258,9 +246,6 @@
     <tr><td class="en">/context</td><td>Command to check the CLAUDE.md and rules loaded at launch; on-demand files need a matching access.</td><td class="ptm pt">Comando para verificar os CLAUDE.md e rules carregados no início; arquivos sob demanda exigem um acesso correspondente.</td></tr>
     <tr><td class="en">directory-bound</td><td>Tied to its directory; the limitation of a subdirectory CLAUDE.md for files spread across many directories.</td><td class="ptm pt">Preso ao diretório; a limitação do CLAUDE.md de subpasta para arquivos espalhados por muitos diretórios.</td></tr>
     <tr><td class="en">Skill</td><td>A reusable on-demand procedure, invoked explicitly or loaded automatically by relevance; not always-on guidance.</td><td class="ptm pt">Um procedimento reutilizável sob demanda, invocado explicitamente ou carregado automaticamente por relevância; não é orientação always-on.</td></tr>
-    <tr><td class="en">settings.permissions (allow / ask / deny)</td><td>Rules that permit, request approval for, or block a tool, command or path.</td><td class="ptm pt">Regras que permitem, pedem aprovação ou bloqueiam uma tool, comando ou path.</td></tr>
-    <tr><td class="en">command hook</td><td>A command run on an event to act, validate, format or block.</td><td class="ptm pt">Um comando executado em um evento para agir, validar, formatar ou bloquear.</td></tr>
-    <tr><td class="en">permission mode</td><td>A mode controlling the session's overall autonomy and approval level.</td><td class="ptm pt">Um modo que controla o nível geral de autonomia e aprovação da sessão.</td></tr>
     <tr><td class="en">version control (VCS)</td><td>Version control such as git; what is committed is shared with the team.</td><td class="ptm pt">Controle de versão como o git; o que é commitado é compartilhado com o time.</td></tr>
   </table>
 </section>
