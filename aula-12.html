@@ -323,9 +323,7 @@ tokens, sem perder o que o agente precisa honrar. No turno 30, quando o cliente 
 turno 3 já não está no contexto, mas a restrição está. <strong>Ausência da mensagem não é ausência do fato</strong>: por
 isso o bloco é reinjetado antes da decisão, e não consultado só se o modelo lembrar de pedir. Se a extração falhou ou
 ficou ambígua, o trecho original continua no contexto até o fato ser recuperado.</p>
-<p>Regra de bolso: <em>o que o agente pode ter de honrar mais tarde é extraído para o bloco de fatos no turno em que
-aparece, antes de qualquer descarte ou resumo; a aplicação precisa incluir esse bloco nos requests relevantes. Nada sai do
-contexto antes de o que precisa sobreviver estar extraído, persistido e verificado. Aumentar a janela só adia a perda, e
+<p>Regra de bolso: <em>a aplicação precisa incluir o bloco de fatos nos requests relevantes. Aumentar a janela só adia a perda, e
 estado durável fora do transcript não está automaticamente presente no contexto.</em></p>
 
 <h2>2. Escalonamento e resolução de ambiguidade (Task Statement 5.2)</h2>
@@ -442,7 +440,7 @@ real foi espremido para fora ou perdido no miolo. O arsenal de defesa:</p>
       absorvem a saída verbosa de grep/leitura e devolvem resultados contratuais — o principal preserva contexto
       para coordenação de alto nível (o Explore subagent e o <code>context: fork</code> estão na Aula 7)</li>
   <li><strong>Sumários entre fases</strong>: resumir os findings da fase N e injetar o sumário no contexto
-      inicial dos subagents da fase N+1, preservando os fatos exatos necessários</li>
+      inicial dos subagents da fase N+1</li>
   <li><strong><code>/compact</code> dirigido</strong>: no Claude Code, reduz o uso de contexto com instruções explícitas
       de preservação e verificação posterior</li>
 </ul>
@@ -454,7 +452,7 @@ importante pode ficar de fora; por isso, não basta rodar o comando sem orienta�
 <code>/compact</code> direciona o que o resumo deve preservar:</p>
 <pre><code>/compact Preserve: objetivo; restrições; caminhos arquivo:linha; citações com fonte e localização; decisões; pendências; próxima ação. Consulte findings.md e run-manifest.json e não generalize IDs, valores ou datas.</code></pre>
 <ol>
-  <li><strong>Antes:</strong> extraia IDs, valores, datas, decisões e restrições exatas para o scratchpad/manifest.</li>
+  <li><strong>Antes:</strong> extraia IDs, valores, datas, decisões e restrições exatas para o scratchpad/manifest (o princípio da seção 1, 5.1).</li>
   <li><strong>Compacte:</strong> passe instruções explícitas como as do exemplo, adaptadas ao objetivo atual.</li>
   <li><strong>Depois:</strong> compare o resumo gerado com scratchpad e manifest, item por item: objetivo, restrições,
       caminhos, citações, decisões, pendências e próxima ação. Reponha qualquer omissão no contexto antes de agir e
