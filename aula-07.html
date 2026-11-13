@@ -218,9 +218,10 @@ de settings e são aplicadas pelo próprio Claude Code, antes de a tool rodar �
 <p>Regra de bolso: <em>sempre carregado → CLAUDE.md; depende do arquivo → rule com glob; sob demanda → skill ou comando;
 garantia → código, nunca texto: algo que tem de acontecer → hook; algo que nunca pode acontecer → regra deny. O caso oposto:
 a regra deny bloqueia sem olhar contexto — se a proibição depende de uma condição (só em produção, só acima de um valor),
-ela vira hook com lógica. Estilo e nomes seguem a mesma lógica: são orientação (CLAUDE.md ou rule) e só viram hook de comando quando existe
-um critério executável, como um formatter que roda ou um validador que bloqueia. E o deny cobre as tools nativas e os comandos que o Claude Code reconhece
-(<code>cat</code>, <code>head</code>), não um script que abre o arquivo por conta própria: para isso, sandbox.</em></p>
+ela vira hook com lógica. O deny também tem alcance: cobre as tools nativas e os comandos que o Claude Code reconhece
+(<code>cat</code>, <code>head</code>, redirecionamentos), não um script que abre o arquivo por conta própria: para isso, sandbox.
+Já estilo e nomes são orientação (CLAUDE.md ou rule) e só viram hook de comando quando existe
+um critério executável, como um formatter que roda ou um validador que bloqueia.</em></p>
 
 <h2>3. Execução direta, plan mode e workflow multifásico (TS 3.4)</h2>
 <p>São três escolhas diferentes, não três nomes para o mesmo ciclo. <strong>Execução direta</strong> deixa o Claude agir
