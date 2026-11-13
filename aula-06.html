@@ -141,7 +141,8 @@ use <code>/context</code> e confira a seção <strong>Memory files</strong>.</p>
 path. Um <code>CLAUDE.md</code> de subdiretório, por exemplo, não aparece na lista inicial do <code>/context</code>;
 ao carregar, seu caminho aparece numa linha <code>Loaded</code> no terminal. Para registrar o que carregou, quando e
 por quê — inclusive rules por path — use um hook <code>InstructionsLoaded</code>. Portanto, não espere que uma
-chamada a <code>/context</code> liste todos os arquivos que ainda podem entrar no contexto durante o trabalho.</p>
+chamada a <code>/context</code> liste todos os arquivos que ainda podem entrar no contexto durante o trabalho. Para sessões longas
+(<code>/compact</code> dirigido e o hook <code>SessionStart</code> que reinjeta notas depois da compactação), veja a Aula 12.</p>
 
 <h2>2. Modularizando: @import e .claude/rules/ (Task Statement 3.1)</h2>
 <p>Um CLAUDE.md monolítico de 2.000 linhas é impossível de manter e pesa em toda sessão.

@@ -264,7 +264,8 @@ multifásico; aprovar o plano do Claude, sozinho, não aprova produção.</em></
 <p>Fases de <strong>discovery</strong> ("onde essa função é usada?", "mapeie todos os callers") geram output enorme:
 dezenas de arquivos lidos, greps, listagens. Se isso entra na conversa principal, a janela de contexto
 acaba antes da fase de implementação. O <strong>Explore subagent</strong> resolve: faz a busca verbosa num contexto
-isolado e <strong>devolve só o resumo</strong>. Mesma lógica do <code>context: fork</code> das skills.</p>
+isolado e <strong>devolve só o resumo</strong>. Mesma lógica do <code>context: fork</code> das skills. A Aula 12 (seção 3) retoma
+os subagents para exploração verbosa em codebases grandes.</p>
 <p>Num workflow multifásico, esse resumo pode ser o <strong>artefato de discovery</strong> entregue à fase de desenho. O plano
 aprovado vira outro artefato, recebido pela implementação; uma verificação independente produz evidências próprias antes
 do gate de release. O Explore protege o contexto, mas não substitui esses handoffs e gates.</p>

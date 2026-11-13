@@ -440,7 +440,7 @@ real foi espremido para fora ou perdido no miolo. O arsenal de defesa:</p>
   <li><strong>Subagents para exploração verbosa</strong>: o agente principal delega perguntas específicas
       ("ache todos os arquivos de teste", "trace as dependências do fluxo de refund") a subagents, que
       absorvem a saída verbosa de grep/leitura e devolvem resultados contratuais — o principal preserva contexto
-      para coordenação de alto nível</li>
+      para coordenação de alto nível (o Explore subagent e o <code>context: fork</code> estão na Aula 7)</li>
   <li><strong>Sumários entre fases</strong>: resumir os findings da fase N e injetar o sumário no contexto
       inicial dos subagents da fase N+1, preservando os fatos exatos necessários</li>
   <li><strong><code>/compact</code> dirigido</strong>: no Claude Code, reduz o uso de contexto com instruções explícitas
@@ -465,7 +465,8 @@ mostra um hook <code>SessionStart</code> com matcher <code>compact</code> que im
 após a compactação; esse stdout volta ao contexto. Use esse padrão para reinjetar notas duráveis, e não
 <code>PostCompact</code> quando o objetivo é devolver contexto. A reinjeção complementa a comparação acima: não garante
 fidelidade nem substitui scratchpad, manifest, checkpoint ou verificação.</p>
-<p>Compactação reduz contexto; não garante fidelidade nem grava um checkpoint de execução.</p>
+<p>Compactação reduz contexto; não garante fidelidade nem grava um checkpoint de execução. Para diagnosticar o que está carregado no
+contexto (<code>/context</code> e <code>/memory</code>), veja a Aula 6.</p>
 
 <h3>Passagem de fase: resumo injetado, não transcript</h3>
 <p>Exploração em fases (mapear → investigar) tem uma costura crítica: os subagents da fase N+1 <strong>não herdam</strong>
