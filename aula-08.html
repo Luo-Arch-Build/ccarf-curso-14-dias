@@ -253,7 +253,7 @@ O Exam Guide não lista essas flags, mas os objetivos oficiais da prova (a lista
 <p><strong>Os modos que importam no CI:</strong></p>
 <ul>
   <li><code>dontAsk</code>: nega automaticamente toda tool call que <strong>exigiria aprovação</strong>. Ações que já não pedem permissão continuam rodando, como leituras no diretório de trabalho e comandos read-only; regras <code>allow</code>, <code>--allowedTools</code> e aprovações por <code>PreToolUse</code> também têm efeito próprio, e um mod instalado ainda pode aprovar algumas chamadas. Portanto, <code>dontAsk</code> evita espera por prompt, mas <strong>não é uma allowlist absoluta</strong>: tools e regras continuam definindo a superfície disponível.</li>
-  <li><code>bypassPermissions</code>: pula os prompts de permissão (o curso oficial diz "skips all checks"); regras deny e hooks que negam continuam bloqueando (card 🧭 abaixo). Só em ambiente isolado (container, VM, dev
+  <li><code>bypassPermissions</code>: pula os prompts de permissão (a doc e o curso oficial falam em "skip all checks"); regras deny e hooks que negam continuam bloqueando (card 🧭 abaixo). Só em ambiente isolado (container, VM, dev
       container sem internet). Num runner com segredos e acesso à rede, é o distrator.</li>
   <li><code>plan</code>: o Claude analisa e propõe, sem editar. Também funciona com <code>-p</code> (ver aula 07).</li>
   <li><code>acceptEdits</code>: aceita sem perguntar edições de arquivo e comandos comuns de sistema de arquivos (<code>mkdir</code>, <code>mv</code>, <code>rm</code>…) dentro do diretório de trabalho. Serve para o job que gera código, não para o revisor.</li>

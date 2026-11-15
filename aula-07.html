@@ -193,7 +193,7 @@ carregada por relevância não vira orientação <em>always-on</em> como o CLAUD
   <tr><td>Mudar a autonomia e a aprovação gerais da sessão (parar de pedir aprovação a cada edição, só planejar)</td><td>Permission mode da sessão (a Aula 08 enumera os modos)</td></tr>
   <tr><td>Bloquear sempre um comando ou um arquivo (ex.: o <code>.env</code>, a pasta <code>secrets/</code>)</td><td>Regra <code>deny</code> em <code>permissions</code> no <code>.claude/settings.json</code> do projeto (versionado)</td></tr>
   <tr><td>Proibir algo só sob uma condição (só em produção, só acima de um valor) ou reescrever a chamada antes de ela rodar</td><td>Hook <code>PreToolUse</code> com lógica</td></tr>
-  <tr><td>Impedir que <em>qualquer</em> processo de shell, inclusive um script, acesse um caminho ou a rede</td><td>Sandbox, que recebe também as regras <code>Read</code>/<code>Edit</code> deny (produto; fora do guia da prova)</td></tr>
+  <tr><td>Impedir que <em>qualquer</em> processo de shell, inclusive um script, acesse um caminho ou a rede</td><td>Sandbox ligado, com <code>allowUnsandboxedCommands: false</code> para o Claude não repetir o comando fora dele; recebe também as regras <code>Read</code>/<code>Edit</code> deny (produto; fora do guia da prova)</td></tr>
 </table>
 <p>As <strong>regras de permissão</strong> ficam em <code>permissions</code> (<code>allow</code>, <code>ask</code>, <code>deny</code>) nos arquivos
 de settings e são aplicadas pelo próprio Claude Code, antes de a tool rodar — não dependem do modelo seguir instrução:</p>
@@ -227,16 +227,17 @@ de settings e são aplicadas pelo próprio Claude Code, antes de a tool rodar �
 
 <h3>Quando hook, regra e modo se cruzam</h3>
 <p>Um hook <code>PreToolUse</code> responde imprimindo JSON com <code>permissionDecision</code>: <code>allow</code> (deixa passar),
-<code>deny</code> (impede) ou <code>ask</code> (devolve a decisão ao usuário). Com <code>updatedInput</code> ele reescreve a chamada em vez de
+<code>deny</code> (impede) ou <code>ask</code> (devolve a decisão ao usuário); há ainda <code>defer</code>, só no modo <code>-p</code>. Com <code>updatedInput</code> ele reescreve a chamada em vez de
 bloquear, por exemplo trocando um segredo por um placeholder no comando. Sem JSON, quem fala é o código de saída: <strong>exit 2
-bloqueia</strong>, e o stderr volta para o Claude como motivo; <strong>exit 1 não bloqueia</strong>, apesar de ser o código de erro
+bloqueia</strong>, e o stderr volta para o Claude como motivo; <strong>exit 1, por padrão, não bloqueia</strong>, apesar de ser o código de erro
 convencional. Como os três controles atuam juntos, valem estas regras de precedência:</p>
 <ul>
   <li>O <code>allow</code> de um hook <strong>não reabre</strong> uma regra deny nem pula uma regra ask: o Claude Code avalia as regras de qualquer jeito.</li>
   <li>O <code>deny</code> de um hook (ou exit 2) bloqueia <strong>em qualquer permission mode</strong>, inclusive em <code>bypassPermissions</code>.
       As regras deny também.</li>
-  <li>Hook que não responde, falha com outro código ou estoura o tempo <strong>não aprova nem bloqueia</strong>: a chamada segue o fluxo
-      normal de permissões. Para um hook ser uma garantia, ele precisa negar de forma explícita.</li>
+  <li>Hook que não responde <strong>não aprova nem bloqueia</strong>: a chamada segue o fluxo normal de permissões. Por padrão, o hook que
+      falha com outro código ou estoura o tempo também deixa a chamada seguir; com <code>onFailure: "block"</code> no hook, a falha bloqueia
+      como um exit 2. Para um hook ser uma garantia, ele precisa negar de forma explícita ou estar configurado para bloquear quando falha.</li>
 </ul>
 
 <p>Regra de bolso: <em>orientação persistente → CLAUDE.md; depende do arquivo → rule com glob; procedimento sob demanda → skill ou comando;
@@ -333,7 +334,7 @@ quantidade de etapas mencionadas que decide: procure artefatos, handoffs e gates
   <tr><td class="en">conditional hook</td><td>hook com lógica para decidir conforme o contexto</td><td class="uso">"use a PreToolUse hook to deny deployment only when it targets production"</td></tr>
   <tr><td class="en">command hook</td><td>hook que executa um comando de shell num evento (formatar, validar, bloquear)</td><td class="uso">"configure command hooks for PostToolUse and PreToolUse events"</td></tr>
   <tr><td class="en">sandbox</td><td>isolamento no nível do sistema operacional para os comandos de shell e seus processos filhos (produto; fora do guia)</td><td class="uso">"a deny rule doesn't stop a script that opens the file itself; the sandbox does"</td></tr>
-  <tr><td class="en">exit code 2</td><td>código de saída com que um hook bloqueia a ação (exit 1 não bloqueia)</td><td class="uso">"if you meant to stop something, exit 2, not 1"</td></tr>
+  <tr><td class="en">exit code 2</td><td>código de saída com que um hook bloqueia a ação (por padrão, exit 1 não bloqueia)</td><td class="uso">"if you meant to stop something, exit 2, not 1"</td></tr>
   <tr><td class="en">settings precedence</td><td>ordem de prioridade entre arquivos de settings</td><td class="uso">"managed settings take precedence over project and user settings"</td></tr>
   <tr><td class="en">session resume / plan artifact</td><td>retomada da sessão / artefato do plano fornecido explicitamente</td><td class="uso">"a new headless run must resume the session or receive the approved plan"</td></tr>
   <tr><td class="en">risk level</td><td>nível de risco (produção, dados, irreversível)</td><td class="uso">"choose proportional controls; high risk alone does not make plan mode sufficient"</td></tr>
@@ -594,7 +595,7 @@ quantidade de etapas mencionadas que decide: procure artefatos, handoffs e gates
     <label class="opt"><input type="checkbox" name="q17" value="e">E. A hook must reliably block a dangerous Bash command → a committed PreToolUse script that exits 1 when it detects it, since 1 signals an error.<div class="pt">Um hook precisa bloquear com certeza um comando Bash perigoso → um script PreToolUse versionado que sai com exit 1 quando o detecta, já que 1 sinaliza erro.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: A e D.</strong> A é enforcement por código: o hook <code>PreToolUse</code> roda antes da tool, e o exit 2 bloqueia a chamada sem depender do modelo (é o exemplo que o curso oficial <em>Claude Code in Action</em> usa para uma regra dura). D é enforcement declarativo: o alvo é fixo e cabe num padrão, e a regra deny bloqueia em qualquer permission mode, inclusive <code>bypassPermissions</code>; versionada, chega ao time inteiro. B erra o carregamento: o que vale em toda sessão é o CLAUDE.md do projeto, e a skill é sob demanda (só a descrição fica no contexto). C erra o mecanismo e o escopo: parar de perguntar só nesta sessão é papel do permission mode (<code>acceptEdits</code>, Aula 08), e uma allow rule commitada mudaria a sessão de todo o time, e para sempre. E erra o protocolo: exit 1 é erro <em>não bloqueante</em>, então o comando roda mesmo assim; para bloquear, é exit 2 ou <code>permissionDecision: "deny"</code>.<span class="ts">Domínio 3 · TS 3.2 — Escolha do mecanismo: hook, deny e permission mode</span></div>
+  <div class="feedback"><strong>Gabarito: A e D.</strong> A é enforcement por código: o hook <code>PreToolUse</code> roda antes da tool, e o exit 2 bloqueia a chamada sem depender do modelo (é o exemplo que o curso oficial <em>Claude Code in Action</em> usa para uma regra dura). D é enforcement declarativo: o alvo é fixo e cabe num padrão, e a regra deny bloqueia em qualquer permission mode, inclusive <code>bypassPermissions</code>; versionada, chega ao time inteiro. B erra o carregamento: o que vale em toda sessão é o CLAUDE.md do projeto, e a skill é sob demanda (só a descrição fica no contexto). C erra o mecanismo e o escopo: parar de perguntar só nesta sessão é papel do permission mode (<code>acceptEdits</code>, Aula 08), e uma allow rule commitada mudaria a sessão de todo o time, e para sempre. E erra o protocolo: por padrão, exit 1 é erro <em>não bloqueante</em>, então o comando roda mesmo assim; para bloquear, é exit 2 ou <code>permissionDecision: "deny"</code>.<span class="ts">Domínio 3 · TS 3.2 — Escolha do mecanismo: hook, deny e permission mode</span></div>
 </div>
 
 <div class="concluir">
