@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Notes 03 — Enforcement, hooks and session management · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  .lead { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  section.ficha { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px 20px; margin: 18px 0; border-left: 3px solid var(--accent); }
+  section.ficha > h2 { font-size: 18px; margin: 0 0 4px; border: none; padding: 0; }
+  .ficha-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  ul.assert { margin: 10px 0 0; padding-left: 20px; }
+  ul.assert li { margin: 8px 0; }
+  .ver-traducao { flex: none; background: var(--card2); border: 1px solid var(--border);
+    color: var(--muted); border-radius: 999px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+    white-space: nowrap; transition: border-color .15s, color .15s; }
+  .ver-traducao:hover { color: var(--text); border-color: var(--accent); }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 12px 0 0;
+    display: none; }
+  .pt-block.pt { color: var(--pt); font-size: 13.5px; }
+  section.ficha.show-pt .pt-block { display: block; }
+  ul.assert.pt-block li { margin: 7px 0; }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px;
+    text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.ptm { color: var(--pt); font-size: 13px; }
+  section.ficha.gloss-sec table.gloss td.ptm { display: none; }
+  section.ficha.gloss-sec.show-pt table.gloss td.ptm { display: table-cell; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px;
+    border-top: 1px solid var(--border); font-size: 14px; gap: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / <a href="aula-03.html">Aula 03</a> / Study Notes (EN)</div>
+  <h1>Study Notes 03 — Enforcement, hooks and session management</h1>
+  <div class="meta">
+    <span class="tag">Domain 1 · Agentic Architecture &amp; Orchestration (27%)</span>
+    <span class="tag">English · narrated</span>
+  </div>
+  <p class="lead">Factual assertions in English for review. Each section has a translation button that
+  reveals the pt-BR version. The audio narration is English only.</p>
+</header>
+
+<section class="ficha" id="programmatic-vs-prompt-enforcement">
+  <div class="ficha-head">
+    <h2>Programmatic versus prompt-based enforcement (TS 1.4)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Enforcement programático versus via prompt (TS 1.4)</strong></div>
+  <ul class="assert">
+    <li>When a business rule requires deterministic compliance, such as identity verification before a financial operation, a value limit or a mandatory order of steps, a prompt instruction has a non-zero failure rate, because the model is probabilistic no matter how good the prompt is.</li>
+    <li>Programmatic enforcement, through hooks and prerequisite gates, is deterministic: the tool simply does not run.</li>
+    <li>The classic exam symptom is that in X% of cases the agent skips step A and calls tool B directly.</li>
+    <li>Strengthening the system prompt or adding few-shot examples reduces the error rate but does not eliminate it.</li>
+    <li>The right answer is a prerequisite gate that blocks lookup_order and process_refund until get_customer has returned a verified customer ID.</li>
+    <li>It is not the model that decides to obey; it is your code that makes the violation impossible.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Quando uma regra de negócio exige compliance determinístico, como verificação de identidade antes de uma operação financeira, um limite de valor ou uma ordem obrigatória de etapas, uma instrução no prompt tem taxa de falha não-zero, porque o modelo é probabilístico por melhor que seja o prompt.</li>
+    <li>O enforcement programático, por hooks e prerequisite gates, é determinístico: a tool simplesmente não executa.</li>
+    <li>O sintoma clássico na prova é que em X% dos casos o agente pula a etapa A e chama a tool B diretamente.</li>
+    <li>Reforçar o system prompt ou adicionar exemplos few-shot reduz a taxa de erro, mas não a elimina.</li>
+    <li>A resposta certa é um prerequisite gate que bloqueia lookup_order e process_refund até que get_customer tenha retornado um customer ID verificado.</li>
+    <li>Não é o modelo que decide obedecer; é o seu código que torna a violação impossível.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="structured-handoff">
+  <div class="ficha-head">
+    <h2>Structured handoff to humans (TS 1.4)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Handoff estruturado para humanos (TS 1.4)</strong></div>
+  <ul class="assert">
+    <li>When the agent escalates to a human agent mid-process, the human has no access to the conversation transcript, so asking to summarize the conversation produces a weak handoff.</li>
+    <li>The correct handoff is a structured protocol with fixed fields: the verified customer ID, not the declared name; the root cause the investigation has already established; the amount involved, such as the refund amount; and the recommended action the human should execute or approve.</li>
+    <li>A conversation excerpt, the whole transcript or a summary of what happened forces the human agent to reread and redo the diagnosis, and a priority score or the model's self-confidence does not say what to do.</li>
+    <li>Rule of thumb: the human must be able to act without rereading anything, through fixed fields with the conclusion and the next step.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Quando o agente escala para um atendente humano no meio do processo, o humano não tem acesso ao transcript da conversa, então pedir para resumir a conversa gera um handoff fraco.</li>
+    <li>O handoff correto é um protocolo estruturado com campos fixos: o customer ID verificado, e não o nome declarado; a root cause que a investigação já concluiu; o valor envolvido, como o valor do reembolso; e a ação recomendada que o humano deve executar ou aprovar.</li>
+    <li>Um trecho da conversa, o transcript inteiro ou um resumo do que aconteceu obrigam o atendente a reler e refazer o diagnóstico, e um score de prioridade ou a autoconfiança do modelo não dizem o que fazer.</li>
+    <li>Regra de bolso: o humano tem que conseguir agir sem reler nada, por campos fixos com a conclusão e o próximo passo.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="multi-concern-requests">
+  <div class="ficha-head">
+    <h2>Multi-concern requests (TS 1.4)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Pedidos com vários assuntos, multi-concern (TS 1.4)</strong></div>
+  <ul class="assert">
+    <li>In a message such as "my order is late, I want to change the delivery address and there is a duplicate charge", handling only the first concern and closing the case lowers first-contact resolution.</li>
+    <li>The TS 1.4 pattern is to decompose the message into distinct items, investigate each item in parallel using the shared context, such as the same verified customer and the same account data, instead of a serial flow that mixes states, and synthesize one unified resolution that closes every item.</li>
+    <li>Escalating because there is a lot to handle is not the answer: complexity is not an escalation trigger.</li>
+    <li>The escalation triggers are an explicit request for a human, a policy gap and inability to make progress.</li>
+    <li>Rule of thumb: several concerns become items investigated in parallel with the same context, and then one reply.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Numa mensagem como "meu pedido atrasou, quero trocar o endereço de entrega e tem uma cobrança duplicada", tratar só o primeiro assunto e encerrar derruba a resolução no primeiro contato.</li>
+    <li>O padrão do TS 1.4 é decompor a mensagem em itens distintos, investigar cada item em paralelo usando o contexto compartilhado, como o mesmo cliente verificado e os mesmos dados de conta, em vez de um fluxo serial que mistura estados, e sintetizar uma resolução unificada que fecha todos os itens.</li>
+    <li>Escalar porque tem muita coisa não é saída: complexidade não é gatilho de escalonamento.</li>
+    <li>Os gatilhos de escalonamento são pedido explícito de humano, lacuna de política e falta de progresso.</li>
+    <li>Regra de bolso: vários assuntos viram itens investigados em paralelo com o mesmo contexto, e depois uma resposta só.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="posttooluse-normalization">
+  <div class="ficha-head">
+    <h2>PostToolUse: normalizing heterogeneous data (TS 1.5)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>PostToolUse: normalizar dados heterogêneos (TS 1.5)</strong></div>
+  <ul class="assert">
+    <li>Hooks are interception points in the lifecycle of a tool call, and the exam tests two uses.</li>
+    <li>When several MCP tools return data in different formats, such as Unix timestamps (1712345678), ISO 8601 strings (2024-04-05T14:21:18Z) and numeric status codes (3 instead of "shipped"), passing it raw makes the model spend reasoning on parsing and make mistakes.</li>
+    <li>A PostToolUse hook intercepts the tool result before the model processes it and normalizes it to a canonical format, such as dates in ISO 8601 and status as text.</li>
+    <li>Teaching the conversion in the prompt is the wrong alternative, because it is probabilistic again: normalization is a mechanical transformation, so do it mechanically.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Hooks são pontos de interceptação no ciclo de vida de uma tool call, e a prova cobra dois usos.</li>
+    <li>Quando várias MCP tools devolvem dados em formatos diferentes, como timestamps Unix (1712345678), strings ISO 8601 (2024-04-05T14:21:18Z) e códigos numéricos de status (3 em vez de "shipped"), passá-los crus faz o modelo gastar raciocínio fazendo parsing e errar.</li>
+    <li>Um hook PostToolUse intercepta o tool result antes de o modelo processá-lo e o normaliza para um formato canônico, como datas em ISO 8601 e status como texto.</li>
+    <li>Ensinar a conversão no prompt é a alternativa errada, porque de novo é probabilística: normalização é transformação mecânica, então faça-a mecanicamente.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="pretooluse-policy-block">
+  <div class="ficha-head">
+    <h2>PreToolUse: blocking a policy violation (TS 1.5)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>PreToolUse: bloquear violação de política (TS 1.5)</strong></div>
+  <ul class="assert">
+    <li>When policy says refunds above $500 require human approval, the correct guarantee is a hook that intercepts the call before it runs, blocks the violation and redirects to the alternative workflow, human escalation.</li>
+    <li>In the Agent SDK this hook is PreToolUse: it blocks with permissionDecision deny, and permissionDecisionReason tells the model why the call was denied and which path to follow, such as "call escalate_to_human instead".</li>
+    <li>PreToolUse runs before execution and is for preventing; PostToolUse runs after and is for transforming the result.</li>
+    <li>Blocking in PostToolUse comes too late, because the refund has already gone out.</li>
+    <li>Claude Code command hooks (Lesson 7) follow the same logic: a PostToolUse hook can replace what the model sees with updatedToolOutput or attach a reason, but it does not undo what the tool already did.</li>
+    <li>The Exam Guide's key phrase is "choosing hooks over prompt-based enforcement when business rules require guaranteed compliance."</li>
+    <li>The classic distractor is adding to the system prompt that refunds above $500 must be escalated: it works 95% of the time, and the remaining 5% become financial loss.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Quando a política diz que reembolsos acima de $500 exigem aprovação humana, a garantia correta é um hook que intercepta a chamada antes da execução, bloqueia a violação e redireciona para o workflow alternativo, a escalação humana.</li>
+    <li>No Agent SDK esse hook é o PreToolUse: ele bloqueia com permissionDecision deny, e o permissionDecisionReason diz ao modelo por que a chamada foi negada e qual caminho seguir, como "call escalate_to_human instead".</li>
+    <li>O PreToolUse roda antes da execução e serve para impedir; o PostToolUse roda depois e serve para transformar o resultado.</li>
+    <li>Bloquear em PostToolUse chega tarde, porque o reembolso já saiu.</li>
+    <li>Os hooks de comando do Claude Code (Aula 07) seguem a mesma lógica: um hook PostToolUse pode trocar o que o modelo vê com updatedToolOutput ou anexar um motivo, mas não desfaz o que a tool já fez.</li>
+    <li>A frase-chave do guia é "choosing hooks over prompt-based enforcement when business rules require guaranteed compliance": escolher hooks em vez de enforcement via prompt quando as regras de negócio exigem compliance garantido.</li>
+    <li>O distrator clássico é adicionar ao system prompt que reembolsos acima de $500 devem ser escalados: funciona 95% das vezes, e os 5% restantes viram prejuízo financeiro.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="chaining-vs-dynamic-decomposition">
+  <div class="ficha-head">
+    <h2>Task decomposition: chaining versus dynamic (TS 1.6)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Decomposição de tarefas: chaining versus dinâmica (TS 1.6)</strong></div>
+  <ul class="assert">
+    <li>Prompt chaining, a fixed sequential pipeline, fits a predictable workflow with steps known in advance and several aspects to review, such as a code review that analyzes each file individually and then runs a cross-file integration pass.</li>
+    <li>Dynamic adaptive decomposition fits an open investigation where the next steps depend on what is discovered, such as adding tests to a legacy codebase: map the structure, identify high-impact areas, and follow a prioritized plan that adapts as dependencies emerge.</li>
+    <li>Reviewing a huge PR in one go causes attention dilution: the model loses focus among dozens of files and misses bugs.</li>
+    <li>The correct architecture is a local pass per file, each reviewed in isolation with full attention, plus a separate cross-file integration pass that analyzes how the files interact, such as broken signatures, changed contracts and side effects between modules.</li>
+    <li>The cross-file pass exists because integration bugs are not visible file by file, and trying to catch both kinds in a single pass dilutes attention and makes both worse.</li>
+    <li>Passes can also be split by problem type, such as security, business logic and API design, each with its own prompt and few-shot examples, because criteria competing in the same prompt trade recall in one type for recall in another; details are in Lesson 11 (TS 4.6).</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Prompt chaining, um pipeline sequencial fixo, é indicado para um workflow previsível, com etapas conhecidas de antemão e vários aspectos a revisar, como um code review que analisa cada arquivo individualmente e depois roda um pass de integração cross-file.</li>
+    <li>A decomposição dinâmica adaptativa é indicada para uma investigação aberta, em que os próximos passos dependem do que se descobre, como adicionar testes a um codebase legado: mapear a estrutura, identificar áreas de alto impacto e seguir um plano priorizado que se adapta conforme as dependências surgem.</li>
+    <li>Revisar um PR gigante de uma vez causa attention dilution: o modelo perde o foco em meio a dezenas de arquivos e deixa passar bugs.</li>
+    <li>A arquitetura correta é um pass local por arquivo, cada um revisado isoladamente com atenção total, mais um pass separado de integração cross-file que analisa como os arquivos interagem, como assinaturas quebradas, contratos mudados e efeitos colaterais entre módulos.</li>
+    <li>O pass cross-file existe porque bugs de integração não são visíveis arquivo por arquivo, e tentar pegar os dois tipos num único pass dilui a atenção e piora os dois.</li>
+    <li>Os passes também podem se dividir por tipo de problema, como segurança, lógica de negócio e design de API, cada um com prompt e few-shot próprios, porque critérios competindo no mesmo prompt trocam recall num tipo por recall noutro; os detalhes estão na Aula 11 (TS 4.6).</li>
+  </ul>
+</section>
+
+<section class="ficha" id="sessions-resume-fork-fresh">
+  <div class="ficha-head">
+    <h2>Sessions: resume, fork and fresh start (TS 1.7)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Sessões: resume, fork e recomeço (TS 1.7)</strong></div>
+  <ul class="assert">
+    <li>Claude Code persists named sessions, and the exam tests three operations.</li>
+    <li>--resume with a session name continues a specific earlier conversation, such as a named investigation that spans several days (claude --resume investigacao-checkout), and fits when the earlier context is still mostly valid.</li>
+    <li>If files changed since the original session, tell the agent about the specific changes when resuming, such as "files X and Y changed since yesterday; re-analyze them", which allows targeted re-analysis instead of full re-exploration and keeps the agent from reasoning over stale tool results.</li>
+    <li>fork_session creates independent branches from a shared analysis baseline: you have already analyzed the codebase once and want to explore two divergent approaches, for example to compare two testing strategies or two refactoring plans without one contaminating the other's context.</li>
+    <li>The fork inherits the baseline, and from then on each branch evolves in isolation.</li>
+    <li>When the old context is stale, because tool results are days old, the codebase changed a lot or the investigation took another direction, resuming injects outdated data that the model reasons over.</li>
+    <li>The more reliable practice is to start a new session and inject a structured summary of the relevant conclusions from the previous one, preserving the knowledge without carrying the stale artifacts.</li>
+    <li>Decision rule: earlier context still valid → --resume, with a note about the specific file changes; stale tool results or a heavily changed codebase → a new session with a structured summary; divergent paths from the same baseline → fork_session.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>O Claude Code persiste sessões nomeadas, e a prova cobra três operações.</li>
+    <li>--resume com o nome da sessão continua uma conversa anterior específica, como uma investigação nomeada que atravessa vários dias (claude --resume investigacao-checkout), e serve quando o contexto anterior ainda é majoritariamente válido.</li>
+    <li>Se arquivos mudaram desde a sessão original, informe o agente sobre as mudanças específicas ao retomar, como "os arquivos X e Y mudaram desde ontem; re-analise-os", o que permite re-análise direcionada em vez de re-exploração completa e evita que o agente raciocine sobre tool results velhos.</li>
+    <li>fork_session cria ramificações independentes a partir de uma baseline de análise compartilhada: você já fez a análise do codebase uma vez e quer explorar duas abordagens divergentes, por exemplo para comparar duas estratégias de teste ou dois planos de refatoração sem que um contamine o contexto do outro.</li>
+    <li>O fork herda a baseline, e daí em diante cada branch evolui isolado.</li>
+    <li>Quando o contexto antigo está stale, porque os tool results são de dias atrás, o codebase mudou muito ou a investigação tomou outro rumo, retomar injeta dados desatualizados sobre os quais o modelo raciocina.</li>
+    <li>A prática mais confiável é iniciar uma sessão nova e injetar um resumo estruturado das conclusões relevantes da anterior, preservando o conhecimento sem carregar os artefatos podres.</li>
+    <li>Regra de decisão: contexto anterior ainda válido → --resume, avisando das mudanças pontuais em arquivos; tool results stale ou codebase muito mudado → sessão nova com resumo estruturado; caminhos divergentes da mesma baseline → fork_session.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="pegadinha-do-dia">
+  <div class="ficha-head">
+    <h2>Trap of the day</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Pegadinha do dia</strong></div>
+  <ul class="assert">
+    <li>The number-one distractor in this block is the cosmetic prompt patch: the stem describes a business-rule violation in production, such as a skipped step or a refund above the limit, and the options offer strengthening the system prompt, adding few-shot examples or making the instruction more emphatic.</li>
+    <li>All of that is probabilistic; the right answer is always the one that moves the rule into deterministic code, such as a hook, a prerequisite gate or an interception.</li>
+    <li>A deterministic business rule, checkable in code, such as a mandatory step or a value limit, with a financial or compliance consequence cannot live in the prompt and requires programmatic enforcement.</li>
+    <li>A judgment decision, such as when to escalate or which tool to choose, is different: it is fixed first with explicit criteria and few-shot examples in the prompt, as in official sample question 3 (Lesson 12), because a hook does not know what a policy exception is.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>O distrator número 1 deste bloco é o remendo cosmético via prompt: o stem descreve uma violação de regra de negócio em produção, como uma etapa pulada ou um reembolso acima do limite, e as opções oferecem fortalecer o system prompt, adicionar exemplos few-shot ou deixar a instrução mais enfática.</li>
+    <li>Tudo isso é probabilístico; a resposta certa é sempre a que move a regra para código determinístico, como um hook, um prerequisite gate ou uma interceptação.</li>
+    <li>Uma regra de negócio determinística, checável em código, como uma etapa obrigatória ou um limite de valor, com consequência financeira ou de compliance não pode morar no prompt e exige enforcement programático.</li>
+    <li>Uma decisão de julgamento, como quando escalar ou qual tool escolher, é outra coisa: corrige-se primeiro com critérios explícitos e exemplos few-shot no prompt, como na questão oficial 3 (Aula 12), porque um hook não sabe o que é exceção de política.</li>
+  </ul>
+</section>
+
+<section class="ficha gloss-sec" id="glossary">
+  <div class="ficha-head">
+    <h2>Glossary</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <table class="gloss">
+    <tr><th>Term (EN)</th><th>Meaning (EN)</th><th class="ptm pt">Significado (PT-BR)</th></tr>
+    <tr><td class="en">programmatic enforcement</td><td>A guarantee implemented in code, deterministic.</td><td class="ptm pt">Garantia implementada em código, determinística.</td></tr>
+    <tr><td class="en">prompt-based guidance</td><td>Guidance through the prompt, probabilistic, with a non-zero failure rate.</td><td class="ptm pt">Orientação via prompt, probabilística, com taxa de falha não-zero.</td></tr>
+    <tr><td class="en">prerequisite gate</td><td>Blocks downstream tool calls until the prerequisite steps complete.</td><td class="ptm pt">Bloqueia as tools downstream até as etapas de pré-requisito terminarem.</td></tr>
+    <tr><td class="en">structured handoff</td><td>A handoff to a human with fixed fields: customer ID, root cause, amount and recommended action.</td><td class="ptm pt">Handoff para humano com campos fixos: customer ID, root cause, valor e ação recomendada.</td></tr>
+    <tr><td class="en">recommended action</td><td>The next step the human should execute or approve.</td><td class="ptm pt">O próximo passo que o humano deve executar ou aprovar.</td></tr>
+    <tr><td class="en">multi-concern request</td><td>A request with several distinct issues to decompose.</td><td class="ptm pt">Pedido com vários assuntos distintos a decompor.</td></tr>
+    <tr><td class="en">shared context</td><td>The same verified customer and account data used across parallel items.</td><td class="ptm pt">O mesmo cliente verificado e os mesmos dados de conta usados nos itens em paralelo.</td></tr>
+    <tr><td class="en">unified resolution</td><td>One answer that closes every item.</td><td class="ptm pt">Uma resposta que fecha todos os itens.</td></tr>
+    <tr><td class="en">PostToolUse hook</td><td>Intercepts the tool result after the tool runs, to transform it before the model sees it.</td><td class="ptm pt">Intercepta o resultado da tool depois que ela roda, para transformá-lo antes de o modelo vê-lo.</td></tr>
+    <tr><td class="en">PreToolUse hook</td><td>Intercepts the call before it runs and can deny it with permissionDecision deny.</td><td class="ptm pt">Intercepta a chamada antes de ela rodar e pode negá-la com permissionDecision deny.</td></tr>
+    <tr><td class="en">tool call interception</td><td>Catching an outgoing tool call before execution to block or redirect it.</td><td class="ptm pt">Capturar uma chamada de tool antes da execução para bloqueá-la ou redirecioná-la.</td></tr>
+    <tr><td class="en">policy threshold</td><td>A policy limit, such as refunds above $500.</td><td class="ptm pt">Um limite de política, como reembolsos acima de $500.</td></tr>
+    <tr><td class="en">deterministic vs probabilistic compliance</td><td>Compliance guaranteed by code versus compliance that depends on the model following instructions.</td><td class="ptm pt">Conformidade garantida por código versus conformidade que depende de o modelo seguir instruções.</td></tr>
+    <tr><td class="en">prompt chaining</td><td>A fixed sequential pipeline of focused prompts.</td><td class="ptm pt">Um pipeline sequencial fixo de prompts focados.</td></tr>
+    <tr><td class="en">dynamic decomposition</td><td>Adaptive subtasks chosen from intermediate findings.</td><td class="ptm pt">Subtarefas adaptativas escolhidas a partir das descobertas intermediárias.</td></tr>
+    <tr><td class="en">cross-file integration pass</td><td>A separate review pass over how files interact.</td><td class="ptm pt">Um pass de review separado sobre como os arquivos interagem.</td></tr>
+    <tr><td class="en">attention dilution</td><td>Loss of focus when one pass covers too much.</td><td class="ptm pt">Perda de foco quando um único pass cobre coisa demais.</td></tr>
+    <tr><td class="en">--resume &lt;session-name&gt;</td><td>Continues a named earlier session.</td><td class="ptm pt">Retoma uma sessão anterior nomeada.</td></tr>
+    <tr><td class="en">fork_session</td><td>Creates independent branches from a shared baseline.</td><td class="ptm pt">Cria ramificações independentes a partir de uma baseline compartilhada.</td></tr>
+    <tr><td class="en">stale tool results</td><td>Tool results that no longer reflect the current state.</td><td class="ptm pt">Resultados de tool que já não refletem o estado atual.</td></tr>
+  </table>
+</section>
+
+<nav class="prevnext">
+  <span><a href="index.html">← Índice</a></span>
+  <span><a href="aula-03.html">Aula 03 — versão completa (PT)</a></span>
+  <span><a href="aula-03.html">Aula 03 (completa) →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('section.ficha .ver-traducao').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var sec = btn.closest('section.ficha');
+      var on = sec.classList.toggle('show-pt');
+      btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+      btn.textContent = on ? '🇧🇷 ocultar tradução' : '🇧🇷 ver tradução';
+    });
+  });
+})();
+</script>
+<script src="narracao/fichamento-03.js"></script>
+<script src="narracao/player.js"></script>
+</body>
+</html>
