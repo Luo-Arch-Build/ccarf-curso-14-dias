@@ -187,6 +187,8 @@ correta é um hook que intercepta a chamada <em>antes</em> da execução, bloque
 <code>PostToolUse</code> roda depois e serve para <strong>transformar</strong> o resultado (2.1). Regra de bolso:
 <em>para impedir uma ação, PreToolUse; para normalizar o que a tool devolveu, PostToolUse. Bloquear em PostToolUse
 chega tarde, porque o reembolso já saiu.</em></p>
+<p>Os hooks de comando do Claude Code (Aula 07) seguem a mesma lógica: um <code>PostToolUse</code> pode trocar o que o modelo
+vê (<code>updatedToolOutput</code>) ou anexar um motivo, mas não desfaz o que a tool já fez.</p>
 <p>A frase-chave do guide: <em>"choosing hooks over prompt-based enforcement when business rules require
 guaranteed compliance"</em>. Distrator clássico: "adicionar ao system prompt que refunds acima de $500 devem
 ser escalados" — funciona 95% das vezes, e os 5% restantes viram prejuízo financeiro.</p>

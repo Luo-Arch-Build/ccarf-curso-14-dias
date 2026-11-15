@@ -830,7 +830,7 @@ window.CCARF_BANCO = {
         "dontAsk sem regras allow, para todo comando que o Claude decidir rodar passar sem perguntar."
       ],
       a: [1],
-      e: "<code>bypassPermissions</code> pula as checagens de permissão, e a documentação o reserva exatamente para este caso: container ou VM isolados, sem internet e sem credenciais, onde o pior resultado fica contido e é descartado. É o caso oposto ao do runner compartilhado com segredos, em que o certo é <code>dontAsk</code> com o necessário pré-aprovado. A: no <code>-p</code>, o que precisaria de aprovação é recusado, e o build falha. C: o plan mode só explora e propõe, sem editar — e o job precisa escrever os testes. D descreve o contrário do <code>dontAsk</code>: ele <strong>nega</strong> o que pediria permissão, então sem regras allow os comandos de build seriam recusados."
+      e: "<code>bypassPermissions</code> pula os prompts de permissão (regras deny e hooks que negam continuam valendo), e a documentação o reserva exatamente para este caso: container ou VM isolados, sem internet e sem credenciais, onde o pior resultado fica contido e é descartado. É o caso oposto ao do runner compartilhado com segredos, em que o certo é <code>dontAsk</code> com o necessário pré-aprovado. A: no <code>-p</code>, o que precisaria de aprovação é recusado, e o build falha. C: o plan mode só explora e propõe, sem editar — e o job precisa escrever os testes. D descreve o contrário do <code>dontAsk</code>: ele <strong>nega</strong> o que pediria permissão, então sem regras allow os comandos de build seriam recusados."
     },
     {
       id: "CI7", s: "CI", d: 3, t: "3.6",

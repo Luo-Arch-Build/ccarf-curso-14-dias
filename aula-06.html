@@ -96,8 +96,8 @@
   directory), saber modularizar com <code>@import</code> e <code>.claude/rules/</code>, e escolher
   <strong>rules com glob no frontmatter</strong> quando uma convenção precisa seguir o <em>tipo do arquivo</em>
   e não o diretório. Ao final, distinguir contexto persistente (CLAUDE.md e rules), que é orientação, de
-  procedimento sob demanda (skills e comandos) — e saber que permissões, permission modes e hooks, que dão
-  garantia de verdade, ficam para as Aulas 7 e 8.
+  procedimento sob demanda (skills e comandos) — e saber que as regras de permissão e os hooks, que dão
+  garantia de verdade, ficam para a Aula 7, e os permission modes, que definem a autonomia da sessão, para a Aula 8.
 </div>
 
 <h2>1. A hierarquia de CLAUDE.md (Task Statement 3.1)</h2>
@@ -114,6 +114,11 @@
       parte da árvore (ex.: <code>packages/billing/CLAUDE.md</code>). Carrega quando o Claude trabalha
       em arquivos daquele diretório.</li>
 </ul>
+<p>O guia cobra esses três níveis. O produto tem mais dois arquivos que somam ao mesmo contexto, e o curso oficial
+<em>Claude Code in Action</em> os cita: o <strong>managed policy</strong> (<code>CLAUDE.md</code> que a TI da organização instala na máquina,
+vale para todos e não pode ser excluído) e o <strong><code>CLAUDE.local.md</code></strong> na raiz do projeto (notas pessoais
+daquele repositório, fora do git). Os da pasta de trabalho e das pastas acima dela carregam juntos no início da sessão,
+sem um sobrescrever o outro.</p>
 <pre><code>~/.claude/CLAUDE.md              # pessoal, NÃO vai pro git, só vale pra você
 meu-repo/
 ├── CLAUDE.md                    # project-level: commitado, time inteiro recebe
@@ -348,7 +353,7 @@ permission modes.</p>
     <label class="opt"><input type="radio" name="q6" value="d">D. Create a .claude/rules/ file with paths: ["**/*.tf"] that repeats the ban whenever Terraform files are read or edited.<div class="pt">Criar um arquivo em .claude/rules/ com paths: ["**/*.tf"] que repete a proibição sempre que arquivos Terraform forem lidos ou editados.</div></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: C.</strong> "Nunca" pede garantia, e CLAUDE.md é orientação: o modelo lê e costuma seguir, mas já mostrou que pode não seguir. Uma regra <code>deny</code> em <code>settings.permissions</code> é aplicada pelo próprio Claude Code antes da tool rodar, vence qualquer <code>allow</code> e, no <code>.claude/settings.json</code> versionado, chega ao time inteiro pelo git (o deny cobre as tools e os comandos que o Claude Code reconhece; leitura indireta por um script próprio pede o sandbox). A é o mesmo mecanismo probabilístico com mais ênfase. B usa um arquivo pessoal que não viaja pelo VCS e continua sendo orientação. D carrega contexto ao trabalhar com <code>.tf</code>, mas o <code>terraform apply</code> é um comando e a rule continua sendo orientação, não bloqueio.<span class="ts">Domínio 3 · TS 3.1 — Orientação e settings.permissions</span></div>
+  <div class="feedback"><strong>Gabarito: C.</strong> "Nunca" pede garantia, e CLAUDE.md é orientação: o modelo lê e costuma seguir, mas já mostrou que pode não seguir. Uma regra <code>deny</code> em <code>settings.permissions</code> é aplicada pelo próprio Claude Code antes da tool rodar, vence qualquer <code>allow</code> e, no <code>.claude/settings.json</code> versionado, chega ao time inteiro pelo git (o deny cobre as tools e os comandos que o Claude Code reconhece; leitura indireta por um script próprio pede o sandbox, que incorpora as regras Read deny). A é o mesmo mecanismo probabilístico com mais ênfase. B usa um arquivo pessoal que não viaja pelo VCS e continua sendo orientação. D carrega contexto ao trabalhar com <code>.tf</code>, mas o <code>terraform apply</code> é um comando e a rule continua sendo orientação, não bloqueio.<span class="ts">Domínio 3 · TS 3.1 — Orientação e settings.permissions</span></div>
 </div>
 
 <div class="card objetivo">

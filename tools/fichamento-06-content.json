@@ -13,14 +13,18 @@
         "The user-level CLAUDE.md lives at ~/.claude/CLAUDE.md, holds your personal preferences across all of your projects, and applies only to you.",
         "Because the user-level CLAUDE.md sits in your home directory, outside the repository, it is not shared with the team through version control.",
         "The project-level CLAUDE.md is the CLAUDE.md at the repo root (or .claude/CLAUDE.md), committed to version control so the whole team receives the same project standards, test conventions and build commands.",
-        "A directory-level CLAUDE.md lives in a subdirectory (for example packages/billing/CLAUDE.md) and loads when Claude works on files in that directory, carrying conventions specific to that part of the tree."
+        "A directory-level CLAUDE.md lives in a subdirectory (for example packages/billing/CLAUDE.md) and loads when Claude works on files in that directory, carrying conventions specific to that part of the tree.",
+        "The exam tests these three levels; the product adds two more files to the same context, both cited by the official Claude Code in Action course: the managed policy CLAUDE.md that the organization's IT installs, which applies to everyone and cannot be excluded, and CLAUDE.local.md at the project root, holding personal notes for that repository outside git.",
+        "The files in the working directory and the directories above it load together at session start, and none overrides another."
       ],
       "assertions_pt": [
         "O Claude Code carrega instruções de três níveis que se somam no contexto da sessão: user-level, project-level e directory-level.",
         "O CLAUDE.md user-level fica em ~/.claude/CLAUDE.md, guarda suas preferências pessoais em todos os seus projetos e vale só para você.",
         "Como o CLAUDE.md user-level fica no seu diretório home, fora do repositório, ele não é compartilhado com o time via controle de versão.",
         "O CLAUDE.md project-level é o CLAUDE.md na raiz do repo (ou .claude/CLAUDE.md), commitado no controle de versão para que o time inteiro receba os mesmos padrões do projeto, convenções de teste e comandos de build.",
-        "Um CLAUDE.md directory-level fica num subdiretório (por exemplo packages/billing/CLAUDE.md) e carrega quando o Claude trabalha em arquivos daquele diretório, trazendo convenções específicas daquela parte da árvore."
+        "Um CLAUDE.md directory-level fica num subdiretório (por exemplo packages/billing/CLAUDE.md) e carrega quando o Claude trabalha em arquivos daquele diretório, trazendo convenções específicas daquela parte da árvore.",
+        "A prova cobra esses três níveis; o produto soma mais dois arquivos ao mesmo contexto, ambos citados pelo curso oficial Claude Code in Action: o CLAUDE.md de managed policy que a TI da organização instala, que vale para todos e não pode ser excluído, e o CLAUDE.local.md na raiz do projeto, com notas pessoais daquele repositório fora do git.",
+        "Os arquivos da pasta de trabalho e das pastas acima dela carregam juntos no início da sessão, e nenhum sobrescreve o outro."
       ]
     },
     {
