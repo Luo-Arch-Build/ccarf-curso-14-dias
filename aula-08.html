@@ -253,7 +253,7 @@ O Exam Guide não lista essas flags, mas os objetivos oficiais da prova (a lista
 <p><strong>Os modos que importam no CI:</strong></p>
 <ul>
   <li><code>dontAsk</code>: nega automaticamente toda tool call que <strong>exigiria aprovação</strong>. Ações que já não pedem permissão continuam rodando, como leituras no diretório de trabalho e comandos read-only; regras <code>allow</code>, <code>--allowedTools</code> e aprovações por <code>PreToolUse</code> também têm efeito próprio, e um mod instalado ainda pode aprovar algumas chamadas. Portanto, <code>dontAsk</code> evita espera por prompt, mas <strong>não é uma allowlist absoluta</strong>: tools e regras continuam definindo a superfície disponível.</li>
-  <li><code>bypassPermissions</code>: pula as checagens de permissão. Só em ambiente isolado (container, VM, dev
+  <li><code>bypassPermissions</code>: pula os prompts de permissão (o curso oficial diz "skips all checks"); regras deny e hooks que negam continuam bloqueando (card 🧭 abaixo). Só em ambiente isolado (container, VM, dev
       container sem internet). Num runner com segredos e acesso à rede, é o distrator.</li>
   <li><code>plan</code>: o Claude analisa e propõe, sem editar. Também funciona com <code>-p</code> (ver aula 07).</li>
   <li><code>acceptEdits</code>: aceita sem perguntar edições de arquivo e comandos comuns de sistema de arquivos (<code>mkdir</code>, <code>mv</code>, <code>rm</code>…) dentro do diretório de trabalho. Serve para o job que gera código, não para o revisor.</li>
@@ -290,8 +290,9 @@ pronto sem manter pipeline → Code Review, com as regras no <code>REVIEW.md</co
 moram em arquivo do repositório, não no prompt do job (2.5).</em></p>
 
 <div class="card" style="border-left: 3px solid var(--accent2);">
-  <strong>🧭 Prova × produto atual</strong> <span style="color:var(--muted);font-size:12.5px">(documentação do Claude Code conferida em 29/10/2026)</span>
+  <strong>🧭 Prova × produto atual</strong> <span style="color:var(--muted);font-size:12.5px">(documentação do Claude Code conferida em 15/11/2026)</span>
   <ul>
+    <li><strong><code>bypassPermissions</code> não desliga tudo:</strong> as regras <code>deny</code> e o <code>deny</code> de um hook <code>PreToolUse</code> continuam bloqueando nesse modo, e uma regra <code>ask</code> explícita continua perguntando; já as regras <code>allow</code> não têm efeito, porque nada mais pede aprovação. Na prova vale o papel do modo: só em container ou VM isolados.</li>
     <li>Com <code>--json-schema</code>, um resultado válido vem no campo <code>structured_output</code> do JSON de saída (só no modo <code>-p</code>); se a execução não produzir saída válida, o campo pode não existir.</li>
     <li><code>manual</code> é aceito como alias de <code>default</code> em <code>--permission-mode</code> (v2.1.200+).</li>
     <li>No Agent SDK, a parada por orçamento aparece como resultado com subtype <code>error_max_budget_usd</code>.</li>
@@ -405,7 +406,7 @@ jq -c '.structured_output.findings[]' review.json</code></pre>
   <tr><td class="en">structured_output</td><td>campo com o resultado validado; pode faltar se a execução não gerar saída válida</td><td class="uso">"check structured_output and fail explicitly before consuming findings"</td></tr>
   <tr><td class="en">permission mode</td><td>modo de permissão (o que roda sem aprovação)</td><td class="uso">"configure permission modes for automated CI/CD pipelines"</td></tr>
   <tr><td class="en">dontAsk</td><td>nega o que exigiria aprovação; preserva ações sem prompt e aprovações por regras/hooks/mods</td><td class="uso">"run the locked-down CI job with --permission-mode dontAsk"</td></tr>
-  <tr><td class="en">bypassPermissions</td><td>modo que pula as checagens (só ambiente isolado)</td><td class="uso">"use bypassPermissions only in isolated containers or VMs"</td></tr>
+  <tr><td class="en">bypassPermissions</td><td>modo que pula os prompts de permissão; deny rules e hooks que negam continuam valendo (só ambiente isolado)</td><td class="uso">"use bypassPermissions only in isolated containers or VMs"</td></tr>
   <tr><td class="en">cost and turn limits</td><td>limites de turnos e de custo estimado no cliente; não teto contábil rígido</td><td class="uso">"cost and turn limits that prevent runaway executions"</td></tr>
   <tr><td class="en">runaway execution</td><td>execução descontrolada (loop que não para)</td><td class="uso">"prevent runaway executions in non-interactive runs"</td></tr>
   <tr><td class="en">restrict tool access</td><td>restringir nativas com <code>--tools</code> e tratar MCP separadamente com <code>--disallowedTools</code></td><td class="uso">"restrict unnecessary tool access for the review job"</td></tr>

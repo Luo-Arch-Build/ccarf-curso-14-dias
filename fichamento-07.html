@@ -119,25 +119,29 @@
 
 <section class="ficha" id="exam-vs-product">
   <div class="ficha-head">
-    <h2>Exam versus current product (docs checked on 2026-10-22)</h2>
+    <h2>Exam versus current product (docs checked on 2026-11-15)</h2>
     <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
   </div>
-  <div class="pt-block pt" style="margin-top:2px"><strong>Prova versus produto atual (documentação conferida em 22/10/2026)</strong></div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Prova versus produto atual (documentação conferida em 15/11/2026)</strong></div>
   <ul class="assert">
+    <li>The guide (TS 3.2) contrasts on-demand skills with always-loaded CLAUDE.md, and that is how the exam tests it.</li>
+    <li>In the current product, the CLAUDE.md files in the working directory and the directories above it, plus your own and the managed one, load at session start, while a subdirectory's CLAUDE.md loads only when Claude works with a file in that folder.</li>
     <li>In the current product, custom commands were unified with skills, and files in .claude/commands/ keep working; the exam treats them as two distinct mechanisms.</li>
     <li>The guide says allowed-tools restricts the tools during the skill, and that is how the exam tests it.</li>
     <li>In the current product, allowed-tools only pre-approves the listed tools, which run without asking permission in the turn that invokes the skill, and it removes no tool from reach.</li>
     <li>To remove tools while a skill is active, the current product has a separate field, disallowed-tools.</li>
     <li>With context: fork, the skill runs in a subagent that does not see your conversation history and returns a summary when it finishes, which is the isolation the guide describes.</li>
-    <li>On the exam, answer as the guide does: allowed-tools restricts the skill's tools.</li>
+    <li>On the exam, answer as the guide does: allowed-tools restricts the skill's tools, and CLAUDE.md is the always-loaded context.</li>
   </ul>
   <ul class="assert pt-block pt">
+    <li>O guia (TS 3.2) contrasta skill sob demanda com CLAUDE.md sempre carregado, e é assim que a prova cobra.</li>
+    <li>No produto atual, os CLAUDE.md da pasta de trabalho e das pastas acima dela, além do seu e do managed, carregam no início da sessão, enquanto o CLAUDE.md de um subdiretório só carrega quando o Claude trabalha com um arquivo daquela pasta.</li>
     <li>No produto atual, os custom commands foram unificados com as skills, e os arquivos em .claude/commands/ continuam funcionando; a prova trata os dois como mecanismos distintos.</li>
     <li>O guia diz que allowed-tools restringe as tools durante a skill, e é assim que a prova cobra.</li>
     <li>No produto atual, allowed-tools só pré-aprova as tools listadas, que rodam sem pedir permissão no turno que invoca a skill, e não tira nenhuma tool do alcance.</li>
     <li>Para remover tools enquanto uma skill está ativa, o produto atual tem outro campo, disallowed-tools.</li>
     <li>Com context: fork, a skill roda num subagent que não vê o histórico da sua conversa e devolve um resumo ao terminar, que é o isolamento que o guia descreve.</li>
-    <li>Na prova, responda como o guia: allowed-tools restringe as tools da skill.</li>
+    <li>Na prova, responda como o guia: allowed-tools restringe as tools da skill, e o CLAUDE.md é o contexto sempre carregado.</li>
   </ul>
 </section>
 
@@ -151,9 +155,9 @@
     <li>To customize a project skill only for yourself, create a variant in ~/.claude/skills/ under a different name, for example analise-codebase-luo.</li>
     <li>A different name does not collide with the team's skill and does not change your colleagues' behavior.</li>
     <li>Editing the repo's skill would change everyone's workflow, and committing a personal preference is exactly the anti-pattern the exam tests.</li>
-    <li>A skill loads on demand when the task calls for it, while CLAUDE.md is always loaded in every session.</li>
+    <li>A skill loads on demand when the task calls for it, while CLAUDE.md is always loaded: the root file enters at the start of every session, and a subdirectory's file when you work in that folder.</li>
     <li>A skill suits task-specific workflows such as analysis, migration or release; CLAUDE.md suits universal project standards such as style, conventions and never-do-X rules.</li>
-    <li>A skill costs context only when used, while CLAUDE.md costs context permanently, and letting it grow too much pollutes everything.</li>
+    <li>Only a skill's description stays in context; its body enters when the skill is used and then stays in the conversation, while CLAUDE.md costs context permanently, and letting it grow too much pollutes everything.</li>
     <li>When the stem says a standard that applies to all project code, the answer is CLAUDE.md; when it says a workflow that runs occasionally, with parameters and large output, the answer is a skill, probably with context: fork.</li>
     <li>A skill can be invoked by name or loaded by Claude by relevance, but either way it stays on demand: loaded by relevance does not make it always-on guidance like CLAUDE.md.</li>
   </ul>
@@ -161,9 +165,9 @@
     <li>Para customizar uma skill do projeto só para você, crie uma variante em ~/.claude/skills/ com um nome diferente, por exemplo analise-codebase-luo.</li>
     <li>Um nome diferente não colide com a skill do time e não altera o comportamento dos colegas.</li>
     <li>Editar a skill do repo mudaria o workflow de todo mundo, e commitar uma preferência pessoal é exatamente o anti-padrão que a prova testa.</li>
-    <li>Uma skill carrega sob demanda quando a tarefa pede, enquanto o CLAUDE.md é sempre carregado em toda sessão.</li>
+    <li>Uma skill carrega sob demanda quando a tarefa pede, enquanto o CLAUDE.md é sempre carregado: o da raiz entra no início de toda sessão, e o de subdiretório quando se trabalha naquela pasta.</li>
     <li>A skill serve a workflows específicos de uma tarefa, como análise, migração ou release; o CLAUDE.md serve a padrões universais do projeto, como estilo, convenções e regras de nunca fazer X.</li>
-    <li>Uma skill só custa contexto quando usada, enquanto o CLAUDE.md custa contexto permanentemente, e deixá-lo crescer demais polui tudo.</li>
+    <li>Só a descrição da skill fica no contexto; o corpo entra quando a skill é usada e depois continua na conversa, enquanto o CLAUDE.md custa contexto permanentemente, e deixá-lo crescer demais polui tudo.</li>
     <li>Quando o stem diz um padrão que vale para todo código do projeto, a resposta é CLAUDE.md; quando diz um workflow que roda às vezes, com parâmetros e saída grande, a resposta é uma skill, provavelmente com context: fork.</li>
     <li>Uma skill pode ser invocada pelo nome ou carregada pelo Claude por relevância, mas nas duas formas continua sob demanda: carregada por relevância não vira orientação always-on como o CLAUDE.md.</li>
   </ul>
@@ -177,7 +181,7 @@
   <div class="pt-block pt" style="margin-top:2px"><strong>Mapa rápido: qual mecanismo para cada necessidade</strong></div>
   <ul class="assert">
     <li>The exam likes to list several needs and ask for the mechanism of each; the criterion is always when the guidance applies and who should receive it.</li>
-    <li>A standard for every developer in every session goes in the project CLAUDE.md, which is always loaded and versioned.</li>
+    <li>A standard for every developer in every session goes in the project CLAUDE.md at the root, which loads at the start of every session and is versioned.</li>
     <li>A convention for one file type spread across the repo goes in .claude/rules/ with a paths glob, covered in Lesson 6.</li>
     <li>A workflow that runs occasionally, with parameters or large output, is a skill in .claude/skills/, with context: fork if it is verbose.</li>
     <li>A standardized prompt the team fires by name is a slash command in .claude/commands/.</li>
@@ -185,10 +189,12 @@
     <li>Something that must always happen without exception, such as running the linter after every edit, is a hook configured in settings.json: programmatic enforcement, not instruction, the logic of TS 1.5 from Lesson 3.</li>
     <li>Changing the session's overall autonomy and approval, such as stopping approval prompts for every edit or only planning, is the session's permission mode, enumerated in Lesson 8.</li>
     <li>Always blocking a command or a file, such as the .env file or the secrets/ folder, is a deny rule under permissions in the project's versioned .claude/settings.json.</li>
+    <li>A prohibition that holds only under a condition, such as only in production or only above a value, or a call that should be rewritten before it runs, is a PreToolUse hook with logic.</li>
+    <li>Stopping any shell process, including a script, from reaching a path or the network is the sandbox, which also takes in the Read and Edit deny rules; it is a product feature outside the exam guide.</li>
   </ul>
   <ul class="assert pt-block pt">
     <li>A prova gosta de listar várias necessidades e pedir o mecanismo de cada uma; o critério é sempre quando a orientação se aplica e quem deve recebê-la.</li>
-    <li>Um padrão para todo dev em toda sessão vai no CLAUDE.md do projeto, sempre carregado e versionado.</li>
+    <li>Um padrão para todo dev em toda sessão vai no CLAUDE.md do projeto, na raiz, que carrega no início de toda sessão e é versionado.</li>
     <li>Uma convenção de um tipo de arquivo espalhado pelo repo vai em .claude/rules/ com glob em paths, tema da Aula 06.</li>
     <li>Um workflow que roda às vezes, com parâmetros ou saída grande, é uma skill em .claude/skills/, com context: fork se for verboso.</li>
     <li>Um prompt padronizado que o time dispara pelo nome é um slash command em .claude/commands/.</li>
@@ -196,6 +202,8 @@
     <li>Algo que precisa acontecer sempre, sem exceção, como rodar o linter depois de toda edição, é um hook configurado em settings.json: enforcement programático, não instrução, a lógica do TS 1.5 da Aula 03.</li>
     <li>Mudar a autonomia e a aprovação gerais da sessão, como parar de pedir aprovação a cada edição ou só planejar, é o permission mode da sessão, que a Aula 08 enumera.</li>
     <li>Bloquear sempre um comando ou um arquivo, como o .env ou a pasta secrets/, é uma regra deny em permissions no .claude/settings.json do projeto, versionado.</li>
+    <li>Uma proibição que só vale sob uma condição, como só em produção ou só acima de um valor, ou uma chamada que deve ser reescrita antes de rodar, é um hook PreToolUse com lógica.</li>
+    <li>Impedir que qualquer processo de shell, inclusive um script, acesse um caminho ou a rede é o sandbox, que também recebe as regras Read e Edit deny; é recurso do produto, fora do guia da prova.</li>
   </ul>
 </section>
 
@@ -208,9 +216,10 @@
   <ul class="assert">
     <li>Permission rules live under permissions, with allow, ask and deny lists, in the settings files.</li>
     <li>Claude Code itself applies permission rules before the tool runs, so they do not depend on the model following an instruction.</li>
-    <li>A deny rule in the project's .claude/settings.json, such as Read(**/.env), Read(./secrets/**) or Bash(terraform apply:*), applies to the whole team.</li>
+    <li>A deny rule in the project's .claude/settings.json, such as Read(**/.env), Read(./secrets/**) or Bash(terraform apply *), applies to the whole team.</li>
     <li>Rules are evaluated in the order deny, then ask, then allow, and among rules deny always wins.</li>
     <li>Read(./.env) matches only the .env in the current directory, while Read(**/.env) matches all of them.</li>
+    <li>A rule matches by pattern against the call's parameters, such as the path for Read and Edit, the full command text for Bash, or the domain for WebFetch; what it does not do is conditional logic, such as checking the environment, the branch or a computed value.</li>
     <li>File precedence from strongest to weakest is: managed organization policy, command-line arguments, .claude/settings.local.json (personal, outside git), .claude/settings.json (project, versioned), and ~/.claude/settings.json (user).</li>
     <li>Lists such as permissions.allow are combined across files instead of overriding each other, which is why a personal allow does not reopen what a project deny closed.</li>
     <li>For a rule that the whole organization must follow and nobody can remove, there is the managed level.</li>
@@ -218,9 +227,10 @@
   <ul class="assert pt-block pt">
     <li>As regras de permissão ficam em permissions, com as listas allow, ask e deny, nos arquivos de settings.</li>
     <li>O próprio Claude Code aplica as regras de permissão antes de a tool rodar, então elas não dependem de o modelo seguir uma instrução.</li>
-    <li>Uma regra deny no .claude/settings.json do projeto, como Read(**/.env), Read(./secrets/**) ou Bash(terraform apply:*), vale para o time inteiro.</li>
+    <li>Uma regra deny no .claude/settings.json do projeto, como Read(**/.env), Read(./secrets/**) ou Bash(terraform apply *), vale para o time inteiro.</li>
     <li>As regras são avaliadas na ordem deny, depois ask, depois allow, e entre regras o deny sempre ganha.</li>
     <li>Read(./.env) casa só com o .env do diretório atual, enquanto Read(**/.env) casa com todos.</li>
+    <li>Uma regra casa por padrão com os parâmetros da chamada, como o caminho em Read e Edit, o texto inteiro do comando em Bash ou o domínio em WebFetch; o que ela não faz é lógica condicional, como consultar o ambiente, o branch ou um valor calculado.</li>
     <li>A precedência dos arquivos, do mais forte ao mais fraco, é: política managed da organização, argumentos de linha de comando, .claude/settings.local.json (pessoal, fora do git), .claude/settings.json (projeto, versionado) e ~/.claude/settings.json (usuário).</li>
     <li>Listas como permissions.allow se combinam entre os arquivos em vez de se sobrescreverem, e por isso um allow pessoal não reabre o que um deny do projeto fechou.</li>
     <li>Para uma regra que a organização inteira deve seguir e que ninguém pode remover, existe o nível managed.</li>
@@ -234,28 +244,32 @@
   </div>
   <div class="pt-block pt" style="margin-top:2px"><strong>Hook, regra deny e permission mode são três controles diferentes</strong></div>
   <ul class="assert">
-    <li>Hooks are also configured in the settings files, and additionally in plugins and in the frontmatter of skills and subagents.</li>
+    <li>Hooks are also configured in the settings files, and additionally in plugins and in the frontmatter of skills and subagents; settings and plugin hooks last the whole session and also fire on subagents' tool calls, skill hooks start when the skill is invoked and last until the session ends, and subagent hooks last only while that subagent runs.</li>
     <li>A hook executes something on an event; a deny rule prevents a tool call.</li>
     <li>A permission mode is not a per-target rule: it changes the session's overall autonomy and approval, meaning what runs without asking.</li>
     <li>An allow, ask or deny rule decides about a specific target: a tool, a command or a path.</li>
     <li>Permission mode, permission rules and hooks act together, and none of them replaces another; the modes are covered in Lesson 8.</li>
-    <li>Rule of thumb: always loaded is CLAUDE.md; depends on the file is a rule with glob; on demand is a skill or command; a guarantee is code, never text: what must happen is a hook, and what must never happen is a deny rule.</li>
-    <li>A deny rule blocks without looking at context, so when a prohibition depends on a condition, such as only in production or only above a value, it becomes a hook with logic.</li>
+    <li>Rule of thumb: persistent guidance is CLAUDE.md; depends on the file is a rule with glob; an on-demand procedure is a skill or command; a guarantee is code, never text: what must happen is a hook, and what must never happen is enforcement, either a deny rule when the target is fixed and fits a pattern or a PreToolUse hook when it depends on a condition.</li>
+    <li>A deny rule matches the call against a pattern without conditional logic, so when a prohibition depends on a condition, such as only in production or only above a value, it becomes a hook with logic; the official Claude Code in Action course uses a hook even for never push to main, because both are guarantees.</li>
     <li>A PreToolUse hook can inspect a command and its target, deny production calls, and leave development calls to the other permission rules; not being denied by that hook does not mean automatic permission.</li>
-    <li>The deny rule's reach covers the native tools and the commands Claude Code recognizes, such as cat, head and redirections, not a script that opens the file on its own; for that, use the sandbox.</li>
+    <li>A PreToolUse hook answers with JSON permissionDecision allow, deny or ask, can rewrite the call with updatedInput instead of blocking it, and without JSON blocks with exit 2; exit 1 does not block.</li>
+    <li>A hook's allow does not reopen a deny rule or skip an ask rule; a hook's deny, like a deny rule, blocks in every permission mode, including bypassPermissions; and a hook that stays silent, fails with another code or times out neither approves nor blocks.</li>
+    <li>The deny rule's reach covers the native tools and the commands Claude Code recognizes, such as cat, head and redirections, not a script that opens the file on its own or a grep -r over the folder; for that there is the sandbox, which restricts shell commands and their child processes at the operating-system level, allows most reads by default, and blocks the .env when a Read deny rule exists.</li>
     <li>Style and naming are guidance in CLAUDE.md or a rule, and they only become a command hook when there is an executable criterion, such as a formatter that runs or a validator that blocks.</li>
     <li>With an executable criterion, the formatter runs after a successful edit in a PostToolUse hook, and the validator blocks the action before it runs in a PreToolUse hook.</li>
   </ul>
   <ul class="assert pt-block pt">
-    <li>Hooks também se configuram nos arquivos de settings e, além disso, em plugins e no frontmatter de skills e subagents.</li>
+    <li>Hooks também se configuram nos arquivos de settings e, além disso, em plugins e no frontmatter de skills e subagents; hooks de settings e de plugin valem na sessão inteira e disparam também nas tool calls dos subagents, hooks de skill passam a valer quando ela é invocada e ficam até o fim da sessão, e hooks de subagent valem só enquanto ele roda.</li>
     <li>Um hook executa algo num evento; uma regra deny impede uma tool call.</li>
     <li>Um permission mode não é regra por alvo: ele muda a autonomia e a aprovação gerais da sessão, ou seja, o que roda sem perguntar.</li>
     <li>Uma regra allow, ask ou deny decide sobre um alvo específico: uma tool, um comando ou um caminho.</li>
     <li>Permission mode, regras de permissão e hooks atuam juntos, e um não substitui o outro; os modos estão na Aula 08.</li>
-    <li>Regra de bolso: sempre carregado é CLAUDE.md; depende do arquivo é rule com glob; sob demanda é skill ou comando; garantia é código, nunca texto: o que tem de acontecer é hook, e o que nunca pode acontecer é regra deny.</li>
-    <li>Uma regra deny bloqueia sem olhar contexto, então quando uma proibição depende de uma condição, como só em produção ou só acima de um valor, ela vira hook com lógica.</li>
+    <li>Regra de bolso: orientação persistente é CLAUDE.md; depende do arquivo é rule com glob; procedimento sob demanda é skill ou comando; garantia é código, nunca texto: o que tem de acontecer é hook, e o que nunca pode acontecer é enforcement, seja uma regra deny quando o alvo é fixo e cabe num padrão, seja um hook PreToolUse quando depende de uma condição.</li>
+    <li>Uma regra deny compara a chamada com um padrão, sem lógica condicional, então quando uma proibição depende de uma condição, como só em produção ou só acima de um valor, ela vira hook com lógica; o curso oficial Claude Code in Action usa hook até para never push to main, porque os dois são garantia.</li>
     <li>Um hook PreToolUse pode inspecionar um comando e seu destino, negar chamadas de produção e deixar as de desenvolvimento para as demais regras de permissão; não ser negado por esse hook não equivale a permissão automática.</li>
-    <li>O alcance da regra deny cobre as tools nativas e os comandos que o Claude Code reconhece, como cat, head e redirecionamentos, e não um script que abre o arquivo por conta própria; para isso, use o sandbox.</li>
+    <li>Um hook PreToolUse responde com o JSON permissionDecision allow, deny ou ask, pode reescrever a chamada com updatedInput em vez de bloqueá-la e, sem JSON, bloqueia com exit 2; exit 1 não bloqueia.</li>
+    <li>O allow de um hook não reabre uma regra deny nem pula uma regra ask; o deny de um hook, como uma regra deny, bloqueia em qualquer permission mode, inclusive bypassPermissions; e um hook que não responde, falha com outro código ou estoura o tempo não aprova nem bloqueia.</li>
+    <li>O alcance da regra deny cobre as tools nativas e os comandos que o Claude Code reconhece, como cat, head e redirecionamentos, e não um script que abre o arquivo por conta própria nem um grep -r na pasta; para isso existe o sandbox, que restringe os comandos de shell e seus processos filhos no nível do sistema operacional, deixa ler quase tudo por padrão e bloqueia o .env quando há uma regra Read deny.</li>
     <li>Estilo e nomes são orientação em CLAUDE.md ou rule, e só viram hook de comando quando existe um critério executável, como um formatter que roda ou um validador que bloqueia.</li>
     <li>Com um critério executável, o formatter roda depois de uma edição bem-sucedida num hook PostToolUse, e o validador bloqueia a ação antes de ela rodar num hook PreToolUse.</li>
   </ul>
@@ -393,12 +407,14 @@
     <tr><td class="en">allowed-tools</td><td>On the exam, restricts the tools available during the skill.</td><td class="ptm pt">Na prova, restringe as tools disponíveis durante a skill.</td></tr>
     <tr><td class="en">argument-hint</td><td>Prompts for the required parameters when the skill is invoked without them.</td><td class="ptm pt">Lembra os parâmetros obrigatórios quando a skill é invocada sem eles.</td></tr>
     <tr><td class="en">on-demand invocation</td><td>Loaded only when the task calls for it, as skills are, versus always-loaded CLAUDE.md.</td><td class="ptm pt">Carregado só quando a tarefa pede, como as skills, versus o CLAUDE.md sempre carregado.</td></tr>
-    <tr><td class="en">always-loaded</td><td>Present in every session, as CLAUDE.md is.</td><td class="ptm pt">Presente em toda sessão, como o CLAUDE.md.</td></tr>
+    <tr><td class="en">always-loaded</td><td>The exam's term for CLAUDE.md; in the product, a subdirectory's CLAUDE.md loads on demand.</td><td class="ptm pt">O termo da prova para o CLAUDE.md; no produto, o CLAUDE.md de subdiretório carrega sob demanda.</td></tr>
     <tr><td class="en">settings permissions</td><td>allow, ask and deny rules in the settings files, applied by Claude Code before the tool runs.</td><td class="ptm pt">Regras allow, ask e deny nos arquivos de settings, aplicadas pelo Claude Code antes de a tool rodar.</td></tr>
-    <tr><td class="en">deny rule</td><td>Unconditionally blocks a tool, command or file.</td><td class="ptm pt">Bloqueia incondicionalmente uma tool, um comando ou um arquivo.</td></tr>
+    <tr><td class="en">deny rule</td><td>Blocks every call that matches its pattern, whether a tool, command or path, without conditional logic.</td><td class="ptm pt">Bloqueia toda chamada que casa com o padrão, seja tool, comando ou caminho, sem lógica condicional.</td></tr>
     <tr><td class="en">settings precedence</td><td>Managed, then command line, then local, then project, then user settings.</td><td class="ptm pt">Managed, depois linha de comando, depois local, depois projeto, depois usuário.</td></tr>
     <tr><td class="en">command hook</td><td>A hook that runs a shell command on an event, to format, validate or block.</td><td class="ptm pt">Um hook que executa um comando de shell num evento, para formatar, validar ou bloquear.</td></tr>
     <tr><td class="en">conditional hook</td><td>A hook with logic that decides according to context, such as denying only production deploys.</td><td class="ptm pt">Um hook com lógica que decide conforme o contexto, como negar só deploys de produção.</td></tr>
+    <tr><td class="en">exit code 2</td><td>The exit code a hook uses to block the action; exit 1 does not block.</td><td class="ptm pt">O código de saída com que um hook bloqueia a ação; exit 1 não bloqueia.</td></tr>
+    <tr><td class="en">sandbox</td><td>Operating-system isolation for shell commands and their child processes; a product feature outside the exam guide.</td><td class="ptm pt">Isolamento no nível do sistema operacional para os comandos de shell e seus processos filhos; recurso do produto, fora do guia da prova.</td></tr>
     <tr><td class="en">permission mode</td><td>The session's overall autonomy and approval posture, not a per-target rule.</td><td class="ptm pt">A postura geral de autonomia e aprovação da sessão, não uma regra por alvo.</td></tr>
     <tr><td class="en">direct execution</td><td>Claude acts within the permissions, with or without manual per-edit review.</td><td class="ptm pt">O Claude age dentro das permissions, com ou sem revisão manual por edição.</td></tr>
     <tr><td class="en">plan mode</td><td>Explores without modifying files and implements only after the plan is approved.</td><td class="ptm pt">Explora sem modificar arquivos e só implementa depois da aprovação do plano.</td></tr>
