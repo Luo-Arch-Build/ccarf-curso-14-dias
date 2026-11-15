@@ -74,7 +74,7 @@
   </div>
   <div class="pt-block pt" style="margin-top:2px"><strong>Enforcement programático versus via prompt (TS 1.4)</strong></div>
   <ul class="assert">
-    <li>When a business rule requires deterministic compliance, such as identity verification before a financial operation, a value limit or a mandatory order of steps, a prompt instruction has a non-zero failure rate, because the model is probabilistic however good the prompt is.</li>
+    <li>When a business rule requires deterministic compliance, such as identity verification before a financial operation, a value limit or a mandatory order of steps, a prompt instruction has a non-zero failure rate, because the model is probabilistic no matter how good the prompt is.</li>
     <li>Programmatic enforcement, through hooks and prerequisite gates, is deterministic: the tool simply does not run.</li>
     <li>The classic exam symptom is that in X% of cases the agent skips step A and calls tool B directly.</li>
     <li>Strengthening the system prompt or adding few-shot examples reduces the error rate but does not eliminate it.</li>
@@ -93,10 +93,10 @@
 
 <section class="ficha" id="structured-handoff">
   <div class="ficha-head">
-    <h2>Structured handoff to humans</h2>
+    <h2>Structured handoff to humans (TS 1.4)</h2>
     <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
   </div>
-  <div class="pt-block pt" style="margin-top:2px"><strong>Handoff estruturado para humanos</strong></div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Handoff estruturado para humanos (TS 1.4)</strong></div>
   <ul class="assert">
     <li>When the agent escalates to a human agent mid-process, the human has no access to the conversation transcript, so asking to summarize the conversation produces a weak handoff.</li>
     <li>The correct handoff is a structured protocol with fixed fields: the verified customer ID, not the declared name; the root cause the investigation has already established; the amount involved, such as the refund amount; and the recommended action the human should execute or approve.</li>
@@ -113,21 +113,23 @@
 
 <section class="ficha" id="multi-concern-requests">
   <div class="ficha-head">
-    <h2>Multi-concern requests</h2>
+    <h2>Multi-concern requests (TS 1.4)</h2>
     <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
   </div>
-  <div class="pt-block pt" style="margin-top:2px"><strong>Pedidos com vários assuntos (multi-concern)</strong></div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Pedidos com vários assuntos, multi-concern (TS 1.4)</strong></div>
   <ul class="assert">
-    <li>Handling only the first concern of a multi-concern message and closing the case breaks first-contact resolution.</li>
-    <li>The TS 1.4 pattern is to decompose the message into distinct items, investigate each item in parallel using the shared context, such as the same verified customer and the same account data, and synthesize one unified resolution that closes every item.</li>
-    <li>Escalating because there is a lot to handle is not a way out: complexity is not an escalation trigger.</li>
-    <li>The escalation triggers are an explicit request for a human, a policy gap and lack of progress.</li>
+    <li>In a message such as "my order is late, I want to change the delivery address and there is a duplicate charge", handling only the first concern and closing the case lowers first-contact resolution.</li>
+    <li>The TS 1.4 pattern is to decompose the message into distinct items, investigate each item in parallel using the shared context, such as the same verified customer and the same account data, instead of a serial flow that mixes states, and synthesize one unified resolution that closes every item.</li>
+    <li>Escalating because there is a lot to handle is not the answer: complexity is not an escalation trigger.</li>
+    <li>The escalation triggers are an explicit request for a human, a policy gap and inability to make progress.</li>
+    <li>Rule of thumb: several concerns become items investigated in parallel with the same context, and then one reply.</li>
   </ul>
   <ul class="assert pt-block pt">
-    <li>Tratar só o primeiro assunto de uma mensagem com vários assuntos e encerrar derruba a resolução no primeiro contato.</li>
-    <li>O padrão do TS 1.4 é decompor a mensagem em itens distintos, investigar cada item em paralelo usando o contexto compartilhado, como o mesmo cliente verificado e os mesmos dados de conta, e sintetizar uma resolução unificada que fecha todos os itens.</li>
+    <li>Numa mensagem como "meu pedido atrasou, quero trocar o endereço de entrega e tem uma cobrança duplicada", tratar só o primeiro assunto e encerrar derruba a resolução no primeiro contato.</li>
+    <li>O padrão do TS 1.4 é decompor a mensagem em itens distintos, investigar cada item em paralelo usando o contexto compartilhado, como o mesmo cliente verificado e os mesmos dados de conta, em vez de um fluxo serial que mistura estados, e sintetizar uma resolução unificada que fecha todos os itens.</li>
     <li>Escalar porque tem muita coisa não é saída: complexidade não é gatilho de escalonamento.</li>
     <li>Os gatilhos de escalonamento são pedido explícito de humano, lacuna de política e falta de progresso.</li>
+    <li>Regra de bolso: vários assuntos viram itens investigados em paralelo com o mesmo contexto, e depois uma resposta só.</li>
   </ul>
 </section>
 
@@ -139,13 +141,13 @@
   <div class="pt-block pt" style="margin-top:2px"><strong>PostToolUse: normalizar dados heterogêneos (TS 1.5)</strong></div>
   <ul class="assert">
     <li>Hooks are interception points in the lifecycle of a tool call, and the exam tests two uses.</li>
-    <li>When several MCP tools return data in different formats, such as Unix timestamps, ISO 8601 strings and numeric status codes, passing it raw makes the model spend reasoning on parsing and make mistakes.</li>
+    <li>When several MCP tools return data in different formats, such as Unix timestamps (1712345678), ISO 8601 strings (2024-04-05T14:21:18Z) and numeric status codes (3 instead of "shipped"), passing it raw makes the model spend reasoning on parsing and make mistakes.</li>
     <li>A PostToolUse hook intercepts the tool result before the model processes it and normalizes it to a canonical format, such as dates in ISO 8601 and status as text.</li>
     <li>Teaching the conversion in the prompt is the wrong alternative, because it is probabilistic again: normalization is a mechanical transformation, so do it mechanically.</li>
   </ul>
   <ul class="assert pt-block pt">
     <li>Hooks são pontos de interceptação no ciclo de vida de uma tool call, e a prova cobra dois usos.</li>
-    <li>Quando várias MCP tools devolvem dados em formatos diferentes, como timestamps Unix, strings ISO 8601 e códigos numéricos de status, passá-los crus faz o modelo gastar raciocínio fazendo parsing e errar.</li>
+    <li>Quando várias MCP tools devolvem dados em formatos diferentes, como timestamps Unix (1712345678), strings ISO 8601 (2024-04-05T14:21:18Z) e códigos numéricos de status (3 em vez de "shipped"), passá-los crus faz o modelo gastar raciocínio fazendo parsing e errar.</li>
     <li>Um hook PostToolUse intercepta o tool result antes de o modelo processá-lo e o normaliza para um formato canônico, como datas em ISO 8601 e status como texto.</li>
     <li>Ensinar a conversão no prompt é a alternativa errada, porque de novo é probabilística: normalização é transformação mecânica, então faça-a mecanicamente.</li>
   </ul>
@@ -159,20 +161,20 @@
   <div class="pt-block pt" style="margin-top:2px"><strong>PreToolUse: bloquear violação de política (TS 1.5)</strong></div>
   <ul class="assert">
     <li>When policy says refunds above $500 require human approval, the correct guarantee is a hook that intercepts the call before it runs, blocks the violation and redirects to the alternative workflow, human escalation.</li>
-    <li>In the Agent SDK this hook is PreToolUse: it blocks with permissionDecision deny, and permissionDecisionReason tells the model why the call was denied and which path to follow.</li>
-    <li>PreToolUse runs before execution and serves to prevent; PostToolUse runs after and serves to transform the result.</li>
+    <li>In the Agent SDK this hook is PreToolUse: it blocks with permissionDecision deny, and permissionDecisionReason tells the model why the call was denied and which path to follow, such as "call escalate_to_human instead".</li>
+    <li>PreToolUse runs before execution and is for preventing; PostToolUse runs after and is for transforming the result.</li>
     <li>Blocking in PostToolUse comes too late, because the refund has already gone out.</li>
-    <li>Claude Code command hooks follow the same logic: a PostToolUse hook can replace what the model sees with updatedToolOutput or attach a reason, but it does not undo what the tool already did.</li>
-    <li>The guide's key phrase is choosing hooks over prompt-based enforcement when business rules require guaranteed compliance.</li>
+    <li>Claude Code command hooks (Lesson 7) follow the same logic: a PostToolUse hook can replace what the model sees with updatedToolOutput or attach a reason, but it does not undo what the tool already did.</li>
+    <li>The Exam Guide's key phrase is "choosing hooks over prompt-based enforcement when business rules require guaranteed compliance."</li>
     <li>The classic distractor is adding to the system prompt that refunds above $500 must be escalated: it works 95% of the time, and the remaining 5% become financial loss.</li>
   </ul>
   <ul class="assert pt-block pt">
     <li>Quando a política diz que reembolsos acima de $500 exigem aprovação humana, a garantia correta é um hook que intercepta a chamada antes da execução, bloqueia a violação e redireciona para o workflow alternativo, a escalação humana.</li>
-    <li>No Agent SDK esse hook é o PreToolUse: ele bloqueia com permissionDecision deny, e o permissionDecisionReason diz ao modelo por que a chamada foi negada e qual caminho seguir.</li>
+    <li>No Agent SDK esse hook é o PreToolUse: ele bloqueia com permissionDecision deny, e o permissionDecisionReason diz ao modelo por que a chamada foi negada e qual caminho seguir, como "call escalate_to_human instead".</li>
     <li>O PreToolUse roda antes da execução e serve para impedir; o PostToolUse roda depois e serve para transformar o resultado.</li>
     <li>Bloquear em PostToolUse chega tarde, porque o reembolso já saiu.</li>
-    <li>Os hooks de comando do Claude Code seguem a mesma lógica: um hook PostToolUse pode trocar o que o modelo vê com updatedToolOutput ou anexar um motivo, mas não desfaz o que a tool já fez.</li>
-    <li>A frase-chave do guia é escolher hooks em vez de enforcement via prompt quando as regras de negócio exigem compliance garantido.</li>
+    <li>Os hooks de comando do Claude Code (Aula 07) seguem a mesma lógica: um hook PostToolUse pode trocar o que o modelo vê com updatedToolOutput ou anexar um motivo, mas não desfaz o que a tool já fez.</li>
+    <li>A frase-chave do guia é "choosing hooks over prompt-based enforcement when business rules require guaranteed compliance": escolher hooks em vez de enforcement via prompt quando as regras de negócio exigem compliance garantido.</li>
     <li>O distrator clássico é adicionar ao system prompt que reembolsos acima de $500 devem ser escalados: funciona 95% das vezes, e os 5% restantes viram prejuízo financeiro.</li>
   </ul>
 </section>
@@ -192,8 +194,8 @@
     <li>Passes can also be split by problem type, such as security, business logic and API design, each with its own prompt and few-shot examples, because criteria competing in the same prompt trade recall in one type for recall in another; details are in Lesson 11 (TS 4.6).</li>
   </ul>
   <ul class="assert pt-block pt">
-    <li>Prompt chaining, um pipeline sequencial fixo, serve a um workflow previsível, com etapas conhecidas de antemão e vários aspectos a revisar, como um code review que analisa cada arquivo individualmente e depois roda um pass de integração cross-file.</li>
-    <li>A decomposição dinâmica adaptativa serve a uma investigação aberta, em que os próximos passos dependem do que se descobre, como adicionar testes a um codebase legado: mapear a estrutura, identificar áreas de alto impacto e seguir um plano priorizado que se adapta conforme as dependências surgem.</li>
+    <li>Prompt chaining, um pipeline sequencial fixo, é indicado para um workflow previsível, com etapas conhecidas de antemão e vários aspectos a revisar, como um code review que analisa cada arquivo individualmente e depois roda um pass de integração cross-file.</li>
+    <li>A decomposição dinâmica adaptativa é indicada para uma investigação aberta, em que os próximos passos dependem do que se descobre, como adicionar testes a um codebase legado: mapear a estrutura, identificar áreas de alto impacto e seguir um plano priorizado que se adapta conforme as dependências surgem.</li>
     <li>Revisar um PR gigante de uma vez causa attention dilution: o modelo perde o foco em meio a dezenas de arquivos e deixa passar bugs.</li>
     <li>A arquitetura correta é um pass local por arquivo, cada um revisado isoladamente com atenção total, mais um pass separado de integração cross-file que analisa como os arquivos interagem, como assinaturas quebradas, contratos mudados e efeitos colaterais entre módulos.</li>
     <li>O pass cross-file existe porque bugs de integração não são visíveis arquivo por arquivo, e tentar pegar os dois tipos num único pass dilui a atenção e piora os dois.</li>
@@ -209,23 +211,23 @@
   <div class="pt-block pt" style="margin-top:2px"><strong>Sessões: resume, fork e recomeço (TS 1.7)</strong></div>
   <ul class="assert">
     <li>Claude Code persists named sessions, and the exam tests three operations.</li>
-    <li>--resume with a session name continues a specific earlier conversation, such as a named investigation that spans several days, and fits when the earlier context is still mostly valid.</li>
-    <li>If files changed since the original session, tell the agent about the specific changes when resuming, which allows targeted re-analysis instead of full re-exploration and keeps the agent from reasoning over stale tool results.</li>
-    <li>fork_session creates independent branches from a shared analysis baseline, for example to compare two testing strategies or two refactoring plans without one contaminating the other's context.</li>
+    <li>--resume with a session name continues a specific earlier conversation, such as a named investigation that spans several days (claude --resume investigacao-checkout), and fits when the earlier context is still mostly valid.</li>
+    <li>If files changed since the original session, tell the agent about the specific changes when resuming, such as "files X and Y changed since yesterday; re-analyze them", which allows targeted re-analysis instead of full re-exploration and keeps the agent from reasoning over stale tool results.</li>
+    <li>fork_session creates independent branches from a shared analysis baseline: you have already analyzed the codebase once and want to explore two divergent approaches, for example to compare two testing strategies or two refactoring plans without one contaminating the other's context.</li>
     <li>The fork inherits the baseline, and from then on each branch evolves in isolation.</li>
     <li>When the old context is stale, because tool results are days old, the codebase changed a lot or the investigation took another direction, resuming injects outdated data that the model reasons over.</li>
     <li>The more reliable practice is to start a new session and inject a structured summary of the relevant conclusions from the previous one, preserving the knowledge without carrying the stale artifacts.</li>
-    <li>Decision rule: earlier context still valid is --resume, with a note about the specific file changes; stale tool results or a heavily changed codebase is a new session with a structured summary; divergent paths from the same baseline is fork_session.</li>
+    <li>Decision rule: earlier context still valid → --resume, with a note about the specific file changes; stale tool results or a heavily changed codebase → a new session with a structured summary; divergent paths from the same baseline → fork_session.</li>
   </ul>
   <ul class="assert pt-block pt">
     <li>O Claude Code persiste sessões nomeadas, e a prova cobra três operações.</li>
-    <li>--resume com o nome da sessão continua uma conversa anterior específica, como uma investigação nomeada que atravessa vários dias, e serve quando o contexto anterior ainda é majoritariamente válido.</li>
-    <li>Se arquivos mudaram desde a sessão original, informe o agente sobre as mudanças específicas ao retomar, o que permite re-análise direcionada em vez de re-exploração completa e evita que o agente raciocine sobre tool results velhos.</li>
-    <li>fork_session cria ramificações independentes a partir de uma baseline de análise compartilhada, por exemplo para comparar duas estratégias de teste ou dois planos de refatoração sem que um contamine o contexto do outro.</li>
+    <li>--resume com o nome da sessão continua uma conversa anterior específica, como uma investigação nomeada que atravessa vários dias (claude --resume investigacao-checkout), e serve quando o contexto anterior ainda é majoritariamente válido.</li>
+    <li>Se arquivos mudaram desde a sessão original, informe o agente sobre as mudanças específicas ao retomar, como "os arquivos X e Y mudaram desde ontem; re-analise-os", o que permite re-análise direcionada em vez de re-exploração completa e evita que o agente raciocine sobre tool results velhos.</li>
+    <li>fork_session cria ramificações independentes a partir de uma baseline de análise compartilhada: você já fez a análise do codebase uma vez e quer explorar duas abordagens divergentes, por exemplo para comparar duas estratégias de teste ou dois planos de refatoração sem que um contamine o contexto do outro.</li>
     <li>O fork herda a baseline, e daí em diante cada branch evolui isolado.</li>
     <li>Quando o contexto antigo está stale, porque os tool results são de dias atrás, o codebase mudou muito ou a investigação tomou outro rumo, retomar injeta dados desatualizados sobre os quais o modelo raciocina.</li>
     <li>A prática mais confiável é iniciar uma sessão nova e injetar um resumo estruturado das conclusões relevantes da anterior, preservando o conhecimento sem carregar os artefatos podres.</li>
-    <li>Regra de decisão: contexto anterior ainda válido é --resume, avisando das mudanças pontuais em arquivos; tool results stale ou codebase muito mudado é sessão nova com resumo estruturado; caminhos divergentes da mesma baseline é fork_session.</li>
+    <li>Regra de decisão: contexto anterior ainda válido → --resume, avisando das mudanças pontuais em arquivos; tool results stale ou codebase muito mudado → sessão nova com resumo estruturado; caminhos divergentes da mesma baseline → fork_session.</li>
   </ul>
 </section>
 
@@ -239,7 +241,7 @@
     <li>The number-one distractor in this block is the cosmetic prompt patch: the stem describes a business-rule violation in production, such as a skipped step or a refund above the limit, and the options offer strengthening the system prompt, adding few-shot examples or making the instruction more emphatic.</li>
     <li>All of that is probabilistic; the right answer is always the one that moves the rule into deterministic code, such as a hook, a prerequisite gate or an interception.</li>
     <li>A deterministic business rule, checkable in code, such as a mandatory step or a value limit, with a financial or compliance consequence cannot live in the prompt and requires programmatic enforcement.</li>
-    <li>A judgment decision, such as when to escalate or which tool to choose, is different: it is fixed first with explicit criteria and few-shot examples in the prompt, as in official question 3 (Lesson 12), because a hook does not know what a policy exception is.</li>
+    <li>A judgment decision, such as when to escalate or which tool to choose, is different: it is fixed first with explicit criteria and few-shot examples in the prompt, as in official sample question 3 (Lesson 12), because a hook does not know what a policy exception is.</li>
   </ul>
   <ul class="assert pt-block pt">
     <li>O distrator número 1 deste bloco é o remendo cosmético via prompt: o stem descreve uma violação de regra de negócio em produção, como uma etapa pulada ou um reembolso acima do limite, e as opções oferecem fortalecer o system prompt, adicionar exemplos few-shot ou deixar a instrução mais enfática.</li>
