@@ -292,7 +292,7 @@ moram em arquivo do repositório, não no prompt do job (2.5).</em></p>
 <div class="card" style="border-left: 3px solid var(--accent2);">
   <strong>🧭 Prova × produto atual</strong> <span style="color:var(--muted);font-size:12.5px">(documentação do Claude Code conferida em 15/11/2026)</span>
   <ul>
-    <li><strong><code>bypassPermissions</code> não desliga tudo:</strong> as regras <code>deny</code> e o <code>deny</code> de um hook <code>PreToolUse</code> continuam bloqueando nesse modo, e uma regra <code>ask</code> explícita continua perguntando; já as regras <code>allow</code> não têm efeito, porque nada mais pede aprovação. Na prova vale o papel do modo: só em container ou VM isolados.</li>
+    <li><strong><code>bypassPermissions</code> não desliga tudo:</strong> as regras <code>deny</code> e o <code>deny</code> de um hook <code>PreToolUse</code> continuam bloqueando nesse modo, e uma regra <code>ask</code> explícita continua perguntando; já as regras <code>allow</code> não têm efeito, porque o modo já aprova sem perguntar. Na prova vale o papel do modo: só em container ou VM isolados.</li>
     <li>Com <code>--json-schema</code>, um resultado válido vem no campo <code>structured_output</code> do JSON de saída (só no modo <code>-p</code>); se a execução não produzir saída válida, o campo pode não existir.</li>
     <li><code>manual</code> é aceito como alias de <code>default</code> em <code>--permission-mode</code> (v2.1.200+).</li>
     <li>No Agent SDK, a parada por orçamento aparece como resultado com subtype <code>error_max_budget_usd</code>.</li>

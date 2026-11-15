@@ -193,7 +193,7 @@ carregada por relevância não vira orientação <em>always-on</em> como o CLAUD
   <tr><td>Mudar a autonomia e a aprovação gerais da sessão (parar de pedir aprovação a cada edição, só planejar)</td><td>Permission mode da sessão (a Aula 08 enumera os modos)</td></tr>
   <tr><td>Bloquear sempre um comando ou um arquivo (ex.: o <code>.env</code>, a pasta <code>secrets/</code>)</td><td>Regra <code>deny</code> em <code>permissions</code> no <code>.claude/settings.json</code> do projeto (versionado)</td></tr>
   <tr><td>Proibir algo só sob uma condição (só em produção, só acima de um valor) ou reescrever a chamada antes de ela rodar</td><td>Hook <code>PreToolUse</code> com lógica</td></tr>
-  <tr><td>Impedir que <em>qualquer</em> processo de shell, inclusive um script, acesse um caminho ou a rede</td><td>Sandbox ligado, com <code>allowUnsandboxedCommands: false</code> para o Claude não repetir o comando fora dele; recebe também as regras <code>Read</code>/<code>Edit</code> deny (produto; fora do guia da prova)</td></tr>
+  <tr><td>Impedir que <em>qualquer</em> processo de shell, inclusive um script, acesse um caminho ou a rede</td><td>Sandbox ligado, com <code>allowUnsandboxedCommands: false</code> para o Claude não repetir o comando fora dele e <code>failIfUnavailable: true</code> para não rodar sem sandbox se ele não subir; recebe também as regras <code>Read</code>/<code>Edit</code> deny (produto; fora do guia da prova)</td></tr>
 </table>
 <p>As <strong>regras de permissão</strong> ficam em <code>permissions</code> (<code>allow</code>, <code>ask</code>, <code>deny</code>) nos arquivos
 de settings e são aplicadas pelo próprio Claude Code, antes de a tool rodar — não dependem do modelo seguir instrução:</p>
@@ -246,7 +246,7 @@ alvo é fixo e cabe num padrão (o <code>.env</code>, <code>terraform apply</cod
 condição (só em produção, só acima de um valor) ou quando é melhor reescrever a chamada. O curso oficial <em>Claude Code in Action</em>
 usa hook até para "never push to main": os dois são garantia, e o que nunca é garantia é texto. O deny também tem alcance: cobre as
 tools nativas e os comandos que o Claude Code reconhece (<code>cat</code>, <code>head</code>, redirecionamentos), mas não um script que abre o
-arquivo por conta própria nem um <code>grep -r</code> na pasta. Para isso existe o sandbox, que restringe os comandos de shell e os processos
+arquivo por conta própria nem um <code>grep -r</code> na pasta. Para isso existe o sandbox (produto; fora do guia), que restringe os comandos de shell e os processos
 filhos no nível do sistema operacional; por padrão ele deixa ler quase tudo e bloqueia o <code>.env</code> quando há uma regra <code>Read</code> deny.
 Já estilo e nomes são orientação (CLAUDE.md ou rule) e só viram hook de comando quando existe
 um critério executável, como um formatter que roda ou um validador que bloqueia.</em></p>

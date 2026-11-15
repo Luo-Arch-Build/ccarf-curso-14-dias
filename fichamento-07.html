@@ -190,7 +190,7 @@
     <li>Changing the session's overall autonomy and approval, such as stopping approval prompts for every edit or only planning, is the session's permission mode, enumerated in Lesson 8.</li>
     <li>Always blocking a command or a file, such as the .env file or the secrets/ folder, is a deny rule under permissions in the project's versioned .claude/settings.json.</li>
     <li>A prohibition that holds only under a condition, such as only in production or only above a value, or a call that should be rewritten before it runs, is a PreToolUse hook with logic.</li>
-    <li>Stopping any shell process, including a script, from reaching a path or the network is the sandbox, turned on and with allowUnsandboxedCommands set to false so Claude cannot rerun the command outside it, which also takes in the Read and Edit deny rules; it is a product feature outside the exam guide.</li>
+    <li>Stopping any shell process, including a script, from reaching a path or the network is the sandbox, turned on and with allowUnsandboxedCommands set to false so Claude cannot rerun the command outside it and failIfUnavailable set to true so commands do not run unsandboxed if it cannot start, which also takes in the Read and Edit deny rules; it is a product feature outside the exam guide.</li>
   </ul>
   <ul class="assert pt-block pt">
     <li>A prova gosta de listar várias necessidades e pedir o mecanismo de cada uma; o critério é sempre quando a orientação se aplica e quem deve recebê-la.</li>
@@ -203,7 +203,7 @@
     <li>Mudar a autonomia e a aprovação gerais da sessão, como parar de pedir aprovação a cada edição ou só planejar, é o permission mode da sessão, que a Aula 08 enumera.</li>
     <li>Bloquear sempre um comando ou um arquivo, como o .env ou a pasta secrets/, é uma regra deny em permissions no .claude/settings.json do projeto, versionado.</li>
     <li>Uma proibição que só vale sob uma condição, como só em produção ou só acima de um valor, ou uma chamada que deve ser reescrita antes de rodar, é um hook PreToolUse com lógica.</li>
-    <li>Impedir que qualquer processo de shell, inclusive um script, acesse um caminho ou a rede é o sandbox, ligado e com allowUnsandboxedCommands em false para o Claude não repetir o comando fora dele, que também recebe as regras Read e Edit deny; é recurso do produto, fora do guia da prova.</li>
+    <li>Impedir que qualquer processo de shell, inclusive um script, acesse um caminho ou a rede é o sandbox, ligado e com allowUnsandboxedCommands em false para o Claude não repetir o comando fora dele e failIfUnavailable em true para não rodar sem sandbox se ele não subir, que também recebe as regras Read e Edit deny; é recurso do produto, fora do guia da prova.</li>
   </ul>
 </section>
 

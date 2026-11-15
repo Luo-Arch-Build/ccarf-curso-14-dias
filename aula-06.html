@@ -116,8 +116,8 @@
 </ul>
 <p>O guia cobra esses três níveis. O produto tem mais dois arquivos que somam ao mesmo contexto, e o curso oficial
 <em>Claude Code in Action</em> os cita: o <strong>managed policy</strong> (<code>CLAUDE.md</code> que a TI da organização instala na máquina,
-vale para todos e não pode ser excluído) e o <strong><code>CLAUDE.local.md</code></strong> na raiz do projeto (notas pessoais
-daquele repositório, fora do git). Os da pasta de trabalho e das pastas acima dela carregam juntos no início da sessão,
+vale para todos e não pode ser excluído pelo <code>claudeMdExcludes</code>) e o <strong><code>CLAUDE.local.md</code></strong> na raiz do projeto (notas pessoais
+daquele repositório, que você põe no <code>.gitignore</code>). Os da pasta de trabalho e das pastas acima dela carregam juntos no início da sessão,
 sem um sobrescrever o outro.</p>
 <pre><code>~/.claude/CLAUDE.md              # pessoal, NÃO vai pro git, só vale pra você
 meu-repo/
