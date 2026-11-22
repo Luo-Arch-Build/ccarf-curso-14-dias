@@ -1,0 +1,327 @@
+{
+  "lesson": "04",
+  "title_en": "Tool design: descriptions, distribution and tool_choice",
+  "title_pt": "Design de tools: descrições, distribuição e tool_choice",
+  "domain_en": "Domain 2 · Tool Design & MCP Integration (18%)",
+  "sections": [
+    {
+      "id": "description-is-the-selection-mechanism",
+      "heading_en": "The tool description is the selection mechanism (TS 2.1)",
+      "heading_pt": "A descrição da tool é o mecanismo de seleção (TS 2.1)",
+      "assertions_en": [
+        "When the model decides which tool to call, it does not run code or query an index: it reads the descriptions you declared and reasons about them.",
+        "A description is documentation that the model consumes at decision time.",
+        "The guide is direct: minimal descriptions lead to unreliable selection among similar tools.",
+        "The classic exam scenario is two similar tools, get_customer and lookup_order, both with one-line descriptions, \"Retrieves customer information\" and \"Retrieves order details\", and similar identifiers.",
+        "The result is that the user asks \"check my order #12345\" and the agent calls the wrong tool.",
+        "The cheap, high-impact first-step fix is to expand the descriptions."
+      ],
+      "assertions_pt": [
+        "Quando o modelo decide qual tool chamar, ele não executa código nem consulta um índice: ele lê as descrições que você declarou e raciocina sobre elas.",
+        "Descrição é documentação que o modelo consome em tempo de decisão.",
+        "O guide é direto: descrições mínimas levam a seleção não confiável entre tools similares.",
+        "O cenário clássico de prova são duas tools parecidas, get_customer e lookup_order, ambas com descrições de uma linha, \"Retrieves customer information\" e \"Retrieves order details\", e identificadores parecidos.",
+        "O resultado é que o usuário pergunta \"check my order #12345\" e o agente chama a tool errada.",
+        "A correção de primeiro passo, barata e de alto impacto, é expandir as descrições."
+      ]
+    },
+    {
+      "id": "anatomy-of-a-good-description",
+      "heading_en": "Anatomy of a good description (TS 2.1)",
+      "heading_pt": "Anatomia de uma boa descrição (TS 2.1)",
+      "assertions_en": [
+        "Purpose: what the tool does, in domain-specific language.",
+        "Input formats: what it accepts, for example an order ID in the format ORD-XXXXX, not an email or a CPF.",
+        "Example queries: user phrases that should route to it, such as \"where is my package?\".",
+        "Edge cases: what happens with a nonexistent ID, an old order or multiple results.",
+        "Boundaries: when to use this tool versus the similar tool, for example \"use for order status; for customer profile data, use get_customer\".",
+        "The improved lookup_order description states its purpose, the ORD-XXXXX input, example queries, that it returns \"not found\" for unknown or archived orders older than two years, and that profile data such as name, address and plan belongs to get_customer."
+      ],
+      "assertions_pt": [
+        "Propósito: o que a tool faz, em linguagem específica do domínio.",
+        "Formatos de input: o que ela aceita, por exemplo um order ID no formato ORD-XXXXX, não email nem CPF.",
+        "Exemplos de queries: frases de usuário que devem rotear para ela, como \"where is my package?\".",
+        "Edge cases: o que acontece com ID inexistente, pedido antigo ou múltiplos resultados.",
+        "Fronteiras (boundaries): quando usar esta tool versus a tool similar, por exemplo \"use para status de pedido; para dados cadastrais do cliente, use get_customer\".",
+        "A descrição melhorada de lookup_order diz o propósito, o input ORD-XXXXX, exemplos de queries, que devolve \"not found\" para pedidos desconhecidos ou arquivados com mais de dois anos, e que dados de perfil como nome, endereço e plano são da get_customer."
+      ]
+    },
+    {
+      "id": "overlap-rename-split",
+      "heading_en": "Overlapping descriptions: rename and split (TS 2.1)",
+      "heading_pt": "Descrições sobrepostas: renomear e dividir (TS 2.1)",
+      "assertions_en": [
+        "If analyze_content and analyze_document have nearly identical descriptions, the model cannot tell them apart and chooses inconsistently; the production symptom is misrouting.",
+        "The first fix from the guide is to rename and specialize: analyze_content becomes extract_web_results, with a web-specific description.",
+        "The tool name is also a selection signal.",
+        "The second fix is to split the generic tool: a do-everything analyze_document becomes tools with defined input and output contracts, such as extract_data_points, summarize_content and verify_claim_against_source.",
+        "Each resulting tool has a single, unmistakable purpose."
+      ],
+      "assertions_pt": [
+        "Se analyze_content e analyze_document têm descrições quase idênticas, o modelo não tem como diferenciá-las e escolhe de forma inconsistente; o sintoma em produção é misrouting.",
+        "A primeira correção do guide é renomear e especializar: analyze_content vira extract_web_results, com descrição específica de web.",
+        "O nome da tool também é sinal de seleção.",
+        "A segunda correção é dividir a tool genérica: um analyze_document faz-tudo vira tools com contratos definidos de input e output, como extract_data_points, summarize_content e verify_claim_against_source.",
+        "Cada tool resultante tem um propósito único e inconfundível."
+      ]
+    },
+    {
+      "id": "keyword-system-prompt-hijack",
+      "heading_en": "A keyword-sensitive system prompt hijacks selection (TS 2.1)",
+      "heading_pt": "System prompt sensível a palavra-chave sequestra a seleção (TS 2.1)",
+      "assertions_en": [
+        "Excellent descriptions can be overridden by fragile system prompt instructions.",
+        "The guide states only the principle; the lesson's example is illustrative.",
+        "An instruction such as \"for anything order-related, use lookup_order\" makes the agent call lookup_order even when the user writes \"in order to reset my password\".",
+        "The instruction reacts to the literal keyword, not to the intent.",
+        "The fix is to review the system prompt and rewrite the instruction in terms of intent, such as \"use lookup_order for questions about order status\", not keywords.",
+        "When the stem says the descriptions are well written and the agent still fails systematically on a keyword, suspect the system prompt."
+      ],
+      "assertions_pt": [
+        "Descrições ótimas podem ser sobrescritas por instruções frágeis do system prompt.",
+        "O guide enuncia só o princípio; o exemplo da aula é ilustrativo.",
+        "Uma instrução como \"for anything order-related, use lookup_order\" faz o agente chamar lookup_order até quando o usuário escreve \"in order to reset my password\".",
+        "A instrução reage à keyword literal, não à intenção.",
+        "A correção é revisar o system prompt e reescrever a instrução descrevendo intenção, como \"use lookup_order para perguntas sobre status de pedidos\", não palavras-chave.",
+        "Quando o stem diz que as descrições estão bem escritas e o agente ainda erra de forma sistemática numa keyword, suspeite do system prompt."
+      ]
+    },
+    {
+      "id": "fewer-tools-scoped-access",
+      "heading_en": "Fewer tools per agent and scoped tool access (TS 2.3)",
+      "heading_pt": "Menos tools por agente e scoped tool access (TS 2.3)",
+      "assertions_en": [
+        "Giving an agent 18 tools degrades selection reliability: each extra tool increases decision complexity and the chance of semantic overlap.",
+        "The guide illustrates with 18 tools instead of 4 to 5, but the exam tests the principle, each agent only with the tools of its role, not a numeric quota.",
+        "Agents with tools outside their specialization tend to misuse them, for example the synthesis agent trying to do web search on its own.",
+        "Scoped tool access means each subagent receives only the tools of its role."
+      ],
+      "assertions_pt": [
+        "Dar 18 tools a um agente degrada a confiabilidade da seleção: cada tool a mais aumenta a complexidade da decisão e a chance de overlap semântico.",
+        "O guide ilustra com 18 tools em vez de 4 a 5, mas a prova cobra o princípio, cada agente só com as tools do seu papel, não uma cota numérica.",
+        "Agentes com tools fora da especialização tendem a misusá-las, por exemplo o synthesis agent tentando fazer web search sozinho.",
+        "Scoped tool access significa que cada subagente recebe apenas as tools do seu papel."
+      ]
+    },
+    {
+      "id": "constrained-alternative-and-cross-role",
+      "heading_en": "Constrained alternatives and scoped cross-role tools (TS 2.3)",
+      "heading_pt": "Alternativas restritas e tools cross-role com escopo (TS 2.3)",
+      "assertions_en": [
+        "Replace generic tools with constrained versions: swap fetch_url, which opens any URL, for load_document, whose handler validates that the target is an allowed document and rejects the rest.",
+        "The deterministic restriction then lives in the executed contract of the tool: the agent cannot use it outside its role, no matter how far its reasoning pushes it that way.",
+        "Name, description and input schema help guide and validate the shape of the call but, on their own, do not enforce that semantic target policy.",
+        "Rule of thumb: if an agent uses a generic tool outside its specialization, narrow the tool and make the handler enforce the restriction; do not ask nicely in the prompt.",
+        "If the synthesis agent frequently needs to check simple facts, such as dates, names and statistics, give it a scoped verify_fact and keep routing complex verifications to the web-search agent through the coordinator.",
+        "This is the least privilege principle: only what is needed for the common case, without opening the whole arsenal."
+      ],
+      "assertions_pt": [
+        "Substitua tools genéricas por versões restritas: troque fetch_url, que abre qualquer URL, por load_document, cujo handler valida se o destino é um documento permitido e rejeita o resto.",
+        "A restrição determinística passa a morar no contrato executado da tool: o agente não consegue usá-la fora do papel dele, por mais que o raciocínio o leve para lá.",
+        "Nome, descrição e input schema ajudam a orientar e validar a forma da chamada, mas, isoladamente, não impõem essa política semântica de destino.",
+        "Regra de bolso: se um agente usa uma tool genérica fora da especialização dele, estreite a tool e faça o handler aplicar a restrição; não peça por favor no prompt.",
+        "Se o synthesis agent precisa checar fatos simples com frequência, como datas, nomes e estatísticas, dê a ele uma verify_fact escopada e continue roteando verificações complexas para o web-search agent via coordinator.",
+        "É o princípio do least privilege: só o necessário para o caso comum, sem abrir o arsenal inteiro."
+      ]
+    },
+    {
+      "id": "tool-choice",
+      "heading_en": "tool_choice: auto, any and forced (TS 2.3)",
+      "heading_pt": "tool_choice: auto, any e forced (TS 2.3)",
+      "assertions_en": [
+        "With \"auto\", the default, the model may call a tool or answer with text.",
+        "With \"any\", the model must call some tool, with no conversational answer.",
+        "With forced selection, {\"type\": \"tool\", \"name\": \"extract_metadata\"}, the model must call that specific tool.",
+        "Use \"auto\" when the tool is optional and an answer from the context already available is also acceptable.",
+        "Use \"any\" when you must guarantee a tool call but more than one available tool would be suitable, for example an importer that may call any compatible parser, where free text would break the pipeline.",
+        "Use forced when that turn's response must request one specific tool, for example extract_metadata on the first request; the following steps still depend on execution and validation by the application.",
+        "Key exam point: when the requirement is to guarantee the model emits a tool_use, for some tool or a specific one in that turn, the solution is tool_choice, not an imperative sentence in the system prompt such as \"ALWAYS call a tool\", which remains probabilistic.",
+        "A mandatory order between tool executions across the workflow, and business rules such as process_refund only after get_customer returns a verified ID or a refund above the limit, require a prerequisite gate in the application or orchestrator code (lesson 03, TS 1.4 and 1.5)."
+      ],
+      "assertions_pt": [
+        "Com \"auto\", o default, o modelo pode chamar tool ou responder com texto.",
+        "Com \"any\", o modelo é obrigado a chamar alguma tool, sem resposta conversacional.",
+        "Com forced selection, {\"type\": \"tool\", \"name\": \"extract_metadata\"}, o modelo é obrigado a chamar essa tool específica.",
+        "Use \"auto\" quando a tool for opcional e uma resposta com o contexto já disponível também for aceitável.",
+        "Use \"any\" quando você precisa garantir uma chamada de tool, mas mais de uma tool disponível seria adequada, por exemplo um importador que pode chamar qualquer parser compatível, em que texto livre quebraria o pipeline.",
+        "Use forced quando a resposta daquele turno precisa solicitar uma tool específica, por exemplo extract_metadata na primeira requisição; os passos seguintes continuam dependendo de execução e validação pela aplicação.",
+        "Ponto-chave de prova: quando o requisito é garantir que o modelo emita um tool_use, para alguma tool ou uma específica naquele turno, a solução é tool_choice, não frase imperativa no system prompt como \"ALWAYS call a tool\", que continua probabilística.",
+        "Ordem obrigatória entre execuções de tools ao longo do workflow e regra de negócio, como process_refund só depois de get_customer devolver um ID verificado ou refund acima do limite, pedem um prerequisite gate no código da aplicação ou do orquestrador (aula 03, TS 1.4 e 1.5)."
+      ]
+    },
+    {
+      "id": "client-tool-loop",
+      "heading_en": "Client tools: from the emitted tool_use to the executed order (TS 2.3)",
+      "heading_pt": "Client tools: da emissão do tool_use à ordem executada (TS 2.3)",
+      "assertions_en": [
+        "With client tools, the model requests the call, but your application executes the handler.",
+        "A tool_use is not a completed execution, and a tool_result should not be treated as proof of success without validation.",
+        "tool_use: the Messages API returns a block with id, name and input; with forced selection, that response requests the chosen tool instead of text or another tool.",
+        "The application executes: your code dispatches the tool_use to the matching handler, catches exceptions and timeouts, and normalizes the outcome; the model does not run that code.",
+        "tool_result: the application keeps the assistant message with the tool_use and appends the result with the same tool_use_id for the next request; a failure can be signaled with is_error and/or a structured outcome.",
+        "Validation: before releasing the next step, the orchestrator checks the handler's real status, the result's format and the business prerequisite data, for example a completed extraction and a present, valid document_id.",
+        "Next step: only after that gate does the workflow mark the step as done and enable or expose enrich_document in a later turn."
+      ],
+      "assertions_pt": [
+        "Com client tools, o modelo solicita a chamada, mas quem executa o handler é a sua aplicação.",
+        "Um tool_use não é uma execução concluída, e um tool_result não deve ser tratado como prova de sucesso sem validação.",
+        "tool_use: a Messages API devolve um bloco com id, name e input; com forced selection, essa resposta solicita a tool escolhida em vez de texto ou outra tool.",
+        "A aplicação executa: seu código despacha o tool_use para o handler correspondente, captura exceções e timeout e normaliza o outcome; o modelo não executa esse código.",
+        "tool_result: a aplicação preserva a mensagem assistant com o tool_use e acrescenta o resultado com o mesmo tool_use_id para a próxima requisição; falha pode ser indicada com is_error e/ou um outcome estruturado.",
+        "Validação: antes de liberar a etapa seguinte, o orquestrador confere o status real do handler, o formato do resultado e os dados pré-requisitos de negócio, por exemplo extração concluída e um document_id presente e válido.",
+        "Próxima etapa: somente após esse gate o workflow marca a etapa como concluída e habilita ou expõe enrich_document em um turno posterior."
+      ]
+    },
+    {
+      "id": "failure-path-and-two-guarantees",
+      "heading_en": "Failure path and the two different guarantees (TS 2.3)",
+      "heading_pt": "Caminho de falha e as duas garantias diferentes (TS 2.3)",
+      "assertions_en": [
+        "An exception, a timeout, is_error, an invalid result or a missing document_id keep enrichment blocked.",
+        "The application returns or records the failure tool_result where appropriate and follows retry, recovery or escalation; it only reevaluates the release after a new valid execution.",
+        "The workflow must not advance just because the model emitted the right tool.",
+        "In the lesson's pseudocode, enrichment starts disabled and is enabled only after a success status and valid metadata with a document_id.",
+        "tool_choice controls the emission of the request in the model's response; the prerequisite gate guarantees the order the workflow actually executes.",
+        "Forced selection alone neither proves success nor stops the application from running another step out of order.",
+        "Claude Code hooks belong to that product's events and permissions; they are not a generic Messages API mechanism.",
+        "In an application with client tools, the gate belongs to the code that receives the responses and executes the handlers."
+      ],
+      "assertions_pt": [
+        "Exceção, timeout, is_error, resultado inválido ou document_id ausente mantêm o enrichment bloqueado.",
+        "A aplicação devolve ou registra o tool_result de falha quando couber e segue retry, recuperação ou escalonamento; ela só reavalia a liberação depois de uma nova execução válida.",
+        "O workflow não deve avançar apenas porque o modelo emitiu a tool certa.",
+        "No pseudocódigo da aula, o enrichment começa desabilitado e só é habilitado depois de status de sucesso e metadados válidos com document_id.",
+        "tool_choice controla a emissão da solicitação na resposta do modelo; o prerequisite gate garante a ordem efetivamente executada pelo workflow.",
+        "Forced selection sozinha não prova sucesso nem impede que a aplicação execute outra etapa fora de ordem.",
+        "Hooks do Claude Code pertencem aos eventos e permissões desse produto; não são um mecanismo genérico da Messages API.",
+        "Em uma aplicação com client tools, o gate pertence ao código que recebe as respostas e executa os handlers."
+      ]
+    },
+    {
+      "id": "role-tool-matrix",
+      "heading_en": "Integrated exercise: role, tools, turns and gate (TS 2.3)",
+      "heading_pt": "Exercício integrado: papel, tools, turnos e gate (TS 2.3)",
+      "assertions_en": [
+        "The minimum expected matrix is: search receives search_web; document analysis receives load_document, extract_metadata and enrich_document, the last one only after the gate; synthesis receives a scoped verify_fact, with complex investigation through the coordinator.",
+        "The generic fetch_url should not be distributed without need and without enforcement in the handler.",
+        "For the turns: turn A, where synthesis may answer from evidence or optionally call verify_fact, uses \"auto\".",
+        "Turn B, where an import must call parse_pdf or parse_csv and never return text, uses \"any\", because both parsers are acceptable.",
+        "Turn C, where a new document must first request exactly extract_metadata, uses forced extract_metadata plus the application's gate.",
+        "The pseudocode must validate success and data, not just the emission of the tool_use."
+      ],
+      "assertions_pt": [
+        "A matriz mínima esperada é: search recebe search_web; análise de documentos recebe load_document, extract_metadata e enrich_document, esta última só após o gate; síntese recebe verify_fact escopada, com investigação complexa via coordinator.",
+        "A genérica fetch_url não deve ser distribuída sem necessidade e sem enforcement no handler.",
+        "Nos turnos: o turno A, em que a síntese pode responder com evidências ou opcionalmente chamar verify_fact, usa \"auto\".",
+        "O turno B, em que uma importação deve chamar parse_pdf ou parse_csv e nunca devolver texto, usa \"any\", porque os dois parsers são aceitáveis.",
+        "O turno C, em que um documento novo deve solicitar exatamente extract_metadata primeiro, usa forced extract_metadata mais o gate da aplicação.",
+        "O pseudocódigo precisa validar sucesso e dados, não apenas a emissão do tool_use."
+      ]
+    },
+    {
+      "id": "pegadinha-do-dia",
+      "heading_en": "Trap of the day",
+      "heading_pt": "Pegadinha do dia",
+      "assertions_en": [
+        "Misrouting questions almost always offer the same three distractors: few-shot examples in the system prompt, an expensive patch when the cause is the minimal description; a keyword routing layer, over-engineering that ignores the model's language ability; and merging the tools into a single generic one, too much effort for a first step.",
+        "When the requirement is deterministic, \"the model MUST call a tool\", the classic distractor is the imperative sentence in the prompt.",
+        "tool_choice guarantees the required emission, but not the executed order nor success.",
+        "A minimal or overlapping description is fixed in the description, as the first step.",
+        "A keyword instruction in the system prompt is fixed by rewriting it in terms of intent.",
+        "A genuinely ambiguous request, with descriptions already good, calls for 2 to 4 few-shot examples showing the reasoning behind the choice (TS 4.2, lesson 09).",
+        "Emission of tool_use is enforced with tool_choice; the real sequence and prerequisites are enforced with a gate in the application; the load_document restriction requires a handler that validates and rejects."
+      ],
+      "assertions_pt": [
+        "Questões de misrouting quase sempre oferecem os mesmos três distratores: few-shot examples no system prompt, remendo caro quando a causa é a descrição mínima; routing layer por keywords, over-engineering que ignora a capacidade de linguagem do modelo; e fundir as tools numa genérica única, esforço grande demais para um primeiro passo.",
+        "Quando o requisito é determinístico, \"the model MUST call a tool\", o distrator clássico é a frase imperativa no prompt.",
+        "tool_choice garante a emissão exigida, mas não a ordem executada nem o sucesso.",
+        "Descrição mínima ou sobreposta se conserta na descrição, como primeiro passo.",
+        "Instrução por palavra-chave no system prompt se conserta reescrevendo-a por intenção.",
+        "Pedido genuinamente ambíguo, com descrições já boas, pede 2 a 4 few-shot com o raciocínio da escolha (TS 4.2, aula 09).",
+        "Emissão de tool_use se impõe com tool_choice; sequência real e pré-requisitos se impõem com gate na aplicação; a restrição de load_document exige handler que valida e rejeita."
+      ]
+    }
+  ],
+  "glossary": [
+    {
+      "term_en": "tool description",
+      "meaning_en": "The primary mechanism the model uses for tool selection.",
+      "meaning_pt": "O mecanismo primário que o modelo usa para escolher a tool."
+    },
+    {
+      "term_en": "misrouting",
+      "meaning_en": "The wrong tool is chosen, typically caused by minimal or overlapping descriptions.",
+      "meaning_pt": "A tool errada é escolhida, tipicamente por descrições mínimas ou sobrepostas."
+    },
+    {
+      "term_en": "boundary",
+      "meaning_en": "The part of a description that says when to use this tool versus a similar one.",
+      "meaning_pt": "Fronteira da tool: a parte da descrição que diz quando usá-la versus a alternativa similar."
+    },
+    {
+      "term_en": "edge case",
+      "meaning_en": "A boundary situation, such as a nonexistent ID, an old order or multiple results.",
+      "meaning_pt": "Caso de borda, como ID inexistente, pedido antigo ou múltiplos resultados."
+    },
+    {
+      "term_en": "functional overlap",
+      "meaning_en": "Two or more tools whose purposes and descriptions cannot be told apart.",
+      "meaning_pt": "Sobreposição funcional: tools cujos propósitos e descrições não se distinguem."
+    },
+    {
+      "term_en": "keyword-sensitive instruction",
+      "meaning_en": "A system prompt instruction that reacts to a literal word and creates unintended tool associations.",
+      "meaning_pt": "Instrução do system prompt que reage a uma palavra literal e cria associações de tool não intencionais."
+    },
+    {
+      "term_en": "scoped tool access",
+      "meaning_en": "Each subagent's tool set is restricted to those relevant to its role.",
+      "meaning_pt": "O conjunto de tools de cada subagente fica restrito ao seu papel."
+    },
+    {
+      "term_en": "least privilege",
+      "meaning_en": "Give an agent only what it needs for the common case.",
+      "meaning_pt": "Menor privilégio: dar ao agente só o necessário para o caso comum."
+    },
+    {
+      "term_en": "cross-role tool",
+      "meaning_en": "A tool shared across roles with a narrow scope, such as a scoped verify_fact for the synthesis agent.",
+      "meaning_pt": "Tool compartilhada entre papéis com escopo estreito, como uma verify_fact escopada para o synthesis agent."
+    },
+    {
+      "term_en": "constrained alternative",
+      "meaning_en": "A narrow contract enforced by the handler, such as load_document replacing fetch_url.",
+      "meaning_pt": "Alternativa restrita: contrato estreito aplicado pelo handler, como load_document no lugar de fetch_url."
+    },
+    {
+      "term_en": "tool_choice",
+      "meaning_en": "The setting that controls tool selection: auto, any or forced.",
+      "meaning_pt": "A configuração que controla a escolha de tool: auto, any ou forced."
+    },
+    {
+      "term_en": "\"auto\" / \"any\"",
+      "meaning_en": "Optional tool with text allowed / some tool required, with several acceptable.",
+      "meaning_pt": "Tool opcional e texto permitido / alguma tool obrigatória, com várias aceitáveis."
+    },
+    {
+      "term_en": "forced tool selection",
+      "meaning_en": "Forces one specific tool; guarantees the requested tool_use, not successful execution or workflow order.",
+      "meaning_pt": "Força uma tool específica; garante o tool_use solicitado, não a execução bem-sucedida nem a ordem do workflow."
+    },
+    {
+      "term_en": "tool_use",
+      "meaning_en": "The call request the model emits; the application executes the client tool.",
+      "meaning_pt": "Solicitação de chamada emitida pelo modelo; a aplicação executa a client tool."
+    },
+    {
+      "term_en": "tool_result",
+      "meaning_en": "The result the application returns to the model, matched by tool_use_id.",
+      "meaning_pt": "Resultado devolvido pela aplicação ao modelo, casado pelo tool_use_id."
+    },
+    {
+      "term_en": "prerequisite gate",
+      "meaning_en": "A barrier that releases the next step only after validating the prerequisites.",
+      "meaning_pt": "Barreira que só libera a próxima etapa após validar os pré-requisitos."
+    }
+  ]
+}

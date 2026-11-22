@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Notes 04 — Tool design: descriptions, distribution and tool_choice · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  .lead { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  section.ficha { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px 20px; margin: 18px 0; border-left: 3px solid var(--accent); }
+  section.ficha > h2 { font-size: 18px; margin: 0 0 4px; border: none; padding: 0; }
+  .ficha-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  ul.assert { margin: 10px 0 0; padding-left: 20px; }
+  ul.assert li { margin: 8px 0; }
+  .ver-traducao { flex: none; background: var(--card2); border: 1px solid var(--border);
+    color: var(--muted); border-radius: 999px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+    white-space: nowrap; transition: border-color .15s, color .15s; }
+  .ver-traducao:hover { color: var(--text); border-color: var(--accent); }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 12px 0 0;
+    display: none; }
+  .pt-block.pt { color: var(--pt); font-size: 13.5px; }
+  section.ficha.show-pt .pt-block { display: block; }
+  ul.assert.pt-block li { margin: 7px 0; }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px;
+    text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.ptm { color: var(--pt); font-size: 13px; }
+  section.ficha.gloss-sec table.gloss td.ptm { display: none; }
+  section.ficha.gloss-sec.show-pt table.gloss td.ptm { display: table-cell; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px;
+    border-top: 1px solid var(--border); font-size: 14px; gap: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / <a href="aula-04.html">Aula 04</a> / Study Notes (EN)</div>
+  <h1>Study Notes 04 — Tool design: descriptions, distribution and tool_choice</h1>
+  <div class="meta">
+    <span class="tag">Domain 2 · Tool Design &amp; MCP Integration (18%)</span>
+    <span class="tag">English · narrated</span>
+  </div>
+  <p class="lead">Factual assertions in English for review. Each section has a translation button that
+  reveals the pt-BR version. The audio narration is English only.</p>
+</header>
+
+<section class="ficha" id="description-is-the-selection-mechanism">
+  <div class="ficha-head">
+    <h2>The tool description is the selection mechanism (TS 2.1)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>A descrição da tool é o mecanismo de seleção (TS 2.1)</strong></div>
+  <ul class="assert">
+    <li>When the model decides which tool to call, it does not run code or query an index: it reads the descriptions you declared and reasons about them.</li>
+    <li>A description is documentation that the model consumes at decision time.</li>
+    <li>The guide is direct: minimal descriptions lead to unreliable selection among similar tools.</li>
+    <li>The classic exam scenario is two similar tools, get_customer and lookup_order, both with one-line descriptions, "Retrieves customer information" and "Retrieves order details", and similar identifiers.</li>
+    <li>The result is that the user asks "check my order #12345" and the agent calls the wrong tool.</li>
+    <li>The cheap, high-impact first-step fix is to expand the descriptions.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Quando o modelo decide qual tool chamar, ele não executa código nem consulta um índice: ele lê as descrições que você declarou e raciocina sobre elas.</li>
+    <li>Descrição é documentação que o modelo consome em tempo de decisão.</li>
+    <li>O guide é direto: descrições mínimas levam a seleção não confiável entre tools similares.</li>
+    <li>O cenário clássico de prova são duas tools parecidas, get_customer e lookup_order, ambas com descrições de uma linha, "Retrieves customer information" e "Retrieves order details", e identificadores parecidos.</li>
+    <li>O resultado é que o usuário pergunta "check my order #12345" e o agente chama a tool errada.</li>
+    <li>A correção de primeiro passo, barata e de alto impacto, é expandir as descrições.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="anatomy-of-a-good-description">
+  <div class="ficha-head">
+    <h2>Anatomy of a good description (TS 2.1)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Anatomia de uma boa descrição (TS 2.1)</strong></div>
+  <ul class="assert">
+    <li>Purpose: what the tool does, in domain-specific language.</li>
+    <li>Input formats: what it accepts, for example an order ID in the format ORD-XXXXX, not an email or a CPF.</li>
+    <li>Example queries: user phrases that should route to it, such as "where is my package?".</li>
+    <li>Edge cases: what happens with a nonexistent ID, an old order or multiple results.</li>
+    <li>Boundaries: when to use this tool versus the similar tool, for example "use for order status; for customer profile data, use get_customer".</li>
+    <li>The improved lookup_order description states its purpose, the ORD-XXXXX input, example queries, that it returns "not found" for unknown or archived orders older than two years, and that profile data such as name, address and plan belongs to get_customer.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Propósito: o que a tool faz, em linguagem específica do domínio.</li>
+    <li>Formatos de input: o que ela aceita, por exemplo um order ID no formato ORD-XXXXX, não email nem CPF.</li>
+    <li>Exemplos de queries: frases de usuário que devem rotear para ela, como "where is my package?".</li>
+    <li>Edge cases: o que acontece com ID inexistente, pedido antigo ou múltiplos resultados.</li>
+    <li>Fronteiras (boundaries): quando usar esta tool versus a tool similar, por exemplo "use para status de pedido; para dados cadastrais do cliente, use get_customer".</li>
+    <li>A descrição melhorada de lookup_order diz o propósito, o input ORD-XXXXX, exemplos de queries, que devolve "not found" para pedidos desconhecidos ou arquivados com mais de dois anos, e que dados de perfil como nome, endereço e plano são da get_customer.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="overlap-rename-split">
+  <div class="ficha-head">
+    <h2>Overlapping descriptions: rename and split (TS 2.1)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Descrições sobrepostas: renomear e dividir (TS 2.1)</strong></div>
+  <ul class="assert">
+    <li>If analyze_content and analyze_document have nearly identical descriptions, the model cannot tell them apart and chooses inconsistently; the production symptom is misrouting.</li>
+    <li>The first fix from the guide is to rename and specialize: analyze_content becomes extract_web_results, with a web-specific description.</li>
+    <li>The tool name is also a selection signal.</li>
+    <li>The second fix is to split the generic tool: a do-everything analyze_document becomes tools with defined input and output contracts, such as extract_data_points, summarize_content and verify_claim_against_source.</li>
+    <li>Each resulting tool has a single, unmistakable purpose.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Se analyze_content e analyze_document têm descrições quase idênticas, o modelo não tem como diferenciá-las e escolhe de forma inconsistente; o sintoma em produção é misrouting.</li>
+    <li>A primeira correção do guide é renomear e especializar: analyze_content vira extract_web_results, com descrição específica de web.</li>
+    <li>O nome da tool também é sinal de seleção.</li>
+    <li>A segunda correção é dividir a tool genérica: um analyze_document faz-tudo vira tools com contratos definidos de input e output, como extract_data_points, summarize_content e verify_claim_against_source.</li>
+    <li>Cada tool resultante tem um propósito único e inconfundível.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="keyword-system-prompt-hijack">
+  <div class="ficha-head">
+    <h2>A keyword-sensitive system prompt hijacks selection (TS 2.1)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>System prompt sensível a palavra-chave sequestra a seleção (TS 2.1)</strong></div>
+  <ul class="assert">
+    <li>Excellent descriptions can be overridden by fragile system prompt instructions.</li>
+    <li>The guide states only the principle; the lesson's example is illustrative.</li>
+    <li>An instruction such as "for anything order-related, use lookup_order" makes the agent call lookup_order even when the user writes "in order to reset my password".</li>
+    <li>The instruction reacts to the literal keyword, not to the intent.</li>
+    <li>The fix is to review the system prompt and rewrite the instruction in terms of intent, such as "use lookup_order for questions about order status", not keywords.</li>
+    <li>When the stem says the descriptions are well written and the agent still fails systematically on a keyword, suspect the system prompt.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Descrições ótimas podem ser sobrescritas por instruções frágeis do system prompt.</li>
+    <li>O guide enuncia só o princípio; o exemplo da aula é ilustrativo.</li>
+    <li>Uma instrução como "for anything order-related, use lookup_order" faz o agente chamar lookup_order até quando o usuário escreve "in order to reset my password".</li>
+    <li>A instrução reage à keyword literal, não à intenção.</li>
+    <li>A correção é revisar o system prompt e reescrever a instrução descrevendo intenção, como "use lookup_order para perguntas sobre status de pedidos", não palavras-chave.</li>
+    <li>Quando o stem diz que as descrições estão bem escritas e o agente ainda erra de forma sistemática numa keyword, suspeite do system prompt.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="fewer-tools-scoped-access">
+  <div class="ficha-head">
+    <h2>Fewer tools per agent and scoped tool access (TS 2.3)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Menos tools por agente e scoped tool access (TS 2.3)</strong></div>
+  <ul class="assert">
+    <li>Giving an agent 18 tools degrades selection reliability: each extra tool increases decision complexity and the chance of semantic overlap.</li>
+    <li>The guide illustrates with 18 tools instead of 4 to 5, but the exam tests the principle, each agent only with the tools of its role, not a numeric quota.</li>
+    <li>Agents with tools outside their specialization tend to misuse them, for example the synthesis agent trying to do web search on its own.</li>
+    <li>Scoped tool access means each subagent receives only the tools of its role.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Dar 18 tools a um agente degrada a confiabilidade da seleção: cada tool a mais aumenta a complexidade da decisão e a chance de overlap semântico.</li>
+    <li>O guide ilustra com 18 tools em vez de 4 a 5, mas a prova cobra o princípio, cada agente só com as tools do seu papel, não uma cota numérica.</li>
+    <li>Agentes com tools fora da especialização tendem a misusá-las, por exemplo o synthesis agent tentando fazer web search sozinho.</li>
+    <li>Scoped tool access significa que cada subagente recebe apenas as tools do seu papel.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="constrained-alternative-and-cross-role">
+  <div class="ficha-head">
+    <h2>Constrained alternatives and scoped cross-role tools (TS 2.3)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Alternativas restritas e tools cross-role com escopo (TS 2.3)</strong></div>
+  <ul class="assert">
+    <li>Replace generic tools with constrained versions: swap fetch_url, which opens any URL, for load_document, whose handler validates that the target is an allowed document and rejects the rest.</li>
+    <li>The deterministic restriction then lives in the executed contract of the tool: the agent cannot use it outside its role, no matter how far its reasoning pushes it that way.</li>
+    <li>Name, description and input schema help guide and validate the shape of the call but, on their own, do not enforce that semantic target policy.</li>
+    <li>Rule of thumb: if an agent uses a generic tool outside its specialization, narrow the tool and make the handler enforce the restriction; do not ask nicely in the prompt.</li>
+    <li>If the synthesis agent frequently needs to check simple facts, such as dates, names and statistics, give it a scoped verify_fact and keep routing complex verifications to the web-search agent through the coordinator.</li>
+    <li>This is the least privilege principle: only what is needed for the common case, without opening the whole arsenal.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Substitua tools genéricas por versões restritas: troque fetch_url, que abre qualquer URL, por load_document, cujo handler valida se o destino é um documento permitido e rejeita o resto.</li>
+    <li>A restrição determinística passa a morar no contrato executado da tool: o agente não consegue usá-la fora do papel dele, por mais que o raciocínio o leve para lá.</li>
+    <li>Nome, descrição e input schema ajudam a orientar e validar a forma da chamada, mas, isoladamente, não impõem essa política semântica de destino.</li>
+    <li>Regra de bolso: se um agente usa uma tool genérica fora da especialização dele, estreite a tool e faça o handler aplicar a restrição; não peça por favor no prompt.</li>
+    <li>Se o synthesis agent precisa checar fatos simples com frequência, como datas, nomes e estatísticas, dê a ele uma verify_fact escopada e continue roteando verificações complexas para o web-search agent via coordinator.</li>
+    <li>É o princípio do least privilege: só o necessário para o caso comum, sem abrir o arsenal inteiro.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="tool-choice">
+  <div class="ficha-head">
+    <h2>tool_choice: auto, any and forced (TS 2.3)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>tool_choice: auto, any e forced (TS 2.3)</strong></div>
+  <ul class="assert">
+    <li>With "auto", the default, the model may call a tool or answer with text.</li>
+    <li>With "any", the model must call some tool, with no conversational answer.</li>
+    <li>With forced selection, {"type": "tool", "name": "extract_metadata"}, the model must call that specific tool.</li>
+    <li>Use "auto" when the tool is optional and an answer from the context already available is also acceptable.</li>
+    <li>Use "any" when you must guarantee a tool call but more than one available tool would be suitable, for example an importer that may call any compatible parser, where free text would break the pipeline.</li>
+    <li>Use forced when that turn's response must request one specific tool, for example extract_metadata on the first request; the following steps still depend on execution and validation by the application.</li>
+    <li>Key exam point: when the requirement is to guarantee the model emits a tool_use, for some tool or a specific one in that turn, the solution is tool_choice, not an imperative sentence in the system prompt such as "ALWAYS call a tool", which remains probabilistic.</li>
+    <li>A mandatory order between tool executions across the workflow, and business rules such as process_refund only after get_customer returns a verified ID or a refund above the limit, require a prerequisite gate in the application or orchestrator code (lesson 03, TS 1.4 and 1.5).</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Com "auto", o default, o modelo pode chamar tool ou responder com texto.</li>
+    <li>Com "any", o modelo é obrigado a chamar alguma tool, sem resposta conversacional.</li>
+    <li>Com forced selection, {"type": "tool", "name": "extract_metadata"}, o modelo é obrigado a chamar essa tool específica.</li>
+    <li>Use "auto" quando a tool for opcional e uma resposta com o contexto já disponível também for aceitável.</li>
+    <li>Use "any" quando você precisa garantir uma chamada de tool, mas mais de uma tool disponível seria adequada, por exemplo um importador que pode chamar qualquer parser compatível, em que texto livre quebraria o pipeline.</li>
+    <li>Use forced quando a resposta daquele turno precisa solicitar uma tool específica, por exemplo extract_metadata na primeira requisição; os passos seguintes continuam dependendo de execução e validação pela aplicação.</li>
+    <li>Ponto-chave de prova: quando o requisito é garantir que o modelo emita um tool_use, para alguma tool ou uma específica naquele turno, a solução é tool_choice, não frase imperativa no system prompt como "ALWAYS call a tool", que continua probabilística.</li>
+    <li>Ordem obrigatória entre execuções de tools ao longo do workflow e regra de negócio, como process_refund só depois de get_customer devolver um ID verificado ou refund acima do limite, pedem um prerequisite gate no código da aplicação ou do orquestrador (aula 03, TS 1.4 e 1.5).</li>
+  </ul>
+</section>
+
+<section class="ficha" id="client-tool-loop">
+  <div class="ficha-head">
+    <h2>Client tools: from the emitted tool_use to the executed order (TS 2.3)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Client tools: da emissão do tool_use à ordem executada (TS 2.3)</strong></div>
+  <ul class="assert">
+    <li>With client tools, the model requests the call, but your application executes the handler.</li>
+    <li>A tool_use is not a completed execution, and a tool_result should not be treated as proof of success without validation.</li>
+    <li>tool_use: the Messages API returns a block with id, name and input; with forced selection, that response requests the chosen tool instead of text or another tool.</li>
+    <li>The application executes: your code dispatches the tool_use to the matching handler, catches exceptions and timeouts, and normalizes the outcome; the model does not run that code.</li>
+    <li>tool_result: the application keeps the assistant message with the tool_use and appends the result with the same tool_use_id for the next request; a failure can be signaled with is_error and/or a structured outcome.</li>
+    <li>Validation: before releasing the next step, the orchestrator checks the handler's real status, the result's format and the business prerequisite data, for example a completed extraction and a present, valid document_id.</li>
+    <li>Next step: only after that gate does the workflow mark the step as done and enable or expose enrich_document in a later turn.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Com client tools, o modelo solicita a chamada, mas quem executa o handler é a sua aplicação.</li>
+    <li>Um tool_use não é uma execução concluída, e um tool_result não deve ser tratado como prova de sucesso sem validação.</li>
+    <li>tool_use: a Messages API devolve um bloco com id, name e input; com forced selection, essa resposta solicita a tool escolhida em vez de texto ou outra tool.</li>
+    <li>A aplicação executa: seu código despacha o tool_use para o handler correspondente, captura exceções e timeout e normaliza o outcome; o modelo não executa esse código.</li>
+    <li>tool_result: a aplicação preserva a mensagem assistant com o tool_use e acrescenta o resultado com o mesmo tool_use_id para a próxima requisição; falha pode ser indicada com is_error e/ou um outcome estruturado.</li>
+    <li>Validação: antes de liberar a etapa seguinte, o orquestrador confere o status real do handler, o formato do resultado e os dados pré-requisitos de negócio, por exemplo extração concluída e um document_id presente e válido.</li>
+    <li>Próxima etapa: somente após esse gate o workflow marca a etapa como concluída e habilita ou expõe enrich_document em um turno posterior.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="failure-path-and-two-guarantees">
+  <div class="ficha-head">
+    <h2>Failure path and the two different guarantees (TS 2.3)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Caminho de falha e as duas garantias diferentes (TS 2.3)</strong></div>
+  <ul class="assert">
+    <li>An exception, a timeout, is_error, an invalid result or a missing document_id keep enrichment blocked.</li>
+    <li>The application returns or records the failure tool_result where appropriate and follows retry, recovery or escalation; it only reevaluates the release after a new valid execution.</li>
+    <li>The workflow must not advance just because the model emitted the right tool.</li>
+    <li>In the lesson's pseudocode, enrichment starts disabled and is enabled only after a success status and valid metadata with a document_id.</li>
+    <li>tool_choice controls the emission of the request in the model's response; the prerequisite gate guarantees the order the workflow actually executes.</li>
+    <li>Forced selection alone neither proves success nor stops the application from running another step out of order.</li>
+    <li>Claude Code hooks belong to that product's events and permissions; they are not a generic Messages API mechanism.</li>
+    <li>In an application with client tools, the gate belongs to the code that receives the responses and executes the handlers.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Exceção, timeout, is_error, resultado inválido ou document_id ausente mantêm o enrichment bloqueado.</li>
+    <li>A aplicação devolve ou registra o tool_result de falha quando couber e segue retry, recuperação ou escalonamento; ela só reavalia a liberação depois de uma nova execução válida.</li>
+    <li>O workflow não deve avançar apenas porque o modelo emitiu a tool certa.</li>
+    <li>No pseudocódigo da aula, o enrichment começa desabilitado e só é habilitado depois de status de sucesso e metadados válidos com document_id.</li>
+    <li>tool_choice controla a emissão da solicitação na resposta do modelo; o prerequisite gate garante a ordem efetivamente executada pelo workflow.</li>
+    <li>Forced selection sozinha não prova sucesso nem impede que a aplicação execute outra etapa fora de ordem.</li>
+    <li>Hooks do Claude Code pertencem aos eventos e permissões desse produto; não são um mecanismo genérico da Messages API.</li>
+    <li>Em uma aplicação com client tools, o gate pertence ao código que recebe as respostas e executa os handlers.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="role-tool-matrix">
+  <div class="ficha-head">
+    <h2>Integrated exercise: role, tools, turns and gate (TS 2.3)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Exercício integrado: papel, tools, turnos e gate (TS 2.3)</strong></div>
+  <ul class="assert">
+    <li>The minimum expected matrix is: search receives search_web; document analysis receives load_document, extract_metadata and enrich_document, the last one only after the gate; synthesis receives a scoped verify_fact, with complex investigation through the coordinator.</li>
+    <li>The generic fetch_url should not be distributed without need and without enforcement in the handler.</li>
+    <li>For the turns: turn A, where synthesis may answer from evidence or optionally call verify_fact, uses "auto".</li>
+    <li>Turn B, where an import must call parse_pdf or parse_csv and never return text, uses "any", because both parsers are acceptable.</li>
+    <li>Turn C, where a new document must first request exactly extract_metadata, uses forced extract_metadata plus the application's gate.</li>
+    <li>The pseudocode must validate success and data, not just the emission of the tool_use.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>A matriz mínima esperada é: search recebe search_web; análise de documentos recebe load_document, extract_metadata e enrich_document, esta última só após o gate; síntese recebe verify_fact escopada, com investigação complexa via coordinator.</li>
+    <li>A genérica fetch_url não deve ser distribuída sem necessidade e sem enforcement no handler.</li>
+    <li>Nos turnos: o turno A, em que a síntese pode responder com evidências ou opcionalmente chamar verify_fact, usa "auto".</li>
+    <li>O turno B, em que uma importação deve chamar parse_pdf ou parse_csv e nunca devolver texto, usa "any", porque os dois parsers são aceitáveis.</li>
+    <li>O turno C, em que um documento novo deve solicitar exatamente extract_metadata primeiro, usa forced extract_metadata mais o gate da aplicação.</li>
+    <li>O pseudocódigo precisa validar sucesso e dados, não apenas a emissão do tool_use.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="pegadinha-do-dia">
+  <div class="ficha-head">
+    <h2>Trap of the day</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Pegadinha do dia</strong></div>
+  <ul class="assert">
+    <li>Misrouting questions almost always offer the same three distractors: few-shot examples in the system prompt, an expensive patch when the cause is the minimal description; a keyword routing layer, over-engineering that ignores the model's language ability; and merging the tools into a single generic one, too much effort for a first step.</li>
+    <li>When the requirement is deterministic, "the model MUST call a tool", the classic distractor is the imperative sentence in the prompt.</li>
+    <li>tool_choice guarantees the required emission, but not the executed order nor success.</li>
+    <li>A minimal or overlapping description is fixed in the description, as the first step.</li>
+    <li>A keyword instruction in the system prompt is fixed by rewriting it in terms of intent.</li>
+    <li>A genuinely ambiguous request, with descriptions already good, calls for 2 to 4 few-shot examples showing the reasoning behind the choice (TS 4.2, lesson 09).</li>
+    <li>Emission of tool_use is enforced with tool_choice; the real sequence and prerequisites are enforced with a gate in the application; the load_document restriction requires a handler that validates and rejects.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Questões de misrouting quase sempre oferecem os mesmos três distratores: few-shot examples no system prompt, remendo caro quando a causa é a descrição mínima; routing layer por keywords, over-engineering que ignora a capacidade de linguagem do modelo; e fundir as tools numa genérica única, esforço grande demais para um primeiro passo.</li>
+    <li>Quando o requisito é determinístico, "the model MUST call a tool", o distrator clássico é a frase imperativa no prompt.</li>
+    <li>tool_choice garante a emissão exigida, mas não a ordem executada nem o sucesso.</li>
+    <li>Descrição mínima ou sobreposta se conserta na descrição, como primeiro passo.</li>
+    <li>Instrução por palavra-chave no system prompt se conserta reescrevendo-a por intenção.</li>
+    <li>Pedido genuinamente ambíguo, com descrições já boas, pede 2 a 4 few-shot com o raciocínio da escolha (TS 4.2, aula 09).</li>
+    <li>Emissão de tool_use se impõe com tool_choice; sequência real e pré-requisitos se impõem com gate na aplicação; a restrição de load_document exige handler que valida e rejeita.</li>
+  </ul>
+</section>
+
+<section class="ficha gloss-sec" id="glossary">
+  <div class="ficha-head">
+    <h2>Glossary</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <table class="gloss">
+    <tr><th>Term (EN)</th><th>Meaning (EN)</th><th class="ptm pt">Significado (PT-BR)</th></tr>
+    <tr><td class="en">tool description</td><td>The primary mechanism the model uses for tool selection.</td><td class="ptm pt">O mecanismo primário que o modelo usa para escolher a tool.</td></tr>
+    <tr><td class="en">misrouting</td><td>The wrong tool is chosen, typically caused by minimal or overlapping descriptions.</td><td class="ptm pt">A tool errada é escolhida, tipicamente por descrições mínimas ou sobrepostas.</td></tr>
+    <tr><td class="en">boundary</td><td>The part of a description that says when to use this tool versus a similar one.</td><td class="ptm pt">Fronteira da tool: a parte da descrição que diz quando usá-la versus a alternativa similar.</td></tr>
+    <tr><td class="en">edge case</td><td>A boundary situation, such as a nonexistent ID, an old order or multiple results.</td><td class="ptm pt">Caso de borda, como ID inexistente, pedido antigo ou múltiplos resultados.</td></tr>
+    <tr><td class="en">functional overlap</td><td>Two or more tools whose purposes and descriptions cannot be told apart.</td><td class="ptm pt">Sobreposição funcional: tools cujos propósitos e descrições não se distinguem.</td></tr>
+    <tr><td class="en">keyword-sensitive instruction</td><td>A system prompt instruction that reacts to a literal word and creates unintended tool associations.</td><td class="ptm pt">Instrução do system prompt que reage a uma palavra literal e cria associações de tool não intencionais.</td></tr>
+    <tr><td class="en">scoped tool access</td><td>Each subagent's tool set is restricted to those relevant to its role.</td><td class="ptm pt">O conjunto de tools de cada subagente fica restrito ao seu papel.</td></tr>
+    <tr><td class="en">least privilege</td><td>Give an agent only what it needs for the common case.</td><td class="ptm pt">Menor privilégio: dar ao agente só o necessário para o caso comum.</td></tr>
+    <tr><td class="en">cross-role tool</td><td>A tool shared across roles with a narrow scope, such as a scoped verify_fact for the synthesis agent.</td><td class="ptm pt">Tool compartilhada entre papéis com escopo estreito, como uma verify_fact escopada para o synthesis agent.</td></tr>
+    <tr><td class="en">constrained alternative</td><td>A narrow contract enforced by the handler, such as load_document replacing fetch_url.</td><td class="ptm pt">Alternativa restrita: contrato estreito aplicado pelo handler, como load_document no lugar de fetch_url.</td></tr>
+    <tr><td class="en">tool_choice</td><td>The setting that controls tool selection: auto, any or forced.</td><td class="ptm pt">A configuração que controla a escolha de tool: auto, any ou forced.</td></tr>
+    <tr><td class="en">"auto" / "any"</td><td>Optional tool with text allowed / some tool required, with several acceptable.</td><td class="ptm pt">Tool opcional e texto permitido / alguma tool obrigatória, com várias aceitáveis.</td></tr>
+    <tr><td class="en">forced tool selection</td><td>Forces one specific tool; guarantees the requested tool_use, not successful execution or workflow order.</td><td class="ptm pt">Força uma tool específica; garante o tool_use solicitado, não a execução bem-sucedida nem a ordem do workflow.</td></tr>
+    <tr><td class="en">tool_use</td><td>The call request the model emits; the application executes the client tool.</td><td class="ptm pt">Solicitação de chamada emitida pelo modelo; a aplicação executa a client tool.</td></tr>
+    <tr><td class="en">tool_result</td><td>The result the application returns to the model, matched by tool_use_id.</td><td class="ptm pt">Resultado devolvido pela aplicação ao modelo, casado pelo tool_use_id.</td></tr>
+    <tr><td class="en">prerequisite gate</td><td>A barrier that releases the next step only after validating the prerequisites.</td><td class="ptm pt">Barreira que só libera a próxima etapa após validar os pré-requisitos.</td></tr>
+  </table>
+</section>
+
+<nav class="prevnext">
+  <span><a href="fichamento-03.html">← Fichamento 03</a></span>
+  <span><a href="aula-04.html">Aula 04 — versão completa (PT)</a></span>
+  <span><a href="aula-04.html">Aula 04 (completa) →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('section.ficha .ver-traducao').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var sec = btn.closest('section.ficha');
+      var on = sec.classList.toggle('show-pt');
+      btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+      btn.textContent = on ? '🇧🇷 ocultar tradução' : '🇧🇷 ver tradução';
+    });
+  });
+})();
+</script>
+<script src="narracao/fichamento-04.js"></script>
+<script src="narracao/player.js"></script>
+</body>
+</html>
