@@ -220,7 +220,7 @@
     },
     {
       "id": "pegadinha-do-dia",
-      "heading_en": "Today's trap",
+      "heading_en": "Trap of the day",
       "heading_pt": "Pegadinha do dia",
       "assertions_en": [
         "Misrouting questions almost always offer the same three distractors: few-shot examples in the system prompt, an expensive patch when the cause is the minimal description; a keyword routing layer, over-engineering that ignores the model's language ability; and merging the tools into a single generic one, too much effort for a first step.",
@@ -243,21 +243,85 @@
     }
   ],
   "glossary": [
-    {"term_en": "tool description", "meaning_en": "The primary mechanism the model uses for tool selection.", "meaning_pt": "O mecanismo primário que o modelo usa para escolher a tool."},
-    {"term_en": "misrouting", "meaning_en": "The wrong tool is chosen, typically caused by minimal or overlapping descriptions.", "meaning_pt": "A tool errada é escolhida, tipicamente por descrições mínimas ou sobrepostas."},
-    {"term_en": "boundary", "meaning_en": "The part of a description that says when to use this tool versus a similar one.", "meaning_pt": "Fronteira da tool: a parte da descrição que diz quando usá-la versus a alternativa similar."},
-    {"term_en": "edge case", "meaning_en": "A boundary situation, such as a nonexistent ID, an old order or multiple results.", "meaning_pt": "Caso de borda, como ID inexistente, pedido antigo ou múltiplos resultados."},
-    {"term_en": "functional overlap", "meaning_en": "Two or more tools whose purposes and descriptions cannot be told apart.", "meaning_pt": "Sobreposição funcional: tools cujos propósitos e descrições não se distinguem."},
-    {"term_en": "keyword-sensitive instruction", "meaning_en": "A system prompt instruction that reacts to a literal word and creates unintended tool associations.", "meaning_pt": "Instrução do system prompt que reage a uma palavra literal e cria associações de tool não intencionais."},
-    {"term_en": "scoped tool access", "meaning_en": "Each subagent's tool set is restricted to those relevant to its role.", "meaning_pt": "O conjunto de tools de cada subagente fica restrito ao seu papel."},
-    {"term_en": "least privilege", "meaning_en": "Give an agent only what it needs for the common case.", "meaning_pt": "Menor privilégio: dar ao agente só o necessário para o caso comum."},
-    {"term_en": "cross-role tool", "meaning_en": "A tool shared across roles with a narrow scope, such as a scoped verify_fact for the synthesis agent.", "meaning_pt": "Tool compartilhada entre papéis com escopo estreito, como uma verify_fact escopada para o synthesis agent."},
-    {"term_en": "constrained alternative", "meaning_en": "A narrow contract enforced by the handler, such as load_document replacing fetch_url.", "meaning_pt": "Alternativa restrita: contrato estreito aplicado pelo handler, como load_document no lugar de fetch_url."},
-    {"term_en": "tool_choice", "meaning_en": "The setting that controls tool selection: auto, any or forced.", "meaning_pt": "A configuração que controla a escolha de tool: auto, any ou forced."},
-    {"term_en": "\"auto\" / \"any\"", "meaning_en": "Optional tool with text allowed / some tool required, with several acceptable.", "meaning_pt": "Tool opcional e texto permitido / alguma tool obrigatória, com várias aceitáveis."},
-    {"term_en": "forced tool selection", "meaning_en": "Forces one specific tool; guarantees the requested tool_use, not successful execution or workflow order.", "meaning_pt": "Força uma tool específica; garante o tool_use solicitado, não a execução bem-sucedida nem a ordem do workflow."},
-    {"term_en": "tool_use", "meaning_en": "The call request the model emits; the application executes the client tool.", "meaning_pt": "Solicitação de chamada emitida pelo modelo; a aplicação executa a client tool."},
-    {"term_en": "tool_result", "meaning_en": "The result the application returns to the model, matched by tool_use_id.", "meaning_pt": "Resultado devolvido pela aplicação ao modelo, casado pelo tool_use_id."},
-    {"term_en": "prerequisite gate", "meaning_en": "A barrier that releases the next step only after validating the prerequisites.", "meaning_pt": "Barreira que só libera a próxima etapa após validar os pré-requisitos."}
+    {
+      "term_en": "tool description",
+      "meaning_en": "The primary mechanism the model uses for tool selection.",
+      "meaning_pt": "O mecanismo primário que o modelo usa para escolher a tool."
+    },
+    {
+      "term_en": "misrouting",
+      "meaning_en": "The wrong tool is chosen, typically caused by minimal or overlapping descriptions.",
+      "meaning_pt": "A tool errada é escolhida, tipicamente por descrições mínimas ou sobrepostas."
+    },
+    {
+      "term_en": "boundary",
+      "meaning_en": "The part of a description that says when to use this tool versus a similar one.",
+      "meaning_pt": "Fronteira da tool: a parte da descrição que diz quando usá-la versus a alternativa similar."
+    },
+    {
+      "term_en": "edge case",
+      "meaning_en": "A boundary situation, such as a nonexistent ID, an old order or multiple results.",
+      "meaning_pt": "Caso de borda, como ID inexistente, pedido antigo ou múltiplos resultados."
+    },
+    {
+      "term_en": "functional overlap",
+      "meaning_en": "Two or more tools whose purposes and descriptions cannot be told apart.",
+      "meaning_pt": "Sobreposição funcional: tools cujos propósitos e descrições não se distinguem."
+    },
+    {
+      "term_en": "keyword-sensitive instruction",
+      "meaning_en": "A system prompt instruction that reacts to a literal word and creates unintended tool associations.",
+      "meaning_pt": "Instrução do system prompt que reage a uma palavra literal e cria associações de tool não intencionais."
+    },
+    {
+      "term_en": "scoped tool access",
+      "meaning_en": "Each subagent's tool set is restricted to those relevant to its role.",
+      "meaning_pt": "O conjunto de tools de cada subagente fica restrito ao seu papel."
+    },
+    {
+      "term_en": "least privilege",
+      "meaning_en": "Give an agent only what it needs for the common case.",
+      "meaning_pt": "Menor privilégio: dar ao agente só o necessário para o caso comum."
+    },
+    {
+      "term_en": "cross-role tool",
+      "meaning_en": "A tool shared across roles with a narrow scope, such as a scoped verify_fact for the synthesis agent.",
+      "meaning_pt": "Tool compartilhada entre papéis com escopo estreito, como uma verify_fact escopada para o synthesis agent."
+    },
+    {
+      "term_en": "constrained alternative",
+      "meaning_en": "A narrow contract enforced by the handler, such as load_document replacing fetch_url.",
+      "meaning_pt": "Alternativa restrita: contrato estreito aplicado pelo handler, como load_document no lugar de fetch_url."
+    },
+    {
+      "term_en": "tool_choice",
+      "meaning_en": "The setting that controls tool selection: auto, any or forced.",
+      "meaning_pt": "A configuração que controla a escolha de tool: auto, any ou forced."
+    },
+    {
+      "term_en": "\"auto\" / \"any\"",
+      "meaning_en": "Optional tool with text allowed / some tool required, with several acceptable.",
+      "meaning_pt": "Tool opcional e texto permitido / alguma tool obrigatória, com várias aceitáveis."
+    },
+    {
+      "term_en": "forced tool selection",
+      "meaning_en": "Forces one specific tool; guarantees the requested tool_use, not successful execution or workflow order.",
+      "meaning_pt": "Força uma tool específica; garante o tool_use solicitado, não a execução bem-sucedida nem a ordem do workflow."
+    },
+    {
+      "term_en": "tool_use",
+      "meaning_en": "The call request the model emits; the application executes the client tool.",
+      "meaning_pt": "Solicitação de chamada emitida pelo modelo; a aplicação executa a client tool."
+    },
+    {
+      "term_en": "tool_result",
+      "meaning_en": "The result the application returns to the model, matched by tool_use_id.",
+      "meaning_pt": "Resultado devolvido pela aplicação ao modelo, casado pelo tool_use_id."
+    },
+    {
+      "term_en": "prerequisite gate",
+      "meaning_en": "A barrier that releases the next step only after validating the prerequisites.",
+      "meaning_pt": "Barreira que só libera a próxima etapa após validar os pré-requisitos."
+    }
   ]
 }

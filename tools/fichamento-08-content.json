@@ -1,457 +1,457 @@
 {
- "lesson": "08",
- "title_en": "Iterative refinement and Claude Code in CI/CD",
- "title_pt": "Refinamento iterativo e Claude Code em CI/CD",
- "domain_en": "Domain 3 · Claude Code Configuration & Workflows (20%)",
- "sections": [
-  {
-   "id": "io-examples",
-   "heading_en": "Concrete input/output examples beat prose descriptions (TS 3.5)",
-   "heading_pt": "Exemplos concretos de input/output vencem a descrição em prosa (TS 3.5)",
-   "assertions_en": [
-    "When you describe a transformation in prose, such as \"normalize the names consistently\", and Claude interprets it differently on each run, the problem is not the model: prose is ambiguous by nature.",
-    "The canonical fix is to provide 2 to 3 concrete input/output examples showing exactly the expected transformation.",
-    "For example, the input name \"MARIA  silva\", phone \"(11)98765-4321\" and vip \"S\" becomes the name \"Maria Silva\", the phone \"+5511987654321\" and the tier \"vip\"; a record with a null phone keeps the phone null.",
-    "Examples settle at once what paragraphs of instruction do not: capitalization, null handling, phone format and field names.",
-    "The exam contrasts ever more detailed prose, the distractor, with 2 to 3 concrete input/output examples, the answer."
-   ],
-   "assertions_pt": [
-    "Quando você descreve uma transformação em prosa, como \"normalize os nomes de forma consistente\", e o Claude a interpreta de um jeito diferente a cada execução, o problema não é o modelo: prosa é ambígua por natureza.",
-    "A correção canônica é fornecer de 2 a 3 exemplos concretos de input/output mostrando exatamente a transformação esperada.",
-    "Por exemplo, o input com nome \"MARIA  silva\", telefone \"(11)98765-4321\" e vip \"S\" vira o nome \"Maria Silva\", o telefone \"+5511987654321\" e o tier \"vip\"; um registro com telefone null mantém o telefone null.",
-    "Exemplos resolvem de uma vez o que parágrafos de instrução não resolvem: capitalização, tratamento de null, formato de telefone e nome dos campos.",
-    "A prova contrasta a prosa cada vez mais detalhada, o distrator, com 2 a 3 exemplos concretos de input/output, a resposta."
-   ]
-  },
-  {
-   "id": "test-driven-iteration",
-   "heading_en": "Test-driven iteration: tests first, failures as the guide (TS 3.5)",
-   "heading_pt": "Test-driven iteration: testes primeiro, falhas como guia (TS 3.5)",
-   "assertions_en": [
-    "The flow the Exam Guide describes is to write the test suite first, covering expected behavior, edge cases and performance requirements, then ask for the implementation, and iterate by sharing the test failures instead of re-describing the requirement in prose.",
-    "The steps are: write tests covering the expected behavior and edge cases, such as null values in a migration script; ask Claude for the implementation; run the tests and paste the exact failure output, with input and expected versus obtained output; repeat until the suite passes.",
-    "A test failure is an unambiguous specification of the bug, with a concrete input, a concrete expectation and a concrete result; it is the automated version of input/output examples.",
-    "To fix a specific edge case, provide the test case with example input and expected output, not \"handle nulls better\".",
-    "Rule of thumb: when prose descriptions of the same requirement produce versions that do not converge, fixing one case and breaking another, stop describing, write the test that defines it and share the failure.",
-    "If they are distinct problems whose fixes interact, that is the interacting-issues case: a single detailed message with all of them."
-   ],
-   "assertions_pt": [
-    "O fluxo que o Exam Guide descreve é escrever a suíte de testes antes, cobrindo comportamento esperado, edge cases e requisitos de performance, depois pedir a implementação e iterar compartilhando as falhas dos testes, em vez de re-descrever o requisito em prosa.",
-    "Os passos são: escrever os testes cobrindo o comportamento esperado e os edge cases, como valores null num script de migração; pedir a implementação ao Claude; rodar os testes e colar a saída exata da falha, com input e output esperado versus obtido; repetir até a suíte passar.",
-    "A falha do teste é uma especificação não ambígua do bug, com input concreto, expectativa concreta e resultado concreto; é a versão automatizada dos exemplos de input/output.",
-    "Para corrigir um edge case específico, forneça o caso de teste com input de exemplo e output esperado, não \"trate melhor os nulos\".",
-    "Regra de bolso: quando a descrição em prosa de um mesmo requisito gera versões que não convergem, corrigindo um caso e quebrando outro, pare de descrever, escreva o teste que o define e compartilhe a falha.",
-    "Se são problemas distintos cujas correções interagem, é o caso dos issues interagentes: uma única mensagem detalhada com todos."
-   ]
-  },
-  {
-   "id": "interview-pattern",
-   "heading_en": "Interview pattern: Claude asks before implementing (TS 3.5)",
-   "heading_pt": "Interview pattern: o Claude pergunta antes de implementar (TS 3.5)",
-   "assertions_en": [
-    "In domains you do not master, such as caching strategies or the failure modes of a protocol, you do not know which design decisions matter, and Claude, told to \"implement X\", will pick defaults silently.",
-    "The interview pattern reverses the direction: before coding, ask Claude to interview you with questions about requirements, constraints and failure modes you may not have considered, and to start coding only after you answer.",
-    "It surfaces considerations you did not anticipate, such as cache invalidation, behavior under partial failure and concurrency, before they become rework.",
-    "The classic distractor is \"write a more detailed prompt\": you cannot detail what you do not know exists.",
-    "Rule of thumb: unfamiliar domain, Claude asks before coding; known transformation described ambiguously, input/output examples."
-   ],
-   "assertions_pt": [
-    "Em domínios que você não domina, como estratégias de cache ou os modos de falha de um protocolo, você não sabe quais decisões de design importam, e o Claude, instruído a \"implementar X\", vai escolher defaults em silêncio.",
-    "O interview pattern inverte a direção: antes de codar, peça ao Claude que entreviste você com perguntas sobre requisitos, restrições e modos de falha que você talvez não tenha considerado, e que só comece a codar depois das suas respostas.",
-    "Ele faz emergir considerações que você não antecipou, como invalidação de cache, comportamento em falha parcial e concorrência, antes de virarem retrabalho.",
-    "O distrator clássico é \"escreva um prompt mais detalhado\": você não consegue detalhar o que não sabe que existe.",
-    "Regra de bolso: domínio desconhecido, o Claude pergunta antes de codar; transformação conhecida mas descrita de forma ambígua, exemplos de input/output."
-   ]
-  },
-  {
-   "id": "interacting-vs-independent",
-   "heading_en": "Interacting issues in one message, independent issues in sequence (TS 3.5)",
-   "heading_pt": "Issues interagentes numa única mensagem, independentes em sequência (TS 3.5)",
-   "assertions_en": [
-    "Fixes that interact, such as token refresh and session timeout, where changing one changes the behavior of the other, go in a single detailed message describing all of them, so Claude can reason about the interaction and produce a coherent solution.",
-    "Fixing interacting issues in sequence produces the cycle \"fixed A, broke B; fixed B, broke A\".",
-    "Independent issues, such as a parser bug and a typo in a log, follow normal sequential iteration, one at a time, at no cost.",
-    "The exam question is always whether the fixes touch each other; if they do, same message."
-   ],
-   "assertions_pt": [
-    "Fixes que interagem, como refresh de token e timeout de sessão, em que mexer num muda o comportamento do outro, vão numa única mensagem detalhada descrevendo todos, para o Claude raciocinar sobre a interação e produzir uma solução coerente.",
-    "Corrigir issues interagentes em sequência gera o ciclo \"consertei A, quebrei B; consertei B, quebrei A\".",
-    "Issues independentes, como um bug no parser e um typo no log, seguem a iteração sequencial normal, um de cada vez, sem custo.",
-    "A pergunta de prova é sempre se os fixes se tocam; se sim, mesma mensagem."
-   ]
-  },
-  {
-   "id": "feedback-exercise",
-   "heading_en": "Writing the next iteration's feedback (TS 3.5)",
-   "heading_pt": "Escrevendo o feedback da próxima iteração (TS 3.5)",
-   "assertions_en": [
-    "Good feedback states the context and gives each problem as input, expected and obtained, including the edge cases, such as a blank name that must become null and a null name that must not become the string \"null\".",
-    "Case normalization and empty/null normalization go together in the same message, because case conversion, whitespace trimming and missing-value handling share the same normalization pipeline and their order can change the final name.",
-    "A log typo goes to a separate iteration, because it does not alter that pipeline or its tests.",
-    "The rationale is part of the answer: the first two fixes can invalidate each other if made in isolation, while the typo can be fixed later without changing any input/output pair."
-   ],
-   "assertions_pt": [
-    "Um bom feedback dá o contexto e apresenta cada problema como input, esperado e obtido, incluindo os casos de borda, como um nome em branco que deve virar null e um nome null que não pode virar a string \"null\".",
-    "Capitalização e normalização de vazio/null vão juntas na mesma mensagem, porque conversão de caixa, remoção de espaços e tratamento de valor ausente compartilham o mesmo pipeline de normalização, e a ordem entre eles pode mudar o nome final.",
-    "Um typo no log vai para uma iteração separada, porque não altera esse pipeline nem seus testes.",
-    "A justificativa é parte da resposta: as duas primeiras correções podem se invalidar se forem feitas isoladamente, enquanto o typo pode ser corrigido depois sem mudar nenhum par de entrada e saída."
-   ]
-  },
-  {
-   "id": "non-interactive-print",
-   "heading_en": "Non-interactive mode: the -p / --print flag (TS 3.6)",
-   "heading_pt": "Modo não-interativo: a flag -p / --print (TS 3.6)",
-   "assertions_en": [
-    "In a pipeline there is no human to type, so running claude \"Analyze this pull request\" in a CI job leaves the process waiting for interactive input until the job dies by timeout.",
-    "The documented solution is the -p flag, or --print: it processes the prompt, prints the result to stdout and exits."
-   ],
-   "assertions_pt": [
-    "Num pipeline não há humano para digitar, então rodar claude \"Analyze this pull request\" num job de CI deixa o processo esperando input interativo até o job morrer por timeout.",
-    "A solução documentada é a flag -p, ou --print: ela processa o prompt, imprime o resultado em stdout e encerra."
-   ]
-  },
-  {
-   "id": "structured-output",
-   "heading_en": "Structured output: --output-format json plus --json-schema (TS 3.6)",
-   "heading_pt": "Output estruturado: --output-format json mais --json-schema (TS 3.6)",
-   "assertions_en": [
-    "Free text is not parseable by the pipeline; to post findings automatically as inline PR comments, the output must be valid JSON in a known schema.",
-    "With --output-format json and --json-schema, the job can parse deterministically, for example with jq, and post each finding on the right line of the PR, with no regex over free text.",
-    "The validated result is in the structured_output field.",
-    "--output-format json makes the output parseable JSON; --json-schema is what fixes the structure, meaning keys, types and required fields, of valid structured output.",
-    "The schema constrains the structure when valid structured output is produced, but does not guarantee its presence: if the run ends without valid output, the structured_output field may be absent.",
-    "Before consuming findings, the pipeline must check the result and the presence and type of structured_output, and fail explicitly if the check does not pass; absent output does not mean zero findings.",
-    "Describing the format in the prompt reduces variation but stays probabilistic.",
-    "Rule of thumb: if a script consumes the output, the structure is imposed by schema, not requested in text, and the presence of the result is checked by the pipeline."
-   ],
-   "assertions_pt": [
-    "Texto livre não é parseável pelo pipeline; para postar findings automaticamente como comentários inline no PR, o output precisa ser JSON válido num schema conhecido.",
-    "Com --output-format json e --json-schema, o job pode fazer parse determinístico, por exemplo com jq, e postar cada finding na linha certa do PR, sem regex em cima de texto livre.",
-    "O resultado validado fica no campo structured_output.",
-    "--output-format json faz a saída ser JSON parseável; --json-schema é o que fixa a estrutura, ou seja, chaves, tipos e campos obrigatórios, do structured output válido.",
-    "O schema restringe a estrutura quando uma saída estruturada válida é produzida, mas não garante sua presença: se a execução terminar sem saída válida, o campo structured_output pode estar ausente.",
-    "Antes de consumir findings, o pipeline deve verificar o resultado e a presença e o tipo de structured_output, e falhar explicitamente se a verificação não passar; ausência de output não significa zero findings.",
-    "Descrever o formato no prompt reduz a variação, mas continua probabilístico.",
-    "Regra de bolso: se um script consome a saída, a estrutura é imposta por schema, não pedida em texto, e a presença do resultado é verificada pelo pipeline."
-   ]
-  },
-  {
-   "id": "permission-modes-limits-tools",
-   "heading_en": "Permission modes, turn and cost limits, reviewer tools (TS 3.6)",
-   "heading_pt": "Permission modes, limites de turnos e de custo, tools do revisor (TS 3.6)",
-   "assertions_en": [
-    "The -p flag fixes the hang but does not say what Claude may do with nobody watching.",
-    "The Exam Guide does not list these flags, but the official exam objectives in the score report require \"non-interactive flags, permission modes, and cost and turn limits that prevent runaway executions\" and \"restrict unnecessary tool access\", so treat them as exam material.",
-    "What runs without approval is set by --permission-mode, which accepts default, acceptEdits, plan, auto, dontAsk and bypassPermissions.",
-    "How far it can go is set by --max-turns, a limit on agentic turns that ends with an error when reached, and --max-budget-usd, a limit on client-side estimated spend; both work only in -p mode.",
-    "The budget helps contain runaway executions but is not a hard accounting cap: the estimate may differ from the invoice.",
-    "Which tools exist is set by --tools, which restricts the available built-in tools, and --disallowedTools, which removes tools from the session, including MCP tools when specified.",
-    "dontAsk automatically denies every tool call that would require approval; actions that already need no permission keep running, such as reads in the working directory and read-only commands.",
-    "Under dontAsk, allow rules, --allowedTools and approvals by PreToolUse hooks still have their own effect, and an installed mod can still approve some calls, so dontAsk avoids waiting on a prompt but is not an absolute allowlist.",
-    "bypassPermissions skips the permission prompts, while deny rules and denying hooks keep blocking; use it only in an isolated environment, such as a container, a VM or a dev container without internet.",
-    "On a runner with secrets and network access, bypassPermissions is the distractor.",
-    "plan has Claude analyze and propose without editing, and it also works with -p.",
-    "acceptEdits accepts file edits and common filesystem commands, such as mkdir, mv and rm, inside the working directory without asking; it fits a job that generates code, not a reviewer.",
-    "A PR reviewer runs with --permission-mode dontAsk, --tools \"Read,Grep,Glob\", --disallowedTools \"mcp__*\", --max-turns, --max-budget-usd, --output-format json and --json-schema.",
-    "--allowedTools does not restrict: it only pre-approves, so the listed tools run without asking and all other tools remain available; what removes tools is --tools or --disallowedTools.",
-    "--tools limits only the built-in tools, so MCP tools must be handled separately, for example with --disallowedTools \"mcp__*\".",
-    "Removing only Edit and Write is not enough while Bash remains available, because sed -i, mv and rm also change files.",
-    "Rule of thumb: for a reviewer without write tools, restrict the built-in tools to Read, Grep and Glob and handle MCP; only then is the exposed tool set read-only, and this does not replace runner isolation or protection of secrets.",
-    "--allowedTools is for the opposite case: letting a tool you want to run proceed without asking.",
-    "A job that can loop, such as fixing until the tests pass, gets --max-turns and --max-budget-usd; if it starts stopping at the limit before legitimate work is done, adjust the limit or split the task, do not remove the safeguard."
-   ],
-   "assertions_pt": [
-    "A flag -p resolve o travamento, mas não diz o que o Claude pode fazer sem ninguém olhando.",
-    "O Exam Guide não lista essas flags, mas os objetivos oficiais da prova no score report cobram \"non-interactive flags, permission modes, and cost and turn limits that prevent runaway executions\" e \"restrict unnecessary tool access\", então trate-as como matéria de prova.",
-    "O que roda sem aprovação é definido por --permission-mode, que aceita default, acceptEdits, plan, auto, dontAsk e bypassPermissions.",
-    "Até onde ele pode ir é definido por --max-turns, um limite de turnos agênticos que encerra com erro ao ser atingido, e por --max-budget-usd, um limite de gasto estimado no cliente; os dois só funcionam no modo -p.",
-    "O orçamento ajuda a conter execuções descontroladas, mas não é um teto contábil rígido: a estimativa pode divergir da fatura.",
-    "Quais tools existem é definido por --tools, que restringe as tools nativas disponíveis, e por --disallowedTools, que remove tools da sessão, inclusive MCP quando especificado.",
-    "dontAsk nega automaticamente toda tool call que exigiria aprovação; ações que já não pedem permissão continuam rodando, como leituras no diretório de trabalho e comandos read-only.",
-    "Sob dontAsk, regras allow, --allowedTools e aprovações por hooks PreToolUse continuam com efeito próprio, e um mod instalado ainda pode aprovar algumas chamadas, então dontAsk evita a espera por prompt, mas não é uma allowlist absoluta.",
-    "bypassPermissions pula os prompts de permissão, enquanto regras deny e hooks que negam continuam bloqueando; use-o só em ambiente isolado, como container, VM ou dev container sem internet.",
-    "Num runner com segredos e acesso à rede, bypassPermissions é o distrator.",
-    "plan faz o Claude analisar e propor sem editar, e também funciona com -p.",
-    "acceptEdits aceita sem perguntar edições de arquivo e comandos comuns de sistema de arquivos, como mkdir, mv e rm, dentro do diretório de trabalho; serve para o job que gera código, não para o revisor.",
-    "Um revisor de PR roda com --permission-mode dontAsk, --tools \"Read,Grep,Glob\", --disallowedTools \"mcp__*\", --max-turns, --max-budget-usd, --output-format json e --json-schema.",
-    "--allowedTools não restringe: ele só pré-aprova, então as tools listadas rodam sem pedir permissão e todas as outras continuam disponíveis; quem tira tools é --tools ou --disallowedTools.",
-    "--tools limita só as tools nativas, então as tools MCP precisam ser tratadas separadamente, por exemplo com --disallowedTools \"mcp__*\".",
-    "Tirar só Edit e Write não basta enquanto o Bash continua disponível, porque sed -i, mv e rm também mudam arquivos.",
-    "Regra de bolso: para um revisor sem tools de escrita, restrinja as nativas a Read, Grep e Glob e trate o MCP; só assim o conjunto de tools expostas é read-only, e isso não substitui o isolamento do runner nem a proteção de segredos.",
-    "--allowedTools é para o caso oposto: deixar rodar sem perguntar uma tool que você quer que rode.",
-    "Um job que pode entrar em loop, como corrigir até o teste passar, recebe --max-turns e --max-budget-usd; se ele começa a parar no limite antes de terminar o trabalho legítimo, ajuste o limite ou divida a tarefa, não tire a trava."
-   ]
-  },
-  {
-   "id": "review-integrations",
-   "heading_en": "The two official review integrations (TS 3.6)",
-   "heading_pt": "As duas integrações oficiais de review (TS 3.6)",
-   "assertions_en": [
-    "Besides calling claude -p in your own script, there are two ready-made integrations, and they are different products.",
-    "GitHub Actions, anthropics/claude-code-action, installed with /install-github-app or manually, runs Claude Code in your workflow; project standards come from CLAUDE.md, read on each run, and CLI flags such as tools, limits and model go in the claude_args input.",
-    "Managed Code Review has Anthropic review the PRs for you, tuned by CLAUDE.md and REVIEW.md.",
-    "REVIEW.md is read from the base or default branch, never from the PR's own changes, so a PR cannot loosen the rules that review it.",
-    "Managed Code Review does not push commits; it comments on the PR.",
-    "Rule of thumb: to control the workflow, flags and limits, use the Action with claude_args; for ready-made review without maintaining a pipeline, use Code Review with the rules in REVIEW.md.",
-    "In both, project conventions live in a repository file, not in the job prompt."
-   ],
-   "assertions_pt": [
-    "Além de chamar claude -p no seu próprio script, há duas integrações prontas, e são produtos diferentes.",
-    "O GitHub Actions, anthropics/claude-code-action, instalado com /install-github-app ou manualmente, roda o Claude Code no seu workflow; os padrões do projeto vêm do CLAUDE.md, lido a cada execução, e flags da CLI como tools, limites e modelo vão no input claude_args.",
-    "O Code Review gerenciado faz a Anthropic revisar os PRs por você, ajustado pelo CLAUDE.md e pelo REVIEW.md.",
-    "O REVIEW.md é lido da branch base ou da default, nunca das mudanças do próprio PR, então um PR não consegue afrouxar as regras que o revisam.",
-    "O Code Review gerenciado não faz push de commits; ele comenta no PR.",
-    "Regra de bolso: para controlar o workflow, as flags e os limites, use a Action com claude_args; para review pronto sem manter pipeline, use o Code Review com as regras no REVIEW.md.",
-    "Nos dois, as convenções do projeto moram em arquivo do repositório, não no prompt do job."
-   ]
-  },
-  {
-   "id": "exam-vs-product",
-   "heading_en": "Exam versus current product (docs checked on 2026-11-15)",
-   "heading_pt": "Prova versus produto atual (documentação conferida em 15/11/2026)",
-   "assertions_en": [
-    "bypassPermissions does not turn everything off: deny rules and a PreToolUse hook's deny keep blocking in this mode, and an explicit ask rule keeps asking.",
-    "Under bypassPermissions, allow rules have no effect, because the mode already approves without asking.",
-    "On the exam, what counts is the mode's role: only in an isolated container or VM.",
-    "With --json-schema, a valid result comes in the structured_output field of the output JSON, only in -p mode; if the run produces no valid output, the field may not exist.",
-    "manual is accepted as an alias of default in --permission-mode, from v2.1.200.",
-    "In the Agent SDK, a stop by budget appears as a result with subtype error_max_budget_usd.",
-    "total_cost_usd and the --max-budget-usd budget use client-side estimates, which can differ from actual billing.",
-    "The exam tests the role of each flag, not these field names."
-   ],
-   "assertions_pt": [
-    "bypassPermissions não desliga tudo: as regras deny e o deny de um hook PreToolUse continuam bloqueando nesse modo, e uma regra ask explícita continua perguntando.",
-    "Sob bypassPermissions, as regras allow não têm efeito, porque o modo já aprova sem perguntar.",
-    "Na prova, vale o papel do modo: só em container ou VM isolados.",
-    "Com --json-schema, um resultado válido vem no campo structured_output do JSON de saída, só no modo -p; se a execução não produzir saída válida, o campo pode não existir.",
-    "manual é aceito como alias de default em --permission-mode, a partir da v2.1.200.",
-    "No Agent SDK, a parada por orçamento aparece como resultado com subtype error_max_budget_usd.",
-    "total_cost_usd e o orçamento de --max-budget-usd usam estimativas calculadas no cliente, que podem divergir da cobrança real.",
-    "A prova cobra o papel de cada flag, não esses nomes de campo."
-   ]
-  },
-  {
-   "id": "claude-md-bare",
-   "heading_en": "CLAUDE.md in CI: normal discovery versus bare mode (TS 3.6)",
-   "heading_pt": "CLAUDE.md no CI: descoberta normal versus modo bare (TS 3.6)",
-   "assertions_en": [
-    "Without --bare, claude -p discovers and loads configuration like an interactive session: CLAUDE.md, auto memory, hooks, Skills, commands, subagents, plugins and the environment's MCP servers.",
-    "On a runner this is not neutral: the documentation warns that -p shows neither the workspace trust dialog nor per-server approval, so do not run content from an untrusted repository assuming non-interactive mode neutralizes it.",
-    "With --bare, startup skips that automatic discovery, reducing variation between machines and avoiding inherited hooks, plugins and MCP; it is the mode the documentation recommends for scripts and runners that need reproducible behavior.",
-    "Under --bare the needed context becomes explicit, for example --append-system-prompt-file \"CLAUDE.md\" for the project's reviewed conventions and --mcp-config only if a server is really needed.",
-    "-p makes the run non-interactive; --bare controls configuration discovery; they are not the same thing.",
-    "CLAUDE.md remains the project-context mechanism for test standards, fixtures, review criteria and what makes a test valuable, which avoids divergent copies of the conventions in each job's prompt.",
-    "Without --bare, CLAUDE.md is discovered normally; with --bare, include it deliberately through the file; in both cases, validate the result and do not treat context as enforcement.",
-    "Rule of thumb: shared conventions live in CLAUDE.md; for reproducible CI with minimal surface, use --bare and supply that context explicitly."
-   ],
-   "assertions_pt": [
-    "Sem --bare, claude -p descobre e carrega configuração como uma sessão interativa: CLAUDE.md, auto memory, hooks, Skills, comandos, subagents, plugins e os MCP servers do ambiente.",
-    "Num runner isso não é neutro: a documentação alerta que -p não mostra nem o diálogo de workspace trust nem a aprovação por server, então não execute conteúdo de um repositório não confiável presumindo que o modo não-interativo o neutraliza.",
-    "Com --bare, a inicialização ignora essa descoberta automática, reduzindo a variação entre máquinas e evitando hooks, plugins e MCP herdados; é o modo que a documentação recomenda para scripts e runners que precisam de comportamento reproduzível.",
-    "Com --bare, o contexto necessário passa a ser explícito, por exemplo --append-system-prompt-file \"CLAUDE.md\" para as convenções revisadas do projeto e --mcp-config somente se um server for realmente necessário.",
-    "-p torna a execução não-interativa; --bare controla a descoberta de configuração; não são a mesma coisa.",
-    "O CLAUDE.md continua sendo o mecanismo de contexto de projeto para padrões de teste, fixtures, critérios de review e o que torna um teste valioso, o que evita cópias divergentes das convenções no prompt de cada job.",
-    "Sem --bare, o CLAUDE.md é descoberto normalmente; com --bare, inclua-o deliberadamente pelo arquivo; nos dois casos, valide o resultado e não trate contexto como enforcement.",
-    "Regra de bolso: convenções compartilhadas moram no CLAUDE.md; em CI reproduzível e com superfície mínima, use --bare e forneça esse contexto explicitamente."
-   ]
-  },
-  {
-   "id": "self-review-bias",
-   "heading_en": "Self-review bias: the generating session is a worse reviewer (TS 3.6)",
-   "heading_pt": "Self-review bias: a sessão que gerou o código é pior revisora dele (TS 3.6)",
-   "assertions_en": [
-    "The session that wrote the code has already decided its approach is correct, and its context is contaminated by the reasoning that produced the code.",
-    "The result is shallow review and a tendency to approve its own choices.",
-    "The architectural fix is to review in an independent instance that sees only the diff and the review criteria, without the generation history.",
-    "In CI this comes naturally: the review job is a new claude -p invocation, not a continuation of the author's session."
-   ],
-   "assertions_pt": [
-    "A sessão que escreveu o código já decidiu que aquela abordagem é correta, e o contexto dela está contaminado pelo raciocínio que produziu o código.",
-    "O resultado é review raso e tendência a aprovar as próprias escolhas.",
-    "A correção arquitetural é revisar numa instância independente, que vê só o diff e os critérios de review, sem o histórico de geração.",
-    "Em CI isso é natural: o job de review é uma invocação nova de claude -p, não a continuação da sessão do autor."
-   ]
-  },
-  {
-   "id": "re-reviews",
-   "heading_en": "Re-running reviews after new commits: only new or unresolved issues (TS 3.6)",
-   "heading_pt": "Re-rodando reviews após novos commits: só issues novos ou não resolvidos (TS 3.6)",
-   "assertions_en": [
-    "When the review runs on every push without care, each run re-posts the same findings, the PR piles up duplicate comments and developers start ignoring the bot.",
-    "The solution is to include the previous findings in the new run's context and instruct explicitly: report only new issues or previously reported issues that are still unaddressed.",
-    "The same principle applies to test generation: include the existing test files in context, so Claude does not suggest scenarios the suite already covers."
-   ],
-   "assertions_pt": [
-    "Quando o review roda a cada push sem cuidado, cada execução reposta os mesmos findings, o PR acumula comentários duplicados e os devs passam a ignorar o bot.",
-    "A solução é incluir os findings anteriores no contexto da nova execução e instruir explicitamente: reporte só issues novos ou issues já reportados que continuam sem solução.",
-    "O mesmo princípio vale para geração de testes: inclua os arquivos de teste existentes no contexto, para o Claude não sugerir cenários que a suíte já cobre."
-   ]
-  },
-  {
-   "id": "ci-repair-exercise",
-   "heading_en": "Repairing a review job and its pipeline gate (TS 3.6)",
-   "heading_pt": "Reparando um job de review e o gate do pipeline (TS 3.6)",
-   "assertions_en": [
-    "On a shared runner with network access and secrets, a review job that must only read and report is unsafe if it runs without -p, with bypassPermissions, with --allowedTools as if it restricted anything, and with a prompt asking it to fix findings.",
-    "The repaired job runs claude --bare -p with a prompt to report findings only, --append-system-prompt-file \"CLAUDE.md\", --permission-mode dontAsk, --tools \"Read,Grep,Glob\", --disallowedTools \"mcp__*\", --max-turns, --max-budget-usd, --output-format json and --json-schema.",
-    "--bare prevents discovery of the host's hooks, Skills, plugins, MCP and other configuration, and --append-system-prompt-file supplies the reviewed conventions that bare mode does not load automatically.",
-    "--disallowedTools \"mcp__*\" makes the no-MCP policy explicit even with --bare, no --mcp-config is supplied, and no --allowedTools pre-approves unnecessary actions.",
-    "The gate uses jq -e to require is_error false, structured_output as an object and findings as an array, and fails the job before publishing if the field is missing or the run errored.",
-    "The fallback .structured_output.findings // [] is wrong, because it turns a failed run into a false \"no findings\" review.",
-    "A legitimate empty array is still a valid result, different from a missing field."
-   ],
-   "assertions_pt": [
-    "Num runner compartilhado com rede e segredos, um job de review que deve apenas ler e reportar é inseguro se roda sem -p, com bypassPermissions, com --allowedTools como se restringisse algo e com um prompt pedindo para corrigir os findings.",
-    "O job reparado roda claude --bare -p com um prompt para só reportar findings, --append-system-prompt-file \"CLAUDE.md\", --permission-mode dontAsk, --tools \"Read,Grep,Glob\", --disallowedTools \"mcp__*\", --max-turns, --max-budget-usd, --output-format json e --json-schema.",
-    "--bare impede a descoberta de hooks, Skills, plugins, MCP e outras configurações do host, e --append-system-prompt-file fornece as convenções revisadas que o modo bare não carrega automaticamente.",
-    "--disallowedTools \"mcp__*\" deixa explícita a política de nenhum MCP mesmo com --bare, nenhum --mcp-config é fornecido e nenhum --allowedTools pré-aprova ações desnecessárias.",
-    "O gate usa jq -e para exigir is_error false, structured_output como objeto e findings como array, e falha o job antes de publicar se o campo estiver ausente ou a execução tiver erro.",
-    "O fallback .structured_output.findings // [] está errado, porque transforma uma execução que falhou num falso review de \"nenhum finding\".",
-    "Um array vazio legítimo continua sendo um resultado válido, diferente de campo ausente."
-   ]
-  },
-  {
-   "id": "pegadinha-do-dia",
-   "heading_en": "Trap of the day",
-   "heading_pt": "Pegadinha do dia",
-   "assertions_en": [
-    "In CI/CD questions, the first kind of distractor is features that do not exist, such as CLAUDE_HEADLESS=true, --batch or --ci-mode, or shell workarounds, such as < /dev/null or timeout 60 claude, that do not fix the root cause.",
-    "The second, more treacherous kind is a real flag in the wrong role: bypassPermissions on a runner with secrets, --allowedTools to \"restrict\" the reviewer, or a prompt instruction in place of --max-turns.",
-    "The documented flags the exam tests are -p/--print, --output-format json, --json-schema, --permission-mode, --max-turns, --max-budget-usd and --tools/--disallowedTools.",
-    "A flag or environment variable that is not in the Claude Code documentation is a distractor, and a flag that exists is the answer only if it plays the role asked for.",
-    "Job hangs waiting for input, -p; output structure, --output-format json plus --json-schema; missing structured_output, check and fail.",
-    "Job with no human that cannot ask for approval, dontAsk; loop or unbounded estimated spend, --max-turns and --max-budget-usd; read-only reviewer, restrict built-in tools and handle MCP with --tools and --disallowedTools."
-   ],
-   "assertions_pt": [
-    "Nas questões de CI/CD, o primeiro tipo de distrator são features que não existem, como CLAUDE_HEADLESS=true, --batch ou --ci-mode, ou gambiarras de shell, como < /dev/null ou timeout 60 claude, que não resolvem a causa raiz.",
-    "O segundo tipo, mais traiçoeiro, é flag real no papel errado: bypassPermissions num runner com segredos, --allowedTools para \"restringir\" o revisor, ou instrução no prompt no lugar de --max-turns.",
-    "As flags documentadas que a prova cobra são -p/--print, --output-format json, --json-schema, --permission-mode, --max-turns, --max-budget-usd e --tools/--disallowedTools.",
-    "Flag ou variável de ambiente que não está na documentação do Claude Code é distrator, e flag que existe só é resposta se faz o papel pedido.",
-    "Job trava esperando input, -p; estrutura da saída, --output-format json mais --json-schema; ausência de structured_output, verificar e falhar.",
-    "Job sem humano que não pode pedir aprovação, dontAsk; loop ou gasto estimado sem limite, --max-turns e --max-budget-usd; revisor só leitura, restringir as nativas e tratar MCP com --tools e --disallowedTools."
-   ]
-  }
- ],
- "glossary": [
-  {
-   "term_en": "iterative refinement",
-   "meaning_en": "Progressive improvement of the output across iterations.",
-   "meaning_pt": "Melhoria progressiva do resultado ao longo das iterações."
-  },
-  {
-   "term_en": "concrete input/output examples",
-   "meaning_en": "2 to 3 pairs that show exactly the expected transformation.",
-   "meaning_pt": "2 a 3 pares que mostram exatamente a transformação esperada."
-  },
-  {
-   "term_en": "test-driven iteration",
-   "meaning_en": "Write the test suite first, then iterate by sharing test failures.",
-   "meaning_pt": "Escrever a suíte de testes antes e iterar compartilhando as falhas dos testes."
-  },
-  {
-   "term_en": "interview pattern",
-   "meaning_en": "Claude asks questions before coding, to surface design considerations.",
-   "meaning_pt": "O Claude faz perguntas antes de codar, para fazer emergir considerações de design."
-  },
-  {
-   "term_en": "interacting issues",
-   "meaning_en": "Problems whose fixes affect each other; they go in a single detailed message.",
-   "meaning_pt": "Problemas cujas correções se afetam; vão numa única mensagem detalhada."
-  },
-  {
-   "term_en": "non-interactive mode",
-   "meaning_en": "Running without waiting for user input, enabled by -p.",
-   "meaning_pt": "Execução sem esperar input do usuário, ativada por -p."
-  },
-  {
-   "term_en": "-p / --print",
-   "meaning_en": "Processes the prompt, prints the result to stdout and exits.",
-   "meaning_pt": "Processa o prompt, imprime o resultado em stdout e encerra."
-  },
-  {
-   "term_en": "--bare",
-   "meaning_en": "Skips automatic discovery of the host's configuration; context and integrations are supplied explicitly.",
-   "meaning_pt": "Ignora a descoberta automática de configuração do host; contexto e integrações são fornecidos explicitamente."
-  },
-  {
-   "term_en": "--output-format json",
-   "meaning_en": "Makes the output parseable JSON.",
-   "meaning_pt": "Faz a saída ser JSON parseável."
-  },
-  {
-   "term_en": "--json-schema",
-   "meaning_en": "Constrains valid structured output to a schema; does not guarantee its presence.",
-   "meaning_pt": "Restringe o structured output válido a um schema; não garante sua presença."
-  },
-  {
-   "term_en": "structured_output",
-   "meaning_en": "Field with the validated result; it may be missing if the run produced no valid output.",
-   "meaning_pt": "Campo com o resultado validado; pode faltar se a execução não gerar saída válida."
-  },
-  {
-   "term_en": "permission mode",
-   "meaning_en": "What runs without approval.",
-   "meaning_pt": "O que roda sem aprovação."
-  },
-  {
-   "term_en": "dontAsk",
-   "meaning_en": "Denies what would require approval; keeps actions that need no prompt and approvals by rules, hooks or mods.",
-   "meaning_pt": "Nega o que exigiria aprovação; preserva ações sem prompt e aprovações por regras, hooks ou mods."
-  },
-  {
-   "term_en": "bypassPermissions",
-   "meaning_en": "Skips permission prompts; deny rules and denying hooks still apply; isolated environments only.",
-   "meaning_pt": "Pula os prompts de permissão; regras deny e hooks que negam continuam valendo; só em ambiente isolado."
-  },
-  {
-   "term_en": "cost and turn limits",
-   "meaning_en": "--max-turns and --max-budget-usd; the budget is a client-side estimate, not a hard accounting cap.",
-   "meaning_pt": "--max-turns e --max-budget-usd; o orçamento é estimativa no cliente, não teto contábil rígido."
-  },
-  {
-   "term_en": "runaway execution",
-   "meaning_en": "A run that loops without stopping.",
-   "meaning_pt": "Execução descontrolada, um loop que não para."
-  },
-  {
-   "term_en": "restrict tool access",
-   "meaning_en": "Restrict built-in tools with --tools and handle MCP separately with --disallowedTools.",
-   "meaning_pt": "Restringir as nativas com --tools e tratar o MCP separadamente com --disallowedTools."
-  },
-  {
-   "term_en": "inline PR comments",
-   "meaning_en": "Findings posted on the exact line of the pull request.",
-   "meaning_pt": "Findings publicados na linha exata do pull request."
-  },
-  {
-   "term_en": "independent review instance",
-   "meaning_en": "A review that sees only the diff and criteria, not the session that generated the code.",
-   "meaning_pt": "Revisão que vê só o diff e os critérios, não a sessão que gerou o código."
-  },
-  {
-   "term_en": "prior review findings",
-   "meaning_en": "Earlier findings included in context so only new or unaddressed issues are reported.",
-   "meaning_pt": "Findings anteriores incluídos no contexto para reportar só issues novos ou não resolvidos."
-  },
-  {
-   "term_en": "fixture conventions",
-   "meaning_en": "Reusable test data and setup, documented in CLAUDE.md.",
-   "meaning_pt": "Dados e setup de teste reutilizáveis, documentados no CLAUDE.md."
-  },
-  {
-   "term_en": "valuable test criteria",
-   "meaning_en": "What makes a test valuable in the codebase, documented to reduce low-value tests.",
-   "meaning_pt": "O que torna um teste valioso no codebase, documentado para reduzir testes de pouco valor."
-  },
-  {
-   "term_en": "machine-parseable",
-   "meaning_en": "Ready for automation without regex over free text.",
-   "meaning_pt": "Pronto para automação, sem regex em cima de texto livre."
-  },
-  {
-   "term_en": "edge case",
-   "meaning_en": "A boundary case, fixed by giving a test case with example input and expected output.",
-   "meaning_pt": "Caso de borda, corrigido dando um caso de teste com input de exemplo e output esperado."
-  }
- ]
+  "lesson": "08",
+  "title_en": "Iterative refinement and Claude Code in CI/CD",
+  "title_pt": "Refinamento iterativo e Claude Code em CI/CD",
+  "domain_en": "Domain 3 · Claude Code Configuration & Workflows (20%)",
+  "sections": [
+    {
+      "id": "io-examples",
+      "heading_en": "Concrete input/output examples beat prose descriptions (TS 3.5)",
+      "heading_pt": "Exemplos concretos de input/output vencem a descrição em prosa (TS 3.5)",
+      "assertions_en": [
+        "When you describe a transformation in prose, such as \"normalize the names consistently\", and Claude interprets it differently on each run, the problem is not the model: prose is ambiguous by nature.",
+        "The canonical fix is to provide 2 to 3 concrete input/output examples showing exactly the expected transformation.",
+        "For example, the input name \"MARIA  silva\", phone \"(11)98765-4321\" and vip \"S\" becomes the name \"Maria Silva\", the phone \"+5511987654321\" and the tier \"vip\"; the input name \"joão PEREIRA\", a null phone and vip \"N\" becomes the name \"João Pereira\", a null phone and the tier \"standard\".",
+        "Examples settle at once what paragraphs of instruction do not: capitalization, null handling, phone format and field names.",
+        "The exam contrasts ever more detailed prose, the distractor, with 2 to 3 concrete input/output examples, the answer."
+      ],
+      "assertions_pt": [
+        "Quando você descreve uma transformação em prosa, como \"normalize os nomes de forma consistente\", e o Claude a interpreta de um jeito diferente a cada execução, o problema não é o modelo: prosa é ambígua por natureza.",
+        "A correção canônica é fornecer de 2 a 3 exemplos concretos de input/output mostrando exatamente a transformação esperada.",
+        "Por exemplo, o input com nome \"MARIA  silva\", telefone \"(11)98765-4321\" e vip \"S\" vira o nome \"Maria Silva\", o telefone \"+5511987654321\" e o tier \"vip\"; o input com nome \"joão PEREIRA\", telefone null e vip \"N\" vira o nome \"João Pereira\", telefone null e o tier \"standard\".",
+        "Exemplos resolvem de uma vez o que parágrafos de instrução não resolvem: capitalização, tratamento de null, formato de telefone e nome dos campos.",
+        "A prova contrasta a prosa cada vez mais detalhada, o distrator, com 2 a 3 exemplos concretos de input/output, a resposta."
+      ]
+    },
+    {
+      "id": "test-driven-iteration",
+      "heading_en": "Test-driven iteration: tests first, failures as the guide (TS 3.5)",
+      "heading_pt": "Test-driven iteration: testes primeiro, falhas como guia (TS 3.5)",
+      "assertions_en": [
+        "The flow the Exam Guide describes is to write the test suite first, covering expected behavior, edge cases and performance requirements, then ask for the implementation, and iterate by sharing the test failures instead of re-describing the requirement in prose.",
+        "The steps are: write tests covering the expected behavior and edge cases, such as null values in a migration script; ask Claude for the implementation; run the tests and paste the exact failure output, with input and expected versus obtained output; repeat until the suite passes.",
+        "A test failure is an unambiguous specification of the bug, with a concrete input, a concrete expectation and a concrete result; it is the automated version of input/output examples.",
+        "To fix a specific edge case, provide the test case with example input and expected output, not \"handle nulls better\".",
+        "Rule of thumb: when prose descriptions of the same requirement produce versions that do not converge, fixing one case and breaking another, stop describing, write the test that defines it and share the failure.",
+        "If they are distinct problems whose fixes interact, that is the interacting-issues case: a single detailed message with all of them."
+      ],
+      "assertions_pt": [
+        "O fluxo que o Exam Guide descreve é escrever a suíte de testes antes, cobrindo comportamento esperado, edge cases e requisitos de performance, depois pedir a implementação e iterar compartilhando as falhas dos testes, em vez de re-descrever o requisito em prosa.",
+        "Os passos são: escrever os testes cobrindo o comportamento esperado e os edge cases, como valores null num script de migração; pedir a implementação ao Claude; rodar os testes e colar a saída exata da falha, com input e output esperado versus obtido; repetir até a suíte passar.",
+        "A falha do teste é uma especificação não ambígua do bug, com input concreto, expectativa concreta e resultado concreto; é a versão automatizada dos exemplos de input/output.",
+        "Para corrigir um edge case específico, forneça o caso de teste com input de exemplo e output esperado, não \"trate melhor os nulos\".",
+        "Regra de bolso: quando a descrição em prosa de um mesmo requisito gera versões que não convergem, corrigindo um caso e quebrando outro, pare de descrever, escreva o teste que o define e compartilhe a falha.",
+        "Se são problemas distintos cujas correções interagem, é o caso dos issues interagentes: uma única mensagem detalhada com todos."
+      ]
+    },
+    {
+      "id": "interview-pattern",
+      "heading_en": "Interview pattern: Claude asks before implementing (TS 3.5)",
+      "heading_pt": "Interview pattern: o Claude pergunta antes de implementar (TS 3.5)",
+      "assertions_en": [
+        "In domains you do not master, such as caching strategies or the failure modes of a protocol, you do not know which design decisions matter, and Claude, told to \"implement X\", will pick defaults silently.",
+        "The interview pattern reverses the direction: before coding, ask Claude to interview you with questions about requirements, constraints and failure modes you may not have considered, and to start coding only after you answer.",
+        "It surfaces considerations you did not anticipate, such as cache invalidation, behavior under partial failure and concurrency, before they become rework.",
+        "The classic distractor is \"write a more detailed prompt\": you cannot detail what you do not know exists.",
+        "Rule of thumb: unfamiliar domain, Claude asks before coding; known transformation described ambiguously, input/output examples."
+      ],
+      "assertions_pt": [
+        "Em domínios que você não domina, como estratégias de cache ou os modos de falha de um protocolo, você não sabe quais decisões de design importam, e o Claude, instruído a \"implementar X\", vai escolher defaults em silêncio.",
+        "O interview pattern inverte a direção: antes de codar, peça ao Claude que entreviste você com perguntas sobre requisitos, restrições e modos de falha que você talvez não tenha considerado, e que só comece a codar depois das suas respostas.",
+        "Ele faz emergir considerações que você não antecipou, como invalidação de cache, comportamento em falha parcial e concorrência, antes de virarem retrabalho.",
+        "O distrator clássico é \"escreva um prompt mais detalhado\": você não consegue detalhar o que não sabe que existe.",
+        "Regra de bolso: domínio desconhecido, o Claude pergunta antes de codar; transformação conhecida mas descrita de forma ambígua, exemplos de input/output."
+      ]
+    },
+    {
+      "id": "interacting-vs-independent",
+      "heading_en": "Interacting issues in one message, independent issues in sequence (TS 3.5)",
+      "heading_pt": "Issues interagentes numa única mensagem, independentes em sequência (TS 3.5)",
+      "assertions_en": [
+        "Fixes that interact, such as token refresh and session timeout, where changing one changes the behavior of the other, go in a single detailed message describing all of them, so Claude can reason about the interaction and produce a coherent solution.",
+        "Fixing interacting issues in sequence produces the cycle \"fixed A, broke B; fixed B, broke A\".",
+        "Independent issues, such as a parser bug and a typo in a log, follow normal sequential iteration, one at a time, at no cost.",
+        "The exam question is always whether the fixes touch each other; if they do, same message."
+      ],
+      "assertions_pt": [
+        "Fixes que interagem, como refresh de token e timeout de sessão, em que mexer num muda o comportamento do outro, vão numa única mensagem detalhada descrevendo todos, para o Claude raciocinar sobre a interação e produzir uma solução coerente.",
+        "Corrigir issues interagentes em sequência gera o ciclo \"consertei A, quebrei B; consertei B, quebrei A\".",
+        "Issues independentes, como um bug no parser e um typo no log, seguem a iteração sequencial normal, um de cada vez, sem custo.",
+        "A pergunta de prova é sempre se os fixes se tocam; se sim, mesma mensagem."
+      ]
+    },
+    {
+      "id": "feedback-exercise",
+      "heading_en": "Writing the next iteration's feedback (TS 3.5)",
+      "heading_pt": "Escrevendo o feedback da próxima iteração (TS 3.5)",
+      "assertions_en": [
+        "Good feedback states the context and gives each problem as input, expected and obtained, including the edge cases, such as a blank name that must become null and a null name that must not become the string \"null\".",
+        "Case normalization and empty/null normalization go together in the same message, because case conversion, whitespace trimming and missing-value handling share the same normalization pipeline and their order can change the final name.",
+        "A log typo goes to a separate iteration, because it does not alter that pipeline or its tests.",
+        "The rationale is part of the answer: the first two fixes can invalidate each other if made in isolation, while the typo can be fixed later without changing any input/output pair."
+      ],
+      "assertions_pt": [
+        "Um bom feedback dá o contexto e apresenta cada problema como input, esperado e obtido, incluindo os casos de borda, como um nome em branco que deve virar null e um nome null que não pode virar a string \"null\".",
+        "Capitalização e normalização de vazio/null vão juntas na mesma mensagem, porque conversão de caixa, remoção de espaços e tratamento de valor ausente compartilham o mesmo pipeline de normalização, e a ordem entre eles pode mudar o nome final.",
+        "Um typo no log vai para uma iteração separada, porque não altera esse pipeline nem seus testes.",
+        "A justificativa é parte da resposta: as duas primeiras correções podem se invalidar se forem feitas isoladamente, enquanto o typo pode ser corrigido depois sem mudar nenhum par de entrada e saída."
+      ]
+    },
+    {
+      "id": "non-interactive-print",
+      "heading_en": "Non-interactive mode: the -p / --print flag (TS 3.6)",
+      "heading_pt": "Modo não-interativo: a flag -p / --print (TS 3.6)",
+      "assertions_en": [
+        "In a pipeline there is no human to type, so running claude \"Analyze this pull request\" in a CI job leaves the process waiting for interactive input until the job dies by timeout.",
+        "The documented solution is the -p flag, or --print: it processes the prompt, prints the result to stdout and exits."
+      ],
+      "assertions_pt": [
+        "Num pipeline não há humano para digitar, então rodar claude \"Analyze this pull request\" num job de CI deixa o processo esperando input interativo até o job morrer por timeout.",
+        "A solução documentada é a flag -p, ou --print: ela processa o prompt, imprime o resultado em stdout e encerra."
+      ]
+    },
+    {
+      "id": "structured-output",
+      "heading_en": "Structured output: --output-format json plus --json-schema (TS 3.6)",
+      "heading_pt": "Output estruturado: --output-format json mais --json-schema (TS 3.6)",
+      "assertions_en": [
+        "Free text is not parseable by the pipeline; to post findings automatically as inline PR comments, the output must be valid JSON in a known schema.",
+        "With --output-format json and --json-schema, the job can parse deterministically, for example with jq, and post each finding on the right line of the PR, with no regex over free text.",
+        "The validated result is in the structured_output field.",
+        "--output-format json makes the output parseable JSON; --json-schema is what fixes the structure, meaning keys, types and required fields, of valid structured output.",
+        "The schema constrains the structure when valid structured output is produced, but does not guarantee its presence: if the run ends without valid output, the structured_output field may be absent.",
+        "Before consuming findings, the pipeline must check the result and the presence and type of structured_output, and fail explicitly if the check does not pass; absent output does not mean zero findings.",
+        "Describing the format in the prompt reduces variation but stays probabilistic.",
+        "Rule of thumb: if a script consumes the output, the structure is imposed by schema, not requested in text, and the presence of the result is checked by the pipeline."
+      ],
+      "assertions_pt": [
+        "Texto livre não é parseável pelo pipeline; para postar findings automaticamente como comentários inline no PR, o output precisa ser JSON válido num schema conhecido.",
+        "Com --output-format json e --json-schema, o job pode fazer parse determinístico, por exemplo com jq, e postar cada finding na linha certa do PR, sem regex em cima de texto livre.",
+        "O resultado validado fica no campo structured_output.",
+        "--output-format json faz a saída ser JSON parseável; --json-schema é o que fixa a estrutura, ou seja, chaves, tipos e campos obrigatórios, do structured output válido.",
+        "O schema restringe a estrutura quando uma saída estruturada válida é produzida, mas não garante sua presença: se a execução terminar sem saída válida, o campo structured_output pode estar ausente.",
+        "Antes de consumir findings, o pipeline deve verificar o resultado e a presença e o tipo de structured_output, e falhar explicitamente se a verificação não passar; ausência de output não significa zero findings.",
+        "Descrever o formato no prompt reduz a variação, mas continua probabilístico.",
+        "Regra de bolso: se um script consome a saída, a estrutura é imposta por schema, não pedida em texto, e a presença do resultado é verificada pelo pipeline."
+      ]
+    },
+    {
+      "id": "permission-modes-limits-tools",
+      "heading_en": "Permission modes, turn and cost limits, reviewer tools (TS 3.6)",
+      "heading_pt": "Permission modes, limites de turnos e de custo, tools do revisor (TS 3.6)",
+      "assertions_en": [
+        "The -p flag fixes the hang but does not say what Claude may do with nobody watching.",
+        "The Exam Guide does not list these flags, but the official exam objectives in the score report require \"non-interactive flags, permission modes, and cost and turn limits that prevent runaway executions\" and \"restrict unnecessary tool access\", so treat them as exam material.",
+        "What runs without approval is set by --permission-mode, which accepts default, acceptEdits, plan, auto, dontAsk and bypassPermissions.",
+        "How far it can go is set by --max-turns, a limit on agentic turns that ends with an error when reached, and --max-budget-usd, a limit on client-side estimated spend; both work only in -p mode.",
+        "The budget helps contain runaway executions but is not a hard accounting cap: the estimate may differ from the invoice.",
+        "Which tools exist is set by --tools, which restricts the available built-in tools, and --disallowedTools, which removes tools from the session, including MCP tools when specified.",
+        "dontAsk automatically denies every tool call that would require approval; actions that already need no permission keep running, such as reads in the working directory and read-only commands.",
+        "Under dontAsk, allow rules, --allowedTools and approvals by PreToolUse hooks still have their own effect, and an installed mod can still approve some calls, so dontAsk avoids waiting on a prompt but is not an absolute allowlist.",
+        "bypassPermissions skips the permission prompts (the docs and the official course describe it as \"skip all checks\"), while deny rules and denying hooks keep blocking; use it only in an isolated environment, such as a container, a VM or a dev container without internet.",
+        "On a runner with secrets and network access, bypassPermissions is the distractor.",
+        "plan has Claude analyze and propose without editing, and it also works with -p.",
+        "acceptEdits accepts file edits and common filesystem commands, such as mkdir, mv and rm, inside the working directory without asking; it fits a job that generates code, not a reviewer.",
+        "A PR reviewer runs with --permission-mode dontAsk, --tools \"Read,Grep,Glob\", --disallowedTools \"mcp__*\", --max-turns, --max-budget-usd, --output-format json and --json-schema.",
+        "--allowedTools does not restrict: it only pre-approves, so the listed tools run without asking and all other tools remain available; what removes tools is --tools or --disallowedTools.",
+        "--tools limits only the built-in tools, so MCP tools must be handled separately, for example with --disallowedTools \"mcp__*\".",
+        "Removing only Edit and Write is not enough while Bash remains available, because sed -i, mv and rm also change files.",
+        "Rule of thumb: for a reviewer without write tools, restrict the built-in tools to Read, Grep and Glob and handle MCP; only then is the exposed tool set read-only, and this does not replace runner isolation or protection of secrets.",
+        "--allowedTools is for the opposite case: letting a tool you want to run proceed without asking.",
+        "A job that can loop, such as fixing until the tests pass, gets --max-turns and --max-budget-usd; if it starts stopping at the limit before legitimate work is done, adjust the limit or split the task, do not remove the safeguard."
+      ],
+      "assertions_pt": [
+        "A flag -p resolve o travamento, mas não diz o que o Claude pode fazer sem ninguém olhando.",
+        "O Exam Guide não lista essas flags, mas os objetivos oficiais da prova no score report cobram \"non-interactive flags, permission modes, and cost and turn limits that prevent runaway executions\" e \"restrict unnecessary tool access\", então trate-as como matéria de prova.",
+        "O que roda sem aprovação é definido por --permission-mode, que aceita default, acceptEdits, plan, auto, dontAsk e bypassPermissions.",
+        "Até onde ele pode ir é definido por --max-turns, um limite de turnos agênticos que encerra com erro ao ser atingido, e por --max-budget-usd, um limite de gasto estimado no cliente; os dois só funcionam no modo -p.",
+        "O orçamento ajuda a conter execuções descontroladas, mas não é um teto contábil rígido: a estimativa pode divergir da fatura.",
+        "Quais tools existem é definido por --tools, que restringe as tools nativas disponíveis, e por --disallowedTools, que remove tools da sessão, inclusive MCP quando especificado.",
+        "dontAsk nega automaticamente toda tool call que exigiria aprovação; ações que já não pedem permissão continuam rodando, como leituras no diretório de trabalho e comandos read-only.",
+        "Sob dontAsk, regras allow, --allowedTools e aprovações por hooks PreToolUse continuam com efeito próprio, e um mod instalado ainda pode aprovar algumas chamadas, então dontAsk evita a espera por prompt, mas não é uma allowlist absoluta.",
+        "bypassPermissions pula os prompts de permissão (a doc e o curso oficial falam em \"skip all checks\"), enquanto regras deny e hooks que negam continuam bloqueando; use-o só em ambiente isolado, como container, VM ou dev container sem internet.",
+        "Num runner com segredos e acesso à rede, bypassPermissions é o distrator.",
+        "plan faz o Claude analisar e propor sem editar, e também funciona com -p.",
+        "acceptEdits aceita sem perguntar edições de arquivo e comandos comuns de sistema de arquivos, como mkdir, mv e rm, dentro do diretório de trabalho; serve para o job que gera código, não para o revisor.",
+        "Um revisor de PR roda com --permission-mode dontAsk, --tools \"Read,Grep,Glob\", --disallowedTools \"mcp__*\", --max-turns, --max-budget-usd, --output-format json e --json-schema.",
+        "--allowedTools não restringe: ele só pré-aprova, então as tools listadas rodam sem pedir permissão e todas as outras continuam disponíveis; quem tira tools é --tools ou --disallowedTools.",
+        "--tools limita só as tools nativas, então as tools MCP precisam ser tratadas separadamente, por exemplo com --disallowedTools \"mcp__*\".",
+        "Tirar só Edit e Write não basta enquanto o Bash continua disponível, porque sed -i, mv e rm também mudam arquivos.",
+        "Regra de bolso: para um revisor sem tools de escrita, restrinja as nativas a Read, Grep e Glob e trate o MCP; só assim o conjunto de tools expostas é read-only, e isso não substitui o isolamento do runner nem a proteção de segredos.",
+        "--allowedTools é para o caso oposto: deixar rodar sem perguntar uma tool que você quer que rode.",
+        "Um job que pode entrar em loop, como corrigir até o teste passar, recebe --max-turns e --max-budget-usd; se ele começa a parar no limite antes de terminar o trabalho legítimo, ajuste o limite ou divida a tarefa, não tire a trava."
+      ]
+    },
+    {
+      "id": "review-integrations",
+      "heading_en": "The two official review integrations (TS 3.6)",
+      "heading_pt": "As duas integrações oficiais de review (TS 3.6)",
+      "assertions_en": [
+        "Besides calling claude -p in your own script, there are two ready-made integrations, and they are different products.",
+        "GitHub Actions, anthropics/claude-code-action, installed with /install-github-app or manually, runs Claude Code in your workflow; project standards come from CLAUDE.md, read on each run, and CLI flags such as tools, limits and model go in the claude_args input.",
+        "Managed Code Review has Anthropic review the PRs for you, tuned by CLAUDE.md and REVIEW.md.",
+        "REVIEW.md is read from the base or default branch, never from the PR's own changes, so a PR cannot loosen the rules that review it.",
+        "Managed Code Review does not push commits; it comments on the PR.",
+        "Rule of thumb: to control the workflow, flags and limits, use the Action with claude_args; for ready-made review without maintaining a pipeline, use Code Review with the rules in REVIEW.md.",
+        "In both, project conventions live in a repository file, not in the job prompt."
+      ],
+      "assertions_pt": [
+        "Além de chamar claude -p no seu próprio script, há duas integrações prontas, e são produtos diferentes.",
+        "O GitHub Actions, anthropics/claude-code-action, instalado com /install-github-app ou manualmente, roda o Claude Code no seu workflow; os padrões do projeto vêm do CLAUDE.md, lido a cada execução, e flags da CLI como tools, limites e modelo vão no input claude_args.",
+        "O Code Review gerenciado faz a Anthropic revisar os PRs por você, ajustado pelo CLAUDE.md e pelo REVIEW.md.",
+        "O REVIEW.md é lido da branch base ou da default, nunca das mudanças do próprio PR, então um PR não consegue afrouxar as regras que o revisam.",
+        "O Code Review gerenciado não faz push de commits; ele comenta no PR.",
+        "Regra de bolso: para controlar o workflow, as flags e os limites, use a Action com claude_args; para review pronto sem manter pipeline, use o Code Review com as regras no REVIEW.md.",
+        "Nos dois, as convenções do projeto moram em arquivo do repositório, não no prompt do job."
+      ]
+    },
+    {
+      "id": "exam-vs-product",
+      "heading_en": "Exam versus current product (docs checked on 2026-11-15)",
+      "heading_pt": "Prova versus produto atual (documentação conferida em 15/11/2026)",
+      "assertions_en": [
+        "bypassPermissions does not turn everything off: deny rules and a PreToolUse hook's deny keep blocking in this mode, and an explicit ask rule keeps asking.",
+        "Under bypassPermissions, allow rules have no effect, because the mode already approves without asking.",
+        "On the exam, what counts is the mode's role: only in an isolated container or VM.",
+        "With --json-schema, a valid result comes in the structured_output field of the output JSON, only in -p mode; if the run produces no valid output, the field may not exist.",
+        "manual is accepted as an alias of default in --permission-mode, from v2.1.200.",
+        "In the Agent SDK, a stop by budget appears as a result with subtype error_max_budget_usd.",
+        "total_cost_usd and the --max-budget-usd budget use client-side estimates, which can differ from actual billing.",
+        "The exam tests the role of each flag, not these field names."
+      ],
+      "assertions_pt": [
+        "bypassPermissions não desliga tudo: as regras deny e o deny de um hook PreToolUse continuam bloqueando nesse modo, e uma regra ask explícita continua perguntando.",
+        "Sob bypassPermissions, as regras allow não têm efeito, porque o modo já aprova sem perguntar.",
+        "Na prova, vale o papel do modo: só em container ou VM isolados.",
+        "Com --json-schema, um resultado válido vem no campo structured_output do JSON de saída, só no modo -p; se a execução não produzir saída válida, o campo pode não existir.",
+        "manual é aceito como alias de default em --permission-mode, a partir da v2.1.200.",
+        "No Agent SDK, a parada por orçamento aparece como resultado com subtype error_max_budget_usd.",
+        "total_cost_usd e o orçamento de --max-budget-usd usam estimativas calculadas no cliente, que podem divergir da cobrança real.",
+        "A prova cobra o papel de cada flag, não esses nomes de campo."
+      ]
+    },
+    {
+      "id": "claude-md-bare",
+      "heading_en": "CLAUDE.md in CI: normal discovery versus bare mode (TS 3.6)",
+      "heading_pt": "CLAUDE.md no CI: descoberta normal versus modo bare (TS 3.6)",
+      "assertions_en": [
+        "Without --bare, claude -p discovers and loads configuration like an interactive session: CLAUDE.md, auto memory, hooks, Skills, commands, subagents, plugins and the environment's MCP servers.",
+        "On a runner this is not neutral: the documentation warns that -p shows neither the workspace trust dialog nor per-server approval, so do not run content from an untrusted repository assuming non-interactive mode neutralizes it.",
+        "With --bare, startup skips that automatic discovery, reducing variation between machines and avoiding inherited hooks, plugins and MCP; it is the mode the documentation recommends for scripts and runners that need reproducible behavior.",
+        "Under --bare the needed context becomes explicit, for example --append-system-prompt-file \"CLAUDE.md\" for the project's reviewed conventions and --mcp-config only if a server is really needed.",
+        "-p makes the run non-interactive; --bare controls configuration discovery; they are not the same thing.",
+        "CLAUDE.md remains the project-context mechanism for test standards, fixtures, review criteria and what makes a test valuable, which avoids divergent copies of the conventions in each job's prompt.",
+        "Without --bare, CLAUDE.md is discovered normally; with --bare, include it deliberately through the file; in both cases, validate the result and do not treat context as enforcement.",
+        "Rule of thumb: shared conventions live in CLAUDE.md; for reproducible CI with minimal surface, use --bare and supply that context explicitly."
+      ],
+      "assertions_pt": [
+        "Sem --bare, claude -p descobre e carrega configuração como uma sessão interativa: CLAUDE.md, auto memory, hooks, Skills, comandos, subagents, plugins e os MCP servers do ambiente.",
+        "Num runner isso não é neutro: a documentação alerta que -p não mostra nem o diálogo de workspace trust nem a aprovação por server, então não execute conteúdo de um repositório não confiável presumindo que o modo não-interativo o neutraliza.",
+        "Com --bare, a inicialização ignora essa descoberta automática, reduzindo a variação entre máquinas e evitando hooks, plugins e MCP herdados; é o modo que a documentação recomenda para scripts e runners que precisam de comportamento reproduzível.",
+        "Com --bare, o contexto necessário passa a ser explícito, por exemplo --append-system-prompt-file \"CLAUDE.md\" para as convenções revisadas do projeto e --mcp-config somente se um server for realmente necessário.",
+        "-p torna a execução não-interativa; --bare controla a descoberta de configuração; não são a mesma coisa.",
+        "O CLAUDE.md continua sendo o mecanismo de contexto de projeto para padrões de teste, fixtures, critérios de review e o que torna um teste valioso, o que evita cópias divergentes das convenções no prompt de cada job.",
+        "Sem --bare, o CLAUDE.md é descoberto normalmente; com --bare, inclua-o deliberadamente pelo arquivo; nos dois casos, valide o resultado e não trate contexto como enforcement.",
+        "Regra de bolso: convenções compartilhadas moram no CLAUDE.md; em CI reproduzível e com superfície mínima, use --bare e forneça esse contexto explicitamente."
+      ]
+    },
+    {
+      "id": "self-review-bias",
+      "heading_en": "Self-review bias: the generating session is a worse reviewer (TS 3.6)",
+      "heading_pt": "Self-review bias: a sessão que gerou o código é pior revisora dele (TS 3.6)",
+      "assertions_en": [
+        "The session that wrote the code has already decided its approach is correct, and its context is contaminated by the reasoning that produced the code.",
+        "The result is shallow review and a tendency to approve its own choices.",
+        "The architectural fix is to review in an independent instance that sees only the diff and the review criteria, without the generation history.",
+        "In CI this comes naturally: the review job is a new claude -p invocation, not a continuation of the author's session."
+      ],
+      "assertions_pt": [
+        "A sessão que escreveu o código já decidiu que aquela abordagem é correta, e o contexto dela está contaminado pelo raciocínio que produziu o código.",
+        "O resultado é review raso e tendência a aprovar as próprias escolhas.",
+        "A correção arquitetural é revisar numa instância independente, que vê só o diff e os critérios de review, sem o histórico de geração.",
+        "Em CI isso é natural: o job de review é uma invocação nova de claude -p, não a continuação da sessão do autor."
+      ]
+    },
+    {
+      "id": "re-reviews",
+      "heading_en": "Re-running reviews after new commits: only new or unresolved issues (TS 3.6)",
+      "heading_pt": "Re-rodando reviews após novos commits: só issues novos ou não resolvidos (TS 3.6)",
+      "assertions_en": [
+        "When the review runs on every push without care, each run re-posts the same findings, the PR piles up duplicate comments and developers start ignoring the bot.",
+        "The solution is to include the previous findings in the new run's context and instruct explicitly: report only new issues or previously reported issues that are still unaddressed.",
+        "The same principle applies to test generation: include the existing test files in context, so Claude does not suggest scenarios the suite already covers."
+      ],
+      "assertions_pt": [
+        "Quando o review roda a cada push sem cuidado, cada execução reposta os mesmos findings, o PR acumula comentários duplicados e os devs passam a ignorar o bot.",
+        "A solução é incluir os findings anteriores no contexto da nova execução e instruir explicitamente: reporte só issues novos ou issues já reportados que continuam sem solução.",
+        "O mesmo princípio vale para geração de testes: inclua os arquivos de teste existentes no contexto, para o Claude não sugerir cenários que a suíte já cobre."
+      ]
+    },
+    {
+      "id": "ci-repair-exercise",
+      "heading_en": "Repairing a review job and its pipeline gate (TS 3.6)",
+      "heading_pt": "Reparando um job de review e o gate do pipeline (TS 3.6)",
+      "assertions_en": [
+        "On a shared runner with network access and secrets, a review job that must only read and report is unsafe if it runs without -p, with bypassPermissions, with --allowedTools as if it restricted anything, without --max-budget-usd, and with a prompt asking it to fix findings.",
+        "The repaired job runs claude --bare -p with a prompt to report findings only, --append-system-prompt-file \"CLAUDE.md\", --permission-mode dontAsk, --tools \"Read,Grep,Glob\", --disallowedTools \"mcp__*\", --max-turns, --max-budget-usd, --output-format json and --json-schema.",
+        "--bare prevents discovery of the host's hooks, Skills, plugins, MCP and other configuration, and --append-system-prompt-file supplies the reviewed conventions that bare mode does not load automatically.",
+        "--disallowedTools \"mcp__*\" makes the no-MCP policy explicit even with --bare, no --mcp-config is supplied, and no --allowedTools pre-approves unnecessary actions.",
+        "The gate uses jq -e to require is_error false, structured_output as an object and findings as an array, and fails the job before publishing if the field is missing or the run errored.",
+        "The fallback .structured_output.findings // [] is wrong, because it turns a failed run into a false \"no findings\" review.",
+        "A legitimate empty array is still a valid result, different from a missing field."
+      ],
+      "assertions_pt": [
+        "Num runner compartilhado com rede e segredos, um job de review que deve apenas ler e reportar é inseguro se roda sem -p, com bypassPermissions, com --allowedTools como se restringisse algo, sem --max-budget-usd e com um prompt pedindo para corrigir os findings.",
+        "O job reparado roda claude --bare -p com um prompt para só reportar findings, --append-system-prompt-file \"CLAUDE.md\", --permission-mode dontAsk, --tools \"Read,Grep,Glob\", --disallowedTools \"mcp__*\", --max-turns, --max-budget-usd, --output-format json e --json-schema.",
+        "--bare impede a descoberta de hooks, Skills, plugins, MCP e outras configurações do host, e --append-system-prompt-file fornece as convenções revisadas que o modo bare não carrega automaticamente.",
+        "--disallowedTools \"mcp__*\" deixa explícita a política de nenhum MCP mesmo com --bare, nenhum --mcp-config é fornecido e nenhum --allowedTools pré-aprova ações desnecessárias.",
+        "O gate usa jq -e para exigir is_error false, structured_output como objeto e findings como array, e falha o job antes de publicar se o campo estiver ausente ou a execução tiver erro.",
+        "O fallback .structured_output.findings // [] está errado, porque transforma uma execução que falhou num falso review de \"nenhum finding\".",
+        "Um array vazio legítimo continua sendo um resultado válido, diferente de campo ausente."
+      ]
+    },
+    {
+      "id": "pegadinha-do-dia",
+      "heading_en": "Trap of the day",
+      "heading_pt": "Pegadinha do dia",
+      "assertions_en": [
+        "In CI/CD questions, the first kind of distractor is features that do not exist, such as CLAUDE_HEADLESS=true, --batch or --ci-mode, or shell workarounds, such as < /dev/null or timeout 60 claude, that do not fix the root cause.",
+        "The second, more treacherous kind is a real flag in the wrong role: bypassPermissions on a runner with secrets, --allowedTools to \"restrict\" the reviewer, or a prompt instruction in place of --max-turns.",
+        "The documented flags the exam tests are -p/--print, --output-format json, --json-schema, --permission-mode, --max-turns, --max-budget-usd and --tools/--disallowedTools.",
+        "A flag or environment variable that is not in the Claude Code documentation is a distractor, and a flag that exists is the answer only if it plays the role asked for.",
+        "Job hangs waiting for input, -p; output structure, --output-format json plus --json-schema; missing structured_output, check and fail.",
+        "Job with no human that cannot ask for approval, dontAsk; loop or unbounded estimated spend, --max-turns and --max-budget-usd; read-only reviewer, restrict built-in tools and handle MCP with --tools and --disallowedTools."
+      ],
+      "assertions_pt": [
+        "Nas questões de CI/CD, o primeiro tipo de distrator são features que não existem, como CLAUDE_HEADLESS=true, --batch ou --ci-mode, ou gambiarras de shell, como < /dev/null ou timeout 60 claude, que não resolvem a causa raiz.",
+        "O segundo tipo, mais traiçoeiro, é flag real no papel errado: bypassPermissions num runner com segredos, --allowedTools para \"restringir\" o revisor, ou instrução no prompt no lugar de --max-turns.",
+        "As flags documentadas que a prova cobra são -p/--print, --output-format json, --json-schema, --permission-mode, --max-turns, --max-budget-usd e --tools/--disallowedTools.",
+        "Flag ou variável de ambiente que não está na documentação do Claude Code é distrator, e flag que existe só é resposta se faz o papel pedido.",
+        "Job trava esperando input, -p; estrutura da saída, --output-format json mais --json-schema; ausência de structured_output, verificar e falhar.",
+        "Job sem humano que não pode pedir aprovação, dontAsk; loop ou gasto estimado sem limite, --max-turns e --max-budget-usd; revisor só leitura, restringir as nativas e tratar MCP com --tools e --disallowedTools."
+      ]
+    }
+  ],
+  "glossary": [
+    {
+      "term_en": "iterative refinement",
+      "meaning_en": "Progressive improvement of the output across iterations.",
+      "meaning_pt": "Melhoria progressiva do resultado ao longo das iterações."
+    },
+    {
+      "term_en": "concrete input/output examples",
+      "meaning_en": "2 to 3 pairs that show exactly the expected transformation.",
+      "meaning_pt": "2 a 3 pares que mostram exatamente a transformação esperada."
+    },
+    {
+      "term_en": "test-driven iteration",
+      "meaning_en": "Write the test suite first, then iterate by sharing test failures.",
+      "meaning_pt": "Escrever a suíte de testes antes e iterar compartilhando as falhas dos testes."
+    },
+    {
+      "term_en": "interview pattern",
+      "meaning_en": "Claude asks questions before coding, to surface design considerations.",
+      "meaning_pt": "O Claude faz perguntas antes de codar, para fazer emergir considerações de design."
+    },
+    {
+      "term_en": "interacting issues",
+      "meaning_en": "Problems whose fixes affect each other; they go in a single detailed message.",
+      "meaning_pt": "Problemas cujas correções se afetam; vão numa única mensagem detalhada."
+    },
+    {
+      "term_en": "non-interactive mode",
+      "meaning_en": "Running without waiting for user input, enabled by -p.",
+      "meaning_pt": "Execução sem esperar input do usuário, ativada por -p."
+    },
+    {
+      "term_en": "-p / --print",
+      "meaning_en": "Processes the prompt, prints the result to stdout and exits.",
+      "meaning_pt": "Processa o prompt, imprime o resultado em stdout e encerra."
+    },
+    {
+      "term_en": "--bare",
+      "meaning_en": "Skips automatic discovery of the host's configuration; context and integrations are supplied explicitly.",
+      "meaning_pt": "Ignora a descoberta automática de configuração do host; contexto e integrações são fornecidos explicitamente."
+    },
+    {
+      "term_en": "--output-format json",
+      "meaning_en": "Makes the output parseable JSON.",
+      "meaning_pt": "Faz a saída ser JSON parseável."
+    },
+    {
+      "term_en": "--json-schema",
+      "meaning_en": "Constrains valid structured output to a schema; does not guarantee its presence.",
+      "meaning_pt": "Restringe o structured output válido a um schema; não garante sua presença."
+    },
+    {
+      "term_en": "structured_output",
+      "meaning_en": "Field with the validated result; it may be missing if the run produced no valid output.",
+      "meaning_pt": "Campo com o resultado validado; pode faltar se a execução não gerar saída válida."
+    },
+    {
+      "term_en": "permission mode",
+      "meaning_en": "What runs without approval.",
+      "meaning_pt": "O que roda sem aprovação."
+    },
+    {
+      "term_en": "dontAsk",
+      "meaning_en": "Denies what would require approval; keeps actions that need no prompt and approvals by rules, hooks or mods.",
+      "meaning_pt": "Nega o que exigiria aprovação; preserva ações sem prompt e aprovações por regras, hooks ou mods."
+    },
+    {
+      "term_en": "bypassPermissions",
+      "meaning_en": "Skips permission prompts; deny rules and denying hooks still apply; isolated environments only.",
+      "meaning_pt": "Pula os prompts de permissão; regras deny e hooks que negam continuam valendo; só em ambiente isolado."
+    },
+    {
+      "term_en": "cost and turn limits",
+      "meaning_en": "--max-turns and --max-budget-usd; the budget is a client-side estimate, not a hard accounting cap.",
+      "meaning_pt": "--max-turns e --max-budget-usd; o orçamento é estimativa no cliente, não teto contábil rígido."
+    },
+    {
+      "term_en": "runaway execution",
+      "meaning_en": "A run that loops without stopping.",
+      "meaning_pt": "Execução descontrolada, um loop que não para."
+    },
+    {
+      "term_en": "restrict tool access",
+      "meaning_en": "Restrict built-in tools with --tools and handle MCP separately with --disallowedTools.",
+      "meaning_pt": "Restringir as nativas com --tools e tratar o MCP separadamente com --disallowedTools."
+    },
+    {
+      "term_en": "inline PR comments",
+      "meaning_en": "Findings posted on the exact line of the pull request.",
+      "meaning_pt": "Findings publicados na linha exata do pull request."
+    },
+    {
+      "term_en": "independent review instance",
+      "meaning_en": "A review that sees only the diff and criteria, not the session that generated the code.",
+      "meaning_pt": "Revisão que vê só o diff e os critérios, não a sessão que gerou o código."
+    },
+    {
+      "term_en": "prior review findings",
+      "meaning_en": "Earlier findings included in context so only new or unaddressed issues are reported.",
+      "meaning_pt": "Findings anteriores incluídos no contexto para reportar só issues novos ou não resolvidos."
+    },
+    {
+      "term_en": "fixture conventions",
+      "meaning_en": "Reusable test data and setup, documented in CLAUDE.md.",
+      "meaning_pt": "Dados e setup de teste reutilizáveis, documentados no CLAUDE.md."
+    },
+    {
+      "term_en": "valuable test criteria",
+      "meaning_en": "What makes a test valuable in the codebase, documented to reduce low-value tests.",
+      "meaning_pt": "O que torna um teste valioso no codebase, documentado para reduzir testes de pouco valor."
+    },
+    {
+      "term_en": "machine-parseable",
+      "meaning_en": "Ready for automation without regex over free text.",
+      "meaning_pt": "Pronto para automação, sem regex em cima de texto livre."
+    },
+    {
+      "term_en": "edge case",
+      "meaning_en": "A boundary case, fixed by giving a test case with example input and expected output.",
+      "meaning_pt": "Caso de borda, corrigido dando um caso de teste com input de exemplo e output esperado."
+    }
+  ]
 }

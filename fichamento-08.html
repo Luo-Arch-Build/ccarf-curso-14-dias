@@ -76,14 +76,14 @@
   <ul class="assert">
     <li>When you describe a transformation in prose, such as "normalize the names consistently", and Claude interprets it differently on each run, the problem is not the model: prose is ambiguous by nature.</li>
     <li>The canonical fix is to provide 2 to 3 concrete input/output examples showing exactly the expected transformation.</li>
-    <li>For example, the input name "MARIA  silva", phone "(11)98765-4321" and vip "S" becomes the name "Maria Silva", the phone "+5511987654321" and the tier "vip"; a record with a null phone keeps the phone null.</li>
+    <li>For example, the input name "MARIA  silva", phone "(11)98765-4321" and vip "S" becomes the name "Maria Silva", the phone "+5511987654321" and the tier "vip"; the input name "joão PEREIRA", a null phone and vip "N" becomes the name "João Pereira", a null phone and the tier "standard".</li>
     <li>Examples settle at once what paragraphs of instruction do not: capitalization, null handling, phone format and field names.</li>
     <li>The exam contrasts ever more detailed prose, the distractor, with 2 to 3 concrete input/output examples, the answer.</li>
   </ul>
   <ul class="assert pt-block pt">
     <li>Quando você descreve uma transformação em prosa, como "normalize os nomes de forma consistente", e o Claude a interpreta de um jeito diferente a cada execução, o problema não é o modelo: prosa é ambígua por natureza.</li>
     <li>A correção canônica é fornecer de 2 a 3 exemplos concretos de input/output mostrando exatamente a transformação esperada.</li>
-    <li>Por exemplo, o input com nome "MARIA  silva", telefone "(11)98765-4321" e vip "S" vira o nome "Maria Silva", o telefone "+5511987654321" e o tier "vip"; um registro com telefone null mantém o telefone null.</li>
+    <li>Por exemplo, o input com nome "MARIA  silva", telefone "(11)98765-4321" e vip "S" vira o nome "Maria Silva", o telefone "+5511987654321" e o tier "vip"; o input com nome "joão PEREIRA", telefone null e vip "N" vira o nome "João Pereira", telefone null e o tier "standard".</li>
     <li>Exemplos resolvem de uma vez o que parágrafos de instrução não resolvem: capitalização, tratamento de null, formato de telefone e nome dos campos.</li>
     <li>A prova contrasta a prosa cada vez mais detalhada, o distrator, com 2 a 3 exemplos concretos de input/output, a resposta.</li>
   </ul>
@@ -234,7 +234,7 @@
     <li>Which tools exist is set by --tools, which restricts the available built-in tools, and --disallowedTools, which removes tools from the session, including MCP tools when specified.</li>
     <li>dontAsk automatically denies every tool call that would require approval; actions that already need no permission keep running, such as reads in the working directory and read-only commands.</li>
     <li>Under dontAsk, allow rules, --allowedTools and approvals by PreToolUse hooks still have their own effect, and an installed mod can still approve some calls, so dontAsk avoids waiting on a prompt but is not an absolute allowlist.</li>
-    <li>bypassPermissions skips the permission prompts, while deny rules and denying hooks keep blocking; use it only in an isolated environment, such as a container, a VM or a dev container without internet.</li>
+    <li>bypassPermissions skips the permission prompts (the docs and the official course describe it as "skip all checks"), while deny rules and denying hooks keep blocking; use it only in an isolated environment, such as a container, a VM or a dev container without internet.</li>
     <li>On a runner with secrets and network access, bypassPermissions is the distractor.</li>
     <li>plan has Claude analyze and propose without editing, and it also works with -p.</li>
     <li>acceptEdits accepts file edits and common filesystem commands, such as mkdir, mv and rm, inside the working directory without asking; it fits a job that generates code, not a reviewer.</li>
@@ -255,7 +255,7 @@
     <li>Quais tools existem é definido por --tools, que restringe as tools nativas disponíveis, e por --disallowedTools, que remove tools da sessão, inclusive MCP quando especificado.</li>
     <li>dontAsk nega automaticamente toda tool call que exigiria aprovação; ações que já não pedem permissão continuam rodando, como leituras no diretório de trabalho e comandos read-only.</li>
     <li>Sob dontAsk, regras allow, --allowedTools e aprovações por hooks PreToolUse continuam com efeito próprio, e um mod instalado ainda pode aprovar algumas chamadas, então dontAsk evita a espera por prompt, mas não é uma allowlist absoluta.</li>
-    <li>bypassPermissions pula os prompts de permissão, enquanto regras deny e hooks que negam continuam bloqueando; use-o só em ambiente isolado, como container, VM ou dev container sem internet.</li>
+    <li>bypassPermissions pula os prompts de permissão (a doc e o curso oficial falam em "skip all checks"), enquanto regras deny e hooks que negam continuam bloqueando; use-o só em ambiente isolado, como container, VM ou dev container sem internet.</li>
     <li>Num runner com segredos e acesso à rede, bypassPermissions é o distrator.</li>
     <li>plan faz o Claude analisar e propor sem editar, e também funciona com -p.</li>
     <li>acceptEdits aceita sem perguntar edições de arquivo e comandos comuns de sistema de arquivos, como mkdir, mv e rm, dentro do diretório de trabalho; serve para o job que gera código, não para o revisor.</li>
@@ -396,7 +396,7 @@
   </div>
   <div class="pt-block pt" style="margin-top:2px"><strong>Reparando um job de review e o gate do pipeline (TS 3.6)</strong></div>
   <ul class="assert">
-    <li>On a shared runner with network access and secrets, a review job that must only read and report is unsafe if it runs without -p, with bypassPermissions, with --allowedTools as if it restricted anything, and with a prompt asking it to fix findings.</li>
+    <li>On a shared runner with network access and secrets, a review job that must only read and report is unsafe if it runs without -p, with bypassPermissions, with --allowedTools as if it restricted anything, without --max-budget-usd, and with a prompt asking it to fix findings.</li>
     <li>The repaired job runs claude --bare -p with a prompt to report findings only, --append-system-prompt-file "CLAUDE.md", --permission-mode dontAsk, --tools "Read,Grep,Glob", --disallowedTools "mcp__*", --max-turns, --max-budget-usd, --output-format json and --json-schema.</li>
     <li>--bare prevents discovery of the host's hooks, Skills, plugins, MCP and other configuration, and --append-system-prompt-file supplies the reviewed conventions that bare mode does not load automatically.</li>
     <li>--disallowedTools "mcp__*" makes the no-MCP policy explicit even with --bare, no --mcp-config is supplied, and no --allowedTools pre-approves unnecessary actions.</li>
@@ -405,7 +405,7 @@
     <li>A legitimate empty array is still a valid result, different from a missing field.</li>
   </ul>
   <ul class="assert pt-block pt">
-    <li>Num runner compartilhado com rede e segredos, um job de review que deve apenas ler e reportar é inseguro se roda sem -p, com bypassPermissions, com --allowedTools como se restringisse algo e com um prompt pedindo para corrigir os findings.</li>
+    <li>Num runner compartilhado com rede e segredos, um job de review que deve apenas ler e reportar é inseguro se roda sem -p, com bypassPermissions, com --allowedTools como se restringisse algo, sem --max-budget-usd e com um prompt pedindo para corrigir os findings.</li>
     <li>O job reparado roda claude --bare -p com um prompt para só reportar findings, --append-system-prompt-file "CLAUDE.md", --permission-mode dontAsk, --tools "Read,Grep,Glob", --disallowedTools "mcp__*", --max-turns, --max-budget-usd, --output-format json e --json-schema.</li>
     <li>--bare impede a descoberta de hooks, Skills, plugins, MCP e outras configurações do host, e --append-system-prompt-file fornece as convenções revisadas que o modo bare não carrega automaticamente.</li>
     <li>--disallowedTools "mcp__*" deixa explícita a política de nenhum MCP mesmo com --bare, nenhum --mcp-config é fornecido e nenhum --allowedTools pré-aprova ações desnecessárias.</li>
