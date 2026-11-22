@@ -76,14 +76,14 @@
   <ul class="assert">
     <li>When you describe a transformation in prose, such as "normalize the names consistently", and Claude interprets it differently on each run, the problem is not the model: prose is ambiguous by nature.</li>
     <li>The canonical fix is to provide 2 to 3 concrete input/output examples showing exactly the expected transformation.</li>
-    <li>For example, with the input fields nome, tel and vip mapped to the output fields name, phone and tier, the input name "MARIA  silva", phone "(11)98765-4321" and vip "S" becomes the name "Maria Silva", the phone "+5511987654321" and the tier "vip"; the input name "joão PEREIRA", a null phone and vip "N" becomes the name "João Pereira", a null phone and the tier "standard".</li>
+    <li>For example, with the input fields nome, tel and vip mapped to the output fields name, phone and tier, the input name "MARIA  silva" (with a double space), phone "(11)98765-4321" and vip "S" becomes the name "Maria Silva", the phone "+5511987654321" and the tier "vip"; the input name "joão PEREIRA", a null phone and vip "N" becomes the name "João Pereira", a null phone and the tier "standard".</li>
     <li>Examples settle at once what paragraphs of instruction do not: capitalization, null handling, phone format and field names.</li>
     <li>The exam contrasts ever more detailed prose, the distractor, with 2 to 3 concrete input/output examples, the answer.</li>
   </ul>
   <ul class="assert pt-block pt">
     <li>Quando você descreve uma transformação em prosa, como "normalize os nomes de forma consistente", e o Claude a interpreta de um jeito diferente a cada execução, o problema não é o modelo: prosa é ambígua por natureza.</li>
     <li>A correção canônica é fornecer de 2 a 3 exemplos concretos de input/output mostrando exatamente a transformação esperada.</li>
-    <li>Por exemplo, com os campos de input nome, tel e vip mapeados para os campos de output name, phone e tier, o input com nome "MARIA  silva", telefone "(11)98765-4321" e vip "S" vira o nome "Maria Silva", o telefone "+5511987654321" e o tier "vip"; o input com nome "joão PEREIRA", telefone null e vip "N" vira o nome "João Pereira", telefone null e o tier "standard".</li>
+    <li>Por exemplo, com os campos de input nome, tel e vip mapeados para os campos de output name, phone e tier, o input com nome "MARIA  silva" (com espaço duplo), telefone "(11)98765-4321" e vip "S" vira o nome "Maria Silva", o telefone "+5511987654321" e o tier "vip"; o input com nome "joão PEREIRA", telefone null e vip "N" vira o nome "João Pereira", telefone null e o tier "standard".</li>
     <li>Exemplos resolvem de uma vez o que parágrafos de instrução não resolvem: capitalização, tratamento de null, formato de telefone e nome dos campos.</li>
     <li>A prova contrasta a prosa cada vez mais detalhada, o distrator, com 2 a 3 exemplos concretos de input/output, a resposta.</li>
   </ul>
@@ -396,7 +396,7 @@
   </div>
   <div class="pt-block pt" style="margin-top:2px"><strong>Reparando um job de review e o gate do pipeline (TS 3.6)</strong></div>
   <ul class="assert">
-    <li>On a shared runner with network access and secrets, a review job that must only read and report is unsafe if it runs without -p, with bypassPermissions, with --allowedTools as if it restricted anything, without --max-budget-usd, and with a prompt asking it to fix findings.</li>
+    <li>On a shared runner with network access and secrets, a review job that must only read and report is unsafe if it runs without -p, with bypassPermissions, with --allowedTools as if it restricted anything, without --max-budget-usd, without denying MCP tools, and with a prompt asking it to fix findings.</li>
     <li>The repaired job runs claude --bare -p with a prompt to report findings only, --append-system-prompt-file "CLAUDE.md", --permission-mode dontAsk, --tools "Read,Grep,Glob", --disallowedTools "mcp__*", --max-turns, --max-budget-usd, --output-format json and --json-schema.</li>
     <li>--bare prevents discovery of the host's hooks, Skills, plugins, MCP and other configuration, and --append-system-prompt-file supplies the reviewed conventions that bare mode does not load automatically.</li>
     <li>--disallowedTools "mcp__*" makes the no-MCP policy explicit even with --bare, no --mcp-config is supplied, and no --allowedTools pre-approves unnecessary actions.</li>
@@ -405,7 +405,7 @@
     <li>A legitimate empty array is still a valid result, different from a missing field.</li>
   </ul>
   <ul class="assert pt-block pt">
-    <li>Num runner compartilhado com rede e segredos, um job de review que deve apenas ler e reportar é inseguro se roda sem -p, com bypassPermissions, com --allowedTools como se restringisse algo, sem --max-budget-usd e com um prompt pedindo para corrigir os findings.</li>
+    <li>Num runner compartilhado com rede e segredos, um job de review que deve apenas ler e reportar é inseguro se roda sem -p, com bypassPermissions, com --allowedTools como se restringisse algo, sem --max-budget-usd, sem negar tools MCP e com um prompt pedindo para corrigir os findings.</li>
     <li>O job reparado roda claude --bare -p com um prompt para só reportar findings, --append-system-prompt-file "CLAUDE.md", --permission-mode dontAsk, --tools "Read,Grep,Glob", --disallowedTools "mcp__*", --max-turns, --max-budget-usd, --output-format json e --json-schema.</li>
     <li>--bare impede a descoberta de hooks, Skills, plugins, MCP e outras configurações do host, e --append-system-prompt-file fornece as convenções revisadas que o modo bare não carrega automaticamente.</li>
     <li>--disallowedTools "mcp__*" deixa explícita a política de nenhum MCP mesmo com --bare, nenhum --mcp-config é fornecido e nenhum --allowedTools pré-aprova ações desnecessárias.</li>
