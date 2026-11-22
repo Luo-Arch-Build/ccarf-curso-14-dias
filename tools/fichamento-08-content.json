@@ -11,14 +11,14 @@
       "assertions_en": [
         "When you describe a transformation in prose, such as \"normalize the names consistently\", and Claude interprets it differently on each run, the problem is not the model: prose is ambiguous by nature.",
         "The canonical fix is to provide 2 to 3 concrete input/output examples showing exactly the expected transformation.",
-        "For example, the input name \"MARIA  silva\", phone \"(11)98765-4321\" and vip \"S\" becomes the name \"Maria Silva\", the phone \"+5511987654321\" and the tier \"vip\"; the input name \"joão PEREIRA\", a null phone and vip \"N\" becomes the name \"João Pereira\", a null phone and the tier \"standard\".",
+        "For example, with the input fields nome, tel and vip mapped to the output fields name, phone and tier, the input name \"MARIA  silva\", phone \"(11)98765-4321\" and vip \"S\" becomes the name \"Maria Silva\", the phone \"+5511987654321\" and the tier \"vip\"; the input name \"joão PEREIRA\", a null phone and vip \"N\" becomes the name \"João Pereira\", a null phone and the tier \"standard\".",
         "Examples settle at once what paragraphs of instruction do not: capitalization, null handling, phone format and field names.",
         "The exam contrasts ever more detailed prose, the distractor, with 2 to 3 concrete input/output examples, the answer."
       ],
       "assertions_pt": [
         "Quando você descreve uma transformação em prosa, como \"normalize os nomes de forma consistente\", e o Claude a interpreta de um jeito diferente a cada execução, o problema não é o modelo: prosa é ambígua por natureza.",
         "A correção canônica é fornecer de 2 a 3 exemplos concretos de input/output mostrando exatamente a transformação esperada.",
-        "Por exemplo, o input com nome \"MARIA  silva\", telefone \"(11)98765-4321\" e vip \"S\" vira o nome \"Maria Silva\", o telefone \"+5511987654321\" e o tier \"vip\"; o input com nome \"joão PEREIRA\", telefone null e vip \"N\" vira o nome \"João Pereira\", telefone null e o tier \"standard\".",
+        "Por exemplo, com os campos de input nome, tel e vip mapeados para os campos de output name, phone e tier, o input com nome \"MARIA  silva\", telefone \"(11)98765-4321\" e vip \"S\" vira o nome \"Maria Silva\", o telefone \"+5511987654321\" e o tier \"vip\"; o input com nome \"joão PEREIRA\", telefone null e vip \"N\" vira o nome \"João Pereira\", telefone null e o tier \"standard\".",
         "Exemplos resolvem de uma vez o que parágrafos de instrução não resolvem: capitalização, tratamento de null, formato de telefone e nome dos campos.",
         "A prova contrasta a prosa cada vez mais detalhada, o distrator, com 2 a 3 exemplos concretos de input/output, a resposta."
       ]

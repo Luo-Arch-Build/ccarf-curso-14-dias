@@ -109,7 +109,7 @@
       "heading_pt": "Alternativas restritas e tools cross-role com escopo (TS 2.3)",
       "assertions_en": [
         "Replace generic tools with constrained versions: swap fetch_url, which opens any URL, for load_document, whose handler validates that the target is an allowed document and rejects the rest.",
-        "The deterministic restriction then lives in the executed contract of the tool: the agent cannot use it outside its role, however its reasoning leads it there.",
+        "The deterministic restriction then lives in the executed contract of the tool: the agent cannot use it outside its role, no matter how far its reasoning pushes it that way.",
         "Name, description and input schema help guide and validate the shape of the call but, on their own, do not enforce that semantic target policy.",
         "Rule of thumb: if an agent uses a generic tool outside its specialization, narrow the tool and make the handler enforce the restriction; do not ask nicely in the prompt.",
         "If the synthesis agent frequently needs to check simple facts, such as dates, names and statistics, give it a scoped verify_fact and keep routing complex verifications to the web-search agent through the coordinator.",
