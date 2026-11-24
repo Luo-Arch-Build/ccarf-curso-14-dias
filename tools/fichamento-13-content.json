@@ -117,12 +117,12 @@
       "assertions_en": [
         "Field-level confidence: the model emits a score per extracted field, not one global number per document.",
         "The raw score is not yet a calibrated probability.",
-        "Calibrate with a labeled validation set: validate performance and calibrate thresholds for each field-by-segment (or document) slice, for example \"below 0.82 on valor_total of a handwritten contract goes to the human queue\".",
+        "Calibrate with a labeled validation set: validate performance and calibrate thresholds for each field-by-segment (or document-type) slice, for example \"below 0.82 on valor_total of a handwritten contract goes to the human queue\".",
         "Do not lend an unvalidated segment the confidence measured on another one.",
         "Routing uses alternative triggers: low calibrated confidence, an unvalidated segment, ambiguity or contradiction, and high impact are joined by OR, not by AND.",
         "A high score does not cancel the other triggers.",
         "Separately, auto-approved fields remain eligible for their own stratified random sample, by field and segment or document, sent to humans for audit, measurement of the real error rate and detection of new patterns.",
-        "In the lesson's per-field example for a handwritten contract, partes at 0.94 passes, while valor_total at 0.61 and a null data_vigencia at 0.30 go to the human queue.",
+        "In the lesson's per-field example for a handwritten contract, valor_total at 0.61 and a null data_vigencia at 0.30 go to the human queue.",
         "A self-reported score should not be treated as a calibrated probability before empirical validation.",
         "That does not mean it is always poorly calibrated: it means reading 0.97 as \"97% chance of being right\" must be demonstrated on labeled data, by field and segment.",
         "Until then, the score is an input signal, not a guarantee, and contradiction, an unvalidated segment and high impact still trigger review even with a high score."
@@ -135,7 +135,7 @@
         "O roteamento usa gatilhos alternativos: baixa confiança calibrada, segmento não validado, ambiguidade ou contradição e alto impacto são ligados por OR, não por AND.",
         "Um score alto não cancela os demais gatilhos.",
         "Separadamente, os campos auto-aprovados continuam elegíveis a uma amostra aleatória estratificada própria, por campo e segmento ou documento, enviada a humanos para auditoria, medição do erro real e detecção de padrões novos.",
-        "No exemplo por campo da aula, de um contrato manuscrito, partes a 0,94 passa, enquanto valor_total a 0,61 e data_vigencia nula a 0,30 vão para a fila humana.",
+        "No exemplo por campo da aula, de um contrato manuscrito, valor_total a 0,61 e data_vigencia nula a 0,30 vão para a fila humana.",
         "Um score autorrelatado não deve ser tratado como probabilidade calibrada antes de validação empírica.",
         "Isso não significa que ele seja sempre mal calibrado: significa que interpretar 0,97 como \"97% de chance de acerto\" precisa ser demonstrado em dados rotulados, por campo e segmento.",
         "Até lá, o score é um sinal de entrada, não uma garantia, e contradição, segmento não validado e alto impacto continuam acionando revisão mesmo com score alto."
