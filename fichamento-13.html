@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Notes 13 — Error propagation, human review and provenance · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  .lead { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  section.ficha { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px 20px; margin: 18px 0; border-left: 3px solid var(--accent); }
+  section.ficha > h2 { font-size: 18px; margin: 0 0 4px; border: none; padding: 0; }
+  .ficha-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  ul.assert { margin: 10px 0 0; padding-left: 20px; }
+  ul.assert li { margin: 8px 0; }
+  .ver-traducao { flex: none; background: var(--card2); border: 1px solid var(--border);
+    color: var(--muted); border-radius: 999px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+    white-space: nowrap; transition: border-color .15s, color .15s; }
+  .ver-traducao:hover { color: var(--text); border-color: var(--accent); }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 12px 0 0;
+    display: none; }
+  .pt-block.pt { color: var(--pt); font-size: 13.5px; }
+  section.ficha.show-pt .pt-block { display: block; }
+  ul.assert.pt-block li { margin: 7px 0; }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px;
+    text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.ptm { color: var(--pt); font-size: 13px; }
+  section.ficha.gloss-sec table.gloss td.ptm { display: none; }
+  section.ficha.gloss-sec.show-pt table.gloss td.ptm { display: table-cell; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px;
+    border-top: 1px solid var(--border); font-size: 14px; gap: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / <a href="aula-13.html">Aula 13</a> / Study Notes (EN)</div>
+  <h1>Study Notes 13 — Error propagation, human review and provenance</h1>
+  <div class="meta">
+    <span class="tag">Domain 5 · Context Management &amp; Reliability (15%)</span>
+    <span class="tag">English · narrated</span>
+  </div>
+  <p class="lead">Factual assertions in English for review. Each section has a translation button that
+  reveals the pt-BR version. The audio narration is English only.</p>
+</header>
+
+<section class="ficha" id="structured-error-context">
+  <div class="ficha-head">
+    <h2>Structured error propagation (TS 5.3)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Propagação de erros estruturada (TS 5.3)</strong></div>
+  <ul class="assert">
+    <li>In a multi-agent system, a failure in a subagent is information, not a disaster.</li>
+    <li>The exam always asks the same question: what does the coordinator receive when something breaks?</li>
+    <li>The correct answer is structured error context with four fields.</li>
+    <li>Failure type: the kind of failure, such as timeout, rate limit or permission denied.</li>
+    <li>Attempted query: what was attempted, such as the query, the document or the parameters.</li>
+    <li>Partial results: what was already obtained before the failure.</li>
+    <li>Alternative approaches: possible alternatives, such as another source or a narrower query.</li>
+    <li>With that payload, the coordinator can decide intelligently: retry with another query, try an alternative source, or proceed with the partial results and mark the gap in the synthesis.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Num sistema multi-agent, uma falha num subagent é informação, não um desastre.</li>
+    <li>A pergunta da prova é sempre a mesma: o que o coordinator recebe quando algo quebra?</li>
+    <li>A resposta correta é contexto de erro estruturado com quatro campos.</li>
+    <li>Failure type: o tipo de falha, como timeout, rate limit ou permissão negada.</li>
+    <li>Attempted query: o que foi tentado, como a query, o documento ou os parâmetros.</li>
+    <li>Partial results: o que já foi obtido antes da falha.</li>
+    <li>Alternative approaches: alternativas possíveis, como outra fonte ou uma query mais estreita.</li>
+    <li>Com esse payload, o coordinator consegue decidir de forma inteligente: retentar com outra query, tentar uma fonte alternativa, ou seguir com os resultados parciais e marcar a lacuna na síntese.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="access-failure-vs-empty-result">
+  <div class="ficha-head">
+    <h2>Access failure is not a valid empty result (TS 5.3)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Access failure ≠ empty result válido (TS 5.3)</strong></div>
+  <ul class="assert">
+    <li>An access failure, such as a timeout or a service outage, calls for a retry decision: the answer exists, it just did not arrive.</li>
+    <li>A valid empty result is a successful query that simply had no matches; it is information, "there are no results for X", not a failure.</li>
+    <li>Confusing the two corrupts the coordinator's decision: it may retry a query that already answered "does not exist", or accept as empty a result that actually failed.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Uma falha de acesso, como timeout ou serviço fora, exige decisão de retry: a resposta existe, só não chegou.</li>
+    <li>Um resultado vazio válido é uma query bem-sucedida que simplesmente não teve matches; é informação, "não há resultados para X", não falha.</li>
+    <li>Confundir os dois corrompe a decisão do coordinator: ele pode retentar uma query que já respondeu "não existe", ou aceitar como vazio um resultado que na verdade falhou.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="three-anti-patterns">
+  <div class="ficha-head">
+    <h2>The three anti-patterns (TS 5.3)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Os três anti-padrões (TS 5.3)</strong></div>
+  <ul class="assert">
+    <li>Suppressing the error: catching the exception and returning an empty result marked as success.</li>
+    <li>With a suppressed error, the coordinator thinks there is nothing on the topic and produces silently incomplete research.</li>
+    <li>Bringing everything down: propagating the exception up to a top-level handler that terminates the whole workflow because of one recoverable failure.</li>
+    <li>Generic status: returning only "search unavailable", which hides from the coordinator the context that would allow an informed recovery.</li>
+    <li>Internal retry with backoff is legitimate, but what goes up after it is exhausted must be the structured context, not a vague string.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Suprimir o erro: capturar a exceção e devolver um resultado vazio marcado como sucesso.</li>
+    <li>Com o erro suprimido, o coordinator acha que não há nada sobre o tema e produz uma pesquisa silenciosamente incompleta.</li>
+    <li>Derrubar tudo: propagar a exceção até um handler de topo que termina o workflow inteiro por causa de uma falha recuperável.</li>
+    <li>Status genérico: devolver só "search unavailable", o que esconde do coordinator o contexto que permitiria uma recuperação informada.</li>
+    <li>Retry interno com backoff é legítimo, mas o que sobe depois de esgotado precisa ser o contexto estruturado, não uma string vaga.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="local-recovery-first">
+  <div class="ficha-head">
+    <h2>Local recovery first; propagate only the unrecoverable (TS 5.3)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Recovery local primeiro; propaga só o irrecuperável (TS 5.3)</strong></div>
+  <ul class="assert">
+    <li>The subagent resolves transient failures locally, with retry with backoff or a reformulated query.</li>
+    <li>Only what it could not resolve goes up to the coordinator, always with what was attempted and the partial results.</li>
+    <li>The coordinator then decides the global outcome: re-delegate, switch source, or proceed with an annotated gap.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>O subagent resolve localmente falhas transitórias, com retry com backoff ou query reformulada.</li>
+    <li>Só sobe para o coordinator o que ele não conseguiu resolver, sempre acompanhado do que foi tentado e dos resultados parciais.</li>
+    <li>O coordinator então decide o destino global: re-delegar, trocar de fonte, ou seguir com lacuna anotada.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="coverage-annotations">
+  <div class="ficha-head">
+    <h2>Coverage annotations in the synthesis (TS 5.3)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Coverage annotations na síntese (TS 5.3)</strong></div>
+  <ul class="assert">
+    <li>When the coordinator decides to proceed with partial results, the synthesis must annotate coverage: which findings are well supported and which areas have gaps because sources were unavailable.</li>
+    <li>The final report must say explicitly, for example, "the section on European regulation is incomplete because the primary source failed"; the gap is never left invisible.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Quando o coordinator decide seguir com parciais, a síntese precisa anotar a cobertura: quais findings estão bem suportados e quais áreas têm gaps por fontes indisponíveis.</li>
+    <li>O relatório final deve dizer explicitamente, por exemplo, "a seção sobre regulação europeia está incompleta porque a fonte primária falhou"; a lacuna nunca fica invisível.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="aggregate-accuracy-masks-segments">
+  <div class="ficha-head">
+    <h2>Human review: aggregate accuracy masks segments (TS 5.5)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Human review: acurácia agregada mascara segmentos (TS 5.5)</strong></div>
+  <ul class="assert">
+    <li>The typical exam context, scenario 6, is an extraction pipeline that claims 97% aggregate accuracy.</li>
+    <li>The number is real and still misleading: aggregate accuracy masks poor segments.</li>
+    <li>It may be 99.5% on standard invoices and 71% on handwritten contracts.</li>
+    <li>Before automating, that is, before reducing human review, measure accuracy by document type and by field.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>O contexto típico da prova, cenário 6, é um pipeline de extração que afirma 97% de acurácia agregada.</li>
+    <li>O número é real e mesmo assim enganoso: acurácia agregada mascara segmentos ruins.</li>
+    <li>Pode ser 99,5% em notas fiscais padrão e 71% em contratos manuscritos.</li>
+    <li>Antes de automatizar, isto é, antes de reduzir revisão humana, meça a acurácia por tipo de documento e por campo.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="from-raw-to-calibrated-confidence">
+  <div class="ficha-head">
+    <h2>From raw confidence to a calibrated decision (TS 5.5)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Da confiança bruta à decisão calibrada (TS 5.5)</strong></div>
+  <ul class="assert">
+    <li>Field-level confidence: the model emits a score per extracted field, not one global number per document.</li>
+    <li>The raw score is not yet a calibrated probability.</li>
+    <li>Calibrate with a labeled validation set: validate performance and calibrate thresholds per field by segment or document type, for example "below 0.82 on valor_total of a handwritten contract goes to the human queue".</li>
+    <li>Do not lend an unvalidated segment the confidence measured on another one.</li>
+    <li>Routing uses alternative triggers: low calibrated confidence, an unvalidated segment, ambiguity or contradiction, and high impact are joined by OR, not by AND.</li>
+    <li>A high score does not cancel the other triggers.</li>
+    <li>Separately, auto-approved fields remain eligible for their own stratified random sample, by field and segment or document, sent to humans for audit, measurement of the real error rate and detection of new patterns.</li>
+    <li>A self-reported score should not be treated as a calibrated probability before empirical validation.</li>
+    <li>That does not mean it is always poorly calibrated: it means reading 0.97 as "97% chance of being right" must be demonstrated on labeled data, by field and segment.</li>
+    <li>Until then, the score is an input signal, not a guarantee, and contradiction, an unvalidated segment and high impact still trigger review even with a high score.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Confidence por campo: o modelo emite um score por campo extraído, não um número global por documento.</li>
+    <li>O score bruto ainda não é uma probabilidade calibrada.</li>
+    <li>Calibração com validation set rotulado: valide o desempenho e calibre os thresholds por campo × segmento ou tipo de documento, por exemplo "abaixo de 0,82 em valor_total de contrato manuscrito vai para a fila humana".</li>
+    <li>Não empreste a um segmento não validado a confiança medida em outro.</li>
+    <li>O roteamento usa gatilhos alternativos: baixa confiança calibrada, segmento não validado, ambiguidade ou contradição e alto impacto são ligados por OR, não por AND.</li>
+    <li>Um score alto não cancela os demais gatilhos.</li>
+    <li>Separadamente, os campos auto-aprovados continuam elegíveis a uma amostra aleatória estratificada própria, por campo e segmento ou documento, enviada a humanos para auditoria, medição do erro real e detecção de padrões novos.</li>
+    <li>Um score autorrelatado não deve ser tratado como probabilidade calibrada antes de validação empírica.</li>
+    <li>Isso não significa que ele seja sempre mal calibrado: significa que interpretar 0,97 como "97% de chance de acerto" precisa ser demonstrado em dados rotulados, por campo e segmento.</li>
+    <li>Até lá, o score é um sinal de entrada, não uma garantia, e contradição, segmento não validado e alto impacto continuam acionando revisão mesmo com score alto.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="decision-matrix">
+  <div class="ficha-head">
+    <h2>Decision matrix: field by segment or document (TS 5.5)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Matriz de decisão: campo × segmento/documento (TS 5.5)</strong></div>
+  <ul class="assert">
+    <li>One trigger is enough to send the field to review.</li>
+    <li>With no active trigger and validated performance in that slice, the field can be auto-approved, without leaving the audit sample population.</li>
+    <li>valor_total on a handwritten contract: two contradictory values trigger review even with a score of 0.97; while any trigger is active, the action is blocked, and an irreversible, high-impact payment needs approval from the authorization owner.</li>
+    <li>data_vigencia on a handwritten contract: review the date and the minimal excerpt that gives it context, calling in a specialist only if the doubt is about the domain.</li>
+    <li>tax_id on a scanned multi-currency invoice: the extraction reviewer checks tax_id and its excerpt, without indiscriminately reopening every field of the invoice.</li>
+    <li>cnpj on a validated standard invoice: if no trigger is active, auto-approve and keep the field in the separate stratified human-audit sample.</li>
+    <li>Calibration is per field and segment: a single threshold for every field and segment is intuition disguised as a rule.</li>
+    <li>Each slice errs at a different confidence level: cnpj at 0.80 is almost always right in a validated segment, while valor_total at 0.92 still errs on handwritten contracts.</li>
+    <li>If the segment has not been validated yet, that alone is a review trigger, not a reason to assume the global threshold applies.</li>
+    <li>With limited capacity, prioritize the queue by risk and consequence, but do not turn the triggers into a cumulative list: any one of them is enough for review.</li>
+    <li>Rule of thumb: the threshold comes from labeled data, field by field and segment by segment, never from a guess or from an instruction asking the model to "be more humble".</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Basta um gatilho para direcionar o campo à revisão.</li>
+    <li>Sem gatilho ativo e com desempenho validado naquele recorte, o campo pode ser auto-aprovado, sem sair da população da amostra de auditoria.</li>
+    <li>valor_total em contrato manuscrito: dois valores contraditórios acionam revisão mesmo com score 0,97; enquanto houver gatilho, a ação fica bloqueada, e um pagamento irreversível de alto impacto precisa da aprovação do responsável por autorização.</li>
+    <li>data_vigencia em contrato manuscrito: revisar a data e o trecho mínimo que a contextualiza, acionando especialista apenas se a dúvida for de domínio.</li>
+    <li>tax_id em fatura escaneada com várias moedas: o revisor de extração confere tax_id e seu recorte, sem reabrir indiscriminadamente todos os campos da fatura.</li>
+    <li>cnpj em nota fiscal padrão validada: se nenhum gatilho estiver ativo, auto-aprovar e manter o campo na amostra estratificada separada de auditoria humana.</li>
+    <li>Calibração é por campo e segmento: um threshold único para todos os campos e segmentos é intuição disfarçada de regra.</li>
+    <li>Cada recorte erra num nível de confiança diferente: o cnpj a 0,80 quase sempre certo num segmento validado, o valor_total a 0,92 ainda errando em contratos manuscritos.</li>
+    <li>Se o segmento ainda não foi validado, isso já é um gatilho de revisão, não motivo para assumir que o threshold global serve.</li>
+    <li>Com capacidade limitada, priorize a fila pelo risco e pela consequência, mas não transforme os gatilhos em uma lista cumulativa: qualquer um deles basta para revisão.</li>
+    <li>Regra de bolso: o threshold vem dos dados rotulados, campo a campo e segmento a segmento, nunca do chute nem de uma instrução pedindo ao modelo para "ser mais humilde".</li>
+  </ul>
+</section>
+
+<section class="ficha" id="human-roles-and-scope">
+  <div class="ficha-head">
+    <h2>Human roles and review scope (TS 5.5)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Papéis humanos e escopo da revisão (TS 5.5)</strong></div>
+  <ul class="assert">
+    <li>Extraction reviewer: compares the extracted value with the document, checking transcription, legibility and evidence in the excerpt; it is the entry point for reading or extraction errors.</li>
+    <li>Domain specialist: resolves semantic, legal or financial ambiguities and contradictions that require interpretation, without mechanically rechecking every field.</li>
+    <li>Authorization owner: decides whether the high-impact or irreversible action may proceed after the review.</li>
+    <li>Reviewing an extraction is not the same as authorizing a payment, a cancellation or an external communication.</li>
+    <li>By default, review the field and the necessary excerpt, with the minimum context needed to decide; the whole document comes in only when the doubt requires more context.</li>
+    <li>High impact and irreversibility enter the matrix as a recommended architectural reinforcement to prioritize review and require proportional authorization.</li>
+    <li>That consequence criterion should not be attributed as a literal requirement of the public text of TS 5.5.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Revisor de extração: compara o valor extraído ao documento, verificando transcrição, legibilidade e evidência no recorte; é a porta de entrada para erro de leitura ou extração.</li>
+    <li>Especialista de domínio: resolve ambiguidades semânticas, jurídicas ou financeiras e contradições que exigem interpretação, sem reconferir mecanicamente todos os campos.</li>
+    <li>Responsável por autorização: decide se a ação de alto impacto ou irreversível pode prosseguir depois da revisão.</li>
+    <li>Revisar extração não equivale a autorizar pagamento, cancelamento ou comunicação externa.</li>
+    <li>Por padrão, revise o campo e o recorte necessário, com o mínimo de contexto para decidir; o documento inteiro só entra quando a dúvida exigir contexto adicional.</li>
+    <li>Alto impacto e irreversibilidade entram na matriz como reforço arquitetural recomendado para priorizar revisão e exigir autorização proporcional.</li>
+    <li>Esse critério de consequência não deve ser atribuído como requisito literal do texto público da TS 5.5.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="targeted-triage-vs-audit-sampling">
+  <div class="ficha-head">
+    <h2>Targeted triage versus audit sampling (TS 5.5)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Triagem direcionada × auditoria amostral (TS 5.5)</strong></div>
+  <ul class="assert">
+    <li>They are two different functions, and both may send items to humans.</li>
+    <li>Targeted triage uses the matrix triggers to attack known risk.</li>
+    <li>The stratified sample of auto-approved items goes to humans for audit: it measures the real error rate, reveals patterns the triggers miss and feeds recalibration.</li>
+    <li>Audit sampling does not replace targeted triage; drawing more items at random does not guarantee reviewing the contradiction or the problematic segment.</li>
+    <li>Do not generically prescribe a "small" sample: its size and distribution depend on the desired statistical precision, on the strata and their volumes, and on available capacity.</li>
+    <li>Plan the sample separately from the targeted queue and reserve capacity for both activities.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>São duas funções diferentes, e ambas podem enviar itens a humanos.</li>
+    <li>A triagem direcionada usa os gatilhos da matriz para atacar o risco conhecido.</li>
+    <li>A amostra estratificada dos auto-aprovados vai a humanos para auditoria: mede a taxa de erro real, revela padrões que os gatilhos não capturam e alimenta a recalibração.</li>
+    <li>A auditoria amostral não substitui a triagem direcionada; sortear mais itens ao acaso não garante revisar a contradição ou o segmento problemático.</li>
+    <li>Não prescreva genericamente uma amostra "pequena": seu tamanho e sua distribuição dependem da precisão estatística desejada, dos estratos e de seus volumes, e da capacidade disponível.</li>
+    <li>Planeje a amostra separadamente da fila direcionada e reserve capacidade para as duas atividades.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="claim-source-mappings">
+  <div class="ficha-head">
+    <h2>Provenance: claim-source mappings (TS 5.6)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Proveniência: claim-source mappings (TS 5.6)</strong></div>
+  <ul class="assert">
+    <li>When findings pass through summarization steps, source attribution is lost: three sources become "studies indicate that...".</li>
+    <li>The architectural defense is to require structured claim-source mappings from the subagents: each claim with the URL or document name, the relevant excerpt and the date.</li>
+    <li>The synthesis must preserve and merge those mappings when combining findings.</li>
+    <li>The lesson's mapping example has the fields claim, evidence_excerpt, source_url and publication_date.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Quando findings passam por etapas de sumarização, a atribuição de fonte se perde: três fontes viram "estudos indicam que...".</li>
+    <li>A defesa arquitetural é exigir dos subagents claim-source mappings estruturados: cada claim com URL ou nome do documento, trecho relevante e data.</li>
+    <li>A síntese precisa preservar e mesclar esses mappings ao combinar findings.</li>
+    <li>O exemplo de mapping da aula tem os campos claim, evidence_excerpt, source_url e publication_date.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="conflicting-statistics">
+  <div class="ficha-head">
+    <h2>Conflicting statistics from credible sources (TS 5.6)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Estatísticas conflitantes de fontes críveis (TS 5.6)</strong></div>
+  <ul class="assert">
+    <li>Two reputable sources say 62% and 41%: the temptation, and the classic distractor, is to pick one value, the most recent, the most conservative or the average.</li>
+    <li>The right answer is to annotate both values, each with its source and methodological context, and keep the divergence visible.</li>
+    <li>The document analysis agent completes the analysis with the conflicting values included and annotated; the coordinator decides how to reconcile them, before the synthesis.</li>
+    <li>Aborting the analysis with "inconsistent data" is the symmetric anti-pattern: it throws away legitimate evidence and the topic disappears from the report.</li>
+    <li>Rule of thumb: a conflict is annotated and passed up; the coordinator reconciles, never a subagent heuristic.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Duas fontes respeitáveis dizem 62% e 41%: a tentação, e o distrator clássico, é escolher um valor, o mais recente, o mais conservador ou a média.</li>
+    <li>A resposta certa é anotar os dois valores, cada um com sua fonte e seu contexto metodológico, e deixar a divergência visível.</li>
+    <li>O document analysis agent completa a análise com os valores conflitantes incluídos e anotados; quem decide como reconciliar é o coordinator, antes da síntese.</li>
+    <li>Abortar a análise com "dados inconsistentes" é o anti-padrão simétrico: joga fora evidência legítima e o tema some do relatório.</li>
+    <li>Regra de bolso: conflito se anota e sobe; quem reconcilia é o coordinator, nunca uma heurística do subagent.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="publication-dates">
+  <div class="ficha-head">
+    <h2>Publication dates: a time difference is not a contradiction (TS 5.6)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Datas de publicação: diferença temporal não é contradição (TS 5.6)</strong></div>
+  <ul class="assert">
+    <li>41% from 2023 and 62% from 2026 may be no conflict at all; it may be real growth.</li>
+    <li>Without the publication or collection date in the structured output, the synthesis reads a time difference as a contradiction.</li>
+    <li>That is why publication_date goes into every mapping: the subagent is required to report it.</li>
+    <li>If the source has no date, the value is null, preferably with the reason, never an invented date.</li>
+    <li>A required field without null induces fabrication (lesson 10, TS 4.3).</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>"41%" de 2023 e "62%" de 2026 podem não ser conflito nenhum; pode ser crescimento real.</li>
+    <li>Sem a data de publicação ou coleta no output estruturado, a síntese interpreta diferença temporal como contradição.</li>
+    <li>Por isso publication_date entra em todo mapping: o subagent é obrigado a reportá-la.</li>
+    <li>Se a fonte não traz data, o valor é null, de preferência com o motivo, nunca uma data inventada.</li>
+    <li>Campo required sem null induz fabricação (aula 10, TS 4.3).</li>
+  </ul>
+</section>
+
+<section class="ficha" id="final-report-structure">
+  <div class="ficha-head">
+    <h2>Final report structure (TS 5.6)</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Estrutura do relatório final (TS 5.6)</strong></div>
+  <ul class="assert">
+    <li>The synthesis must explicitly separate well-established findings, where multiple sources converge, from contested findings, where sources diverge, with the original characterizations preserved.</li>
+    <li>A generic warning at the top or a "may be" applied to everything does not solve it: the reader still does not know which finding is solid and which is disputed.</li>
+    <li>Each content type goes in the format that suits it, instead of flattening everything into one uniform format.</li>
+    <li>Financial data goes in a table, for side-by-side comparison.</li>
+    <li>News and sequences of events go in prose, for context and chaining.</li>
+    <li>Technical findings go in a structured list, with items verifiable one by one.</li>
+    <li>Rule of thumb: the reader must see the certainty level of each finding and read each content type in its natural format; format uniformity is not a virtue.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>A síntese deve separar explicitamente findings estabelecidos, em que múltiplas fontes convergem, de findings contestados, em que as fontes divergem, com as caracterizações originais preservadas.</li>
+    <li>Um aviso genérico no topo ou um "pode ser" aplicado a tudo não resolve: o leitor continua sem saber qual achado é sólido e qual é disputado.</li>
+    <li>Cada tipo de conteúdo vai no formato que lhe serve, em vez de achatar tudo num formato uniforme.</li>
+    <li>Dados financeiros vão em tabela, para comparação lado a lado.</li>
+    <li>Notícias e sequência de eventos vão em prosa, para contexto e encadeamento.</li>
+    <li>Achados técnicos vão em lista estruturada, com itens verificáveis um a um.</li>
+    <li>Regra de bolso: o leitor precisa ver o grau de certeza de cada achado e ler cada tipo de conteúdo no formato natural dele; uniformidade de formato não é virtude.</li>
+  </ul>
+</section>
+
+<section class="ficha" id="pegadinha-do-dia">
+  <div class="ficha-head">
+    <h2>Trap of the day</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Pegadinha do dia</strong></div>
+  <ul class="assert">
+    <li>Multi-agent error questions come with two symmetric, seductive distractors.</li>
+    <li>"Catch and return empty as success" looks robust, but it suppresses information and produces silently incomplete research.</li>
+    <li>"Propagate the exception and end the workflow" looks safe, but it kills all the work over one recoverable failure.</li>
+    <li>The third distractor is a generic status such as "search unavailable", which hides the context from the coordinator.</li>
+    <li>Rule of thumb: an error goes up as structured data, type plus attempt plus partial results plus alternatives, never as silence, never as a fatal exception, never as a vague string.</li>
+    <li>In human review, a nice aggregate number or a 0.97 score does not cancel the other triggers: low calibrated confidence OR an unvalidated segment OR ambiguity or contradiction OR high impact is already enough to review the field or excerpt.</li>
+    <li>The sample of auto-approved items also goes to humans for audit, but it does not replace that triage; its size depends on precision, strata and capacity, not on a generic "small sample" rule.</li>
+  </ul>
+  <ul class="assert pt-block pt">
+    <li>Questões de erro em multi-agent vêm com dois distratores simétricos e sedutores.</li>
+    <li>"Catch e retornar vazio como sucesso" parece robusto, mas suprime informação e gera pesquisa silenciosamente incompleta.</li>
+    <li>"Propagar a exceção e encerrar o workflow" parece seguro, mas mata o trabalho todo por uma falha recuperável.</li>
+    <li>O terceiro distrator é o status genérico tipo "search unavailable", que esconde o contexto do coordinator.</li>
+    <li>Regra de bolso: erro sobe como dado estruturado, tipo mais tentativa mais parciais mais alternativas, nunca como silêncio, nunca como exceção fatal, nunca como string vaga.</li>
+    <li>Em revisão humana, número agregado bonito ou score 0,97 não anula os demais gatilhos: baixa confiança calibrada OU segmento não validado OU ambiguidade ou contradição OU alto impacto já basta para revisar o campo ou recorte.</li>
+    <li>A amostra dos auto-aprovados também vai a humanos, para auditoria, mas não substitui essa triagem; seu tamanho depende de precisão, estratos e capacidade, não de uma regra genérica de "amostra pequena".</li>
+  </ul>
+</section>
+
+<section class="ficha gloss-sec" id="glossary">
+  <div class="ficha-head">
+    <h2>Glossary</h2>
+    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
+  </div>
+  <table class="gloss">
+    <tr><th>Term (EN)</th><th>Meaning (EN)</th><th class="ptm pt">Significado (PT-BR)</th></tr>
+    <tr><td class="en">structured error context</td><td>Error context with failure type, attempted query, partial results and alternatives.</td><td class="ptm pt">Contexto de erro estruturado: tipo de falha, query tentada, resultados parciais e alternativas.</td></tr>
+    <tr><td class="en">failure type</td><td>The kind of failure; it tells the coordinator whether a retry makes sense.</td><td class="ptm pt">Tipo de falha; diz ao coordinator se um retry faz sentido.</td></tr>
+    <tr><td class="en">partial results</td><td>What was obtained before the failure; the coordinator may proceed with them and annotate coverage gaps.</td><td class="ptm pt">Resultados parciais obtidos antes da falha; dá para seguir com eles e anotar as lacunas.</td></tr>
+    <tr><td class="en">access failure</td><td>A timeout or unavailability; the answer exists but did not arrive.</td><td class="ptm pt">Falha de acesso (timeout, indisponibilidade); a resposta existe, mas não chegou.</td></tr>
+    <tr><td class="en">valid empty result</td><td>A successful query with no matches.</td><td class="ptm pt">Resultado vazio válido: query ok, sem matches.</td></tr>
+    <tr><td class="en">local recovery</td><td>The subagent handles transient failures and propagates only unresolvable errors.</td><td class="ptm pt">Recuperação local no subagent; só propaga o irrecuperável.</td></tr>
+    <tr><td class="en">coverage annotation / gap</td><td>Marking which topic areas have gaps due to unavailable sources.</td><td class="ptm pt">Anotação / lacuna de cobertura por fontes indisponíveis.</td></tr>
+    <tr><td class="en">stratified random sampling</td><td>A separate stratified sample of auto-approved fields sent to human audit; it complements targeted routing.</td><td class="ptm pt">Amostragem aleatória estratificada dos auto-aprovados para auditoria humana; complementa a triagem direcionada.</td></tr>
+    <tr><td class="en">field-level confidence</td><td>A score per extracted field; not a calibrated probability before empirical validation.</td><td class="ptm pt">Confiança por campo; não é probabilidade calibrada antes de validação empírica.</td></tr>
+    <tr><td class="en">labeled validation set</td><td>Labeled data used to calibrate review thresholds by field and document segment.</td><td class="ptm pt">Conjunto de validação rotulado para calibrar thresholds por campo e segmento.</td></tr>
+    <tr><td class="en">aggregate accuracy</td><td>A single overall accuracy number; it may mask poor performance on specific document types.</td><td class="ptm pt">Acurácia agregada; mascara segmentos ruins.</td></tr>
+    <tr><td class="en">claim-source mapping</td><td>A structured link from each claim to its source, which synthesis must preserve.</td><td class="ptm pt">Mapeamento claim → fonte, que a síntese precisa preservar.</td></tr>
+    <tr><td class="en">provenance</td><td>Traceable origin of each claim through summarization steps.</td><td class="ptm pt">Proveniência: origem rastreável de cada claim.</td></tr>
+    <tr><td class="en">publication date</td><td>Publication or collection date, so time differences are not read as contradictions.</td><td class="ptm pt">Data de publicação ou coleta, para diferença temporal não virar contradição.</td></tr>
+    <tr><td class="en">well-established vs contested findings</td><td>Explicit separation of findings where sources converge from those where they diverge.</td><td class="ptm pt">Achados estabelecidos vs contestados, separados explicitamente.</td></tr>
+    <tr><td class="en">content-type rendering</td><td>Financial data as tables, news as prose, technical findings as structured lists.</td><td class="ptm pt">Renderização por tipo de conteúdo: tabela, prosa, lista estruturada.</td></tr>
+    <tr><td class="en">review threshold</td><td>Cut-off for routing to human review, calibrated per field-by-segment slice instead of a global cut-off.</td><td class="ptm pt">Corte de roteamento para revisão humana, calibrado por campo × segmento.</td></tr>
+    <tr><td class="en">alternative review triggers (OR)</td><td>Low calibrated confidence, an unvalidated segment, contradiction or high impact each independently triggers review.</td><td class="ptm pt">Gatilhos alternativos de revisão (OU): cada um, sozinho, já aciona revisão.</td></tr>
+    <tr><td class="en">extraction reviewer</td><td>Checks the flagged field and the necessary source excerpt rather than the whole document.</td><td class="ptm pt">Revisor de extração: confere o campo sinalizado e o recorte necessário.</td></tr>
+    <tr><td class="en">domain specialist</td><td>Resolves ambiguity or contradiction that requires domain interpretation.</td><td class="ptm pt">Especialista de domínio: resolve ambiguidade ou contradição que exige interpretação.</td></tr>
+    <tr><td class="en">authorization owner</td><td>Authorizes the high-impact or irreversible action after the required review.</td><td class="ptm pt">Responsável por autorização da ação de alto impacto ou irreversível.</td></tr>
+  </table>
+</section>
+
+<nav class="prevnext">
+  <span><a href="fichamento-12.html">← Fichamento 12</a></span>
+  <span><a href="aula-13.html">Aula 13 — versão completa (PT)</a></span>
+  <span><a href="aula-13.html">Aula 13 (completa) →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('section.ficha .ver-traducao').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var sec = btn.closest('section.ficha');
+      var on = sec.classList.toggle('show-pt');
+      btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+      btn.textContent = on ? '🇧🇷 ocultar tradução' : '🇧🇷 ver tradução';
+    });
+  });
+})();
+</script>
+<script src="narracao/fichamento-13.js"></script>
+<script src="narracao/player.js"></script>
+</body>
+</html>

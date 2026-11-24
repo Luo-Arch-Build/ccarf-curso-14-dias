@@ -1,0 +1,256 @@
+{
+  "lesson": "11",
+  "title_en": "Message Batches API and multi-pass review",
+  "title_pt": "Message Batches API e review multi-pass",
+  "domain_en": "Domain 4 · Prompt Engineering & Structured Output (20%)",
+  "sections": [
+    {
+      "id": "batches-three-numbers",
+      "heading_en": "Message Batches API: the three numbers (TS 4.5)",
+      "heading_pt": "Message Batches API: os três números (TS 4.5)",
+      "assertions_en": [
+        "The Message Batches API processes sets of requests asynchronously.",
+        "It offers 50% cost savings compared with the synchronous API.",
+        "Its processing window is up to 24 hours; it may finish much faster, but that is not guaranteed.",
+        "It has no latency SLA: there is no promise that a batch finishes within X minutes."
+      ],
+      "assertions_pt": [
+        "A Message Batches API processa conjuntos de requests de forma assíncrona.",
+        "Ela oferece 50% de economia de custo em relação à API síncrona.",
+        "A janela de processamento é de até 24 horas; pode terminar bem mais rápido, mas isso não é garantido.",
+        "Não tem SLA de latência: não existe promessa de que um batch termine em X minutos."
+      ]
+    },
+    {
+      "id": "latency-decides-the-api",
+      "heading_en": "The golden rule: workflow latency decides the API (TS 4.5)",
+      "heading_pt": "A regra de ouro: latência do workflow decide a API (TS 4.5)",
+      "assertions_en": [
+        "The decision is never \"batch is cheaper, so migrate everything\"; it is whether the workflow is blocking or latency-tolerant.",
+        "Batch is appropriate for non-blocking work: overnight technical debt reports, weekly code audits, nightly test generation and bulk data enrichment, anything whose result is consumed hours later.",
+        "Batch is inappropriate for blocking work: pre-merge checks that hold the merge, real-time user responses, and any flow where a human or a pipeline waits for the result.",
+        "A check that may take up to 24 hours destroys the development flow.",
+        "Polling the status is the normal way to track a batch: check the status and, when it finishes, retrieve the results.",
+        "Polling does not shorten the processing window, does not create an SLA and does not make a blocking workload suitable for batch.",
+        "In the classic \"migrate everything and poll the status\" distractor, the mistake is migrating the blocking workflow, not tracking the batch by polling.",
+        "\"Add a timeout with fallback to the real-time API\" is also unnecessary complexity when the simple solution is to match each API to its use case."
+      ],
+      "assertions_pt": [
+        "A decisão nunca é \"batch é mais barato, então migra tudo\"; é se o workflow é bloqueante ou tolerante a latência.",
+        "Batch é apropriado para trabalho não-bloqueante: relatórios overnight de technical debt, auditorias semanais de código, geração noturna de testes e enriquecimento em massa de dados, qualquer coisa cujo resultado só é consumido horas depois.",
+        "Batch é inapropriado para trabalho bloqueante: pre-merge checks que travam o merge, respostas a usuário em tempo real e qualquer fluxo onde um humano ou um pipeline espera pelo resultado.",
+        "Um check que pode levar até 24 horas destrói o fluxo de desenvolvimento.",
+        "Polling do status é a forma normal de acompanhar um batch: consulte o status e, quando ele terminar, recupere os resultados.",
+        "Polling não reduz a janela de processamento, não cria SLA e não torna um workload bloqueante adequado para batch.",
+        "No distrator clássico \"migre tudo e faça polling de status\", o erro está em migrar o workflow bloqueante, não em acompanhar o batch por polling.",
+        "\"Adicione um timeout com fallback pra API real-time\" também é complexidade desnecessária quando a solução simples é casar cada API com seu caso de uso."
+      ]
+    },
+    {
+      "id": "client-tools-no-multi-turn",
+      "heading_en": "Exam scope: client tools without multi-turn in the same request (TS 4.5)",
+      "heading_pt": "No recorte da prova: client tools sem multi-turn na mesma request (TS 4.5)",
+      "assertions_en": [
+        "For the answer the Exam Guide expects, the restriction is about client tools executed by the application.",
+        "Within the same batch request, there is no cycle in which the model emits tool_use, the application runs the tool and returns tool_result for the model to continue.",
+        "If the workload depends on that multi-turn loop, it must be orchestrated outside the batch item, or it is not a batch candidate in this scope.",
+        "Exam versus current product: do not turn the rule into \"batch runs no tools at all\".",
+        "Server tools and the current product's agentic loop are a different scope; the distinction above bounds what the Exam Guide expects, without claiming a generic ban on tools in batch."
+      ],
+      "assertions_pt": [
+        "Para o gabarito esperado pelo Exam Guide, a restrição é sobre client tools executadas pela aplicação.",
+        "Na mesma request de batch, não há o ciclo em que o modelo emite tool_use, a aplicação executa a tool e devolve tool_result para o modelo continuar.",
+        "Se o workload depende desse loop multi-turn, ele precisa ser orquestrado fora do item de batch, ou não é candidato a batch nesse recorte.",
+        "Prova × produto atual: não transforme a regra em \"batch não executa nenhuma tool\".",
+        "Server tools e o agentic loop do produto atual são outro recorte; a distinção acima delimita o que o Exam Guide espera, sem afirmar uma proibição genérica de tools no batch."
+      ]
+    },
+    {
+      "id": "custom-id",
+      "heading_en": "custom_id: the glue between request and response (TS 4.5)",
+      "heading_pt": "custom_id: a cola entre request e response (TS 4.5)",
+      "assertions_en": [
+        "Batch results may come back out of order.",
+        "Each request carries a custom_id that you define, and each result brings the same custom_id back.",
+        "That is how you correlate request and response and identify exactly which items failed.",
+        "The lesson's example request uses a custom_id such as debt-report-src-billing-invoice-py, one per analyzed file, sent to POST /v1/messages/batches."
+      ],
+      "assertions_pt": [
+        "Os resultados de um batch podem vir fora de ordem.",
+        "Cada request leva um custom_id definido por você, e cada resultado traz o mesmo custom_id de volta.",
+        "É assim que você correlaciona request e response e identifica exatamente quais itens falharam.",
+        "A request de exemplo da aula usa um custom_id como debt-report-src-billing-invoice-py, um por arquivo analisado, enviada a POST /v1/messages/batches."
+      ]
+    },
+    {
+      "id": "operating-batches",
+      "heading_en": "Operating batches: frequency, failures and samples (TS 4.5)",
+      "heading_pt": "Operando batches: frequência, falhas e amostra (TS 4.5)",
+      "assertions_en": [
+        "If a batch can take up to 24 hours and you have a 30-hour SLA to deliver results, you cannot submit once a day.",
+        "The worst case is the document that arrives right after a submission: it waits the whole interval until the next one and may still take 24 hours to process.",
+        "The math is: interval between submissions plus 24 hours plus margin must be less than or equal to the SLA.",
+        "With a 30-hour SLA the theoretical ceiling is 6 hours with no margin at all; the guide's example uses 4-hour windows, 4 plus 24 equals 28 hours, leaving 2 hours of margin.",
+        "If the question repeats the guide's numbers, the answer is 4 hours.",
+        "On failures, do not resubmit the whole batch.",
+        "Filter the failed results by custom_id, fix the cause, for example chunking a document that overflowed the context, and resubmit only the failed items.",
+        "Refine the prompt on a small sample set, via the synchronous API and iterating fast, before submitting 10,000 documents in batch.",
+        "A bad prompt in batch means thousands of bad results and expensive resubmissions.",
+        "The sample improves the first-pass success rate and reduces rework and total cost; the 50% batch discount does not depend on that rate."
+      ],
+      "assertions_pt": [
+        "Se um batch pode levar até 24 horas e você tem um SLA de 30 horas para entregar resultados, não dá para submeter uma vez por dia.",
+        "O pior caso é o documento que chega logo depois de uma submissão: ele espera o intervalo inteiro até a próxima e ainda pode levar 24 horas de processamento.",
+        "A conta é: intervalo entre submissões mais 24 horas mais folga deve ser menor ou igual ao SLA.",
+        "Com SLA de 30 horas o teto teórico é 6 horas, sem folga nenhuma; o exemplo do guia usa janelas de 4 horas, 4 mais 24 dá 28 horas, com 2 horas de margem.",
+        "Se a questão repetir os números do guia, a resposta é 4 horas.",
+        "Em falhas, não resubmeta o batch inteiro.",
+        "Filtre os resultados com erro pelo custom_id, corrija a causa, por exemplo chunking de um documento que estourou o contexto, e resubmeta só os itens que falharam.",
+        "Refine o prompt num sample set pequeno, via API síncrona e iterando rápido, antes de submeter 10.000 documentos em batch.",
+        "Um prompt ruim em batch significa milhares de resultados ruins e resubmissões caras.",
+        "A amostra melhora a taxa de acerto de primeira (first-pass success rate) e reduz retrabalho e custo total; o desconto de 50% do batch não depende dessa taxa."
+      ]
+    },
+    {
+      "id": "self-review-is-weak",
+      "heading_en": "Why self-review is weak (TS 4.6)",
+      "heading_pt": "Por que self-review é fraco (TS 4.6)",
+      "assertions_en": [
+        "Asking the model that generated the code to review its own code in the same session yields little.",
+        "The model retains the reasoning context of the generation: the same assumptions and decisions that produced the code are still present, so it tends not to question its own choices.",
+        "Neither explicit self-review instructions nor extended thinking in the same session fix this, because the problem is not effort: it is contaminated context.",
+        "The architectural solution is an independent review instance: a second call to Claude that receives only the generated code, without the generator's reasoning history.",
+        "Without the \"I already decided this is right\" bias, the fresh instance catches subtle issues much more consistently."
+      ],
+      "assertions_pt": [
+        "Pedir ao modelo que gerou o código que revise o próprio código na mesma sessão rende pouco.",
+        "O modelo mantém o contexto de raciocínio da geração: as mesmas suposições e decisões que produziram o código continuam presentes, então ele tende a não questionar as próprias escolhas.",
+        "Nem instruções explícitas de self-review nem extended thinking na mesma sessão resolvem isso, porque o problema não é esforço: é contexto contaminado.",
+        "A solução arquitetural é uma instância independente de review: uma segunda chamada ao Claude que recebe apenas o código gerado, sem o histórico de raciocínio do gerador.",
+        "Sem o viés de \"eu já decidi que isso está certo\", a instância fresca pega issues sutis com muito mais consistência."
+      ]
+    },
+    {
+      "id": "multi-pass-attention-dilution",
+      "heading_en": "Multi-pass: attention dilution in large reviews (TS 4.6)",
+      "heading_pt": "Multi-pass: attention dilution em reviews grandes (TS 4.6)",
+      "assertions_en": [
+        "A 14-file PR reviewed in a single pass shows classic symptoms: detailed feedback on some files and shallow feedback on others, obvious bugs missed, and contradictory feedback, with the same pattern approved in one file and rejected in another.",
+        "The root cause is attention dilution: with many files in context, the model's attention spreads unevenly; it is not lack of capability, it is diluted focus.",
+        "The correct restructuring is multi-pass.",
+        "Per-file focused passes: one pass per file, analyzing local issues such as logic, edge cases and security of that file, with consistent depth across all of them.",
+        "A cross-file integration pass: a separate pass that looks at the whole, focusing on data flow between files, such as broken contracts, types changed on one side and not the other, and cross calls.",
+        "The integration pass sees what the per-file passes cannot see by definition.",
+        "A larger context window does not fix it, because a large window does not fix attention quality.",
+        "Forcing smaller PRs does not fix it either, because it shifts the problem to the developer instead of improving the system.",
+        "Running 3 identical passes and requiring consensus does not fix it, because it suppresses real bugs that are detected intermittently."
+      ],
+      "assertions_pt": [
+        "Um PR com 14 arquivos revisado num passe único produz sintomas clássicos: feedback detalhado em alguns arquivos e superficial em outros, bugs óbvios perdidos e feedback contraditório, com o mesmo padrão aprovado num arquivo e reprovado noutro.",
+        "A causa raiz é attention dilution: com muitos arquivos no contexto, a atenção do modelo se distribui de forma desigual; não é falta de capacidade, é diluição de foco.",
+        "A reestruturação correta é multi-pass.",
+        "Passes focados por arquivo: um passe por arquivo, analisando issues locais como lógica, edge cases e segurança daquele arquivo, com profundidade consistente em todos.",
+        "Um passe de integração cross-file: um passe separado que olha o conjunto focando em data flow entre arquivos, como contratos quebrados, tipos que mudaram de um lado e não do outro, e chamadas cruzadas.",
+        "O passe de integração vê o que os passes por arquivo não veem por definição.",
+        "Context window maior não resolve, porque janela grande não corrige qualidade de atenção.",
+        "Forçar PRs menores também não resolve, porque joga o problema no dev em vez de melhorar o sistema.",
+        "Rodar 3 passes idênticos e exigir consenso não resolve, porque suprime bugs reais detectados de forma intermitente."
+      ]
+    },
+    {
+      "id": "passes-by-concern",
+      "heading_en": "Passes by problem type: security, business logic, API design (TS 4.6)",
+      "heading_pt": "Passes por tipo de problema: segurança, lógica de negócio, design de API (TS 4.6)",
+      "assertions_en": [
+        "Even in a small PR, a single prompt asking for security, business logic and API design at once makes the criteria compete.",
+        "The examples of one type pull the model toward that type, and recall on the others drops.",
+        "Add few-shot examples of SQL injection and the reviewer finds more injection and starts missing violated business rules.",
+        "This is the recall trade-off that the official objective says to avoid.",
+        "The right structure is specialized passes per concern, each with a focused prompt and its own few-shot examples.",
+        "Vulnerability examples go only in the security pass, violated business rule examples only in the logic pass, and endpoint contract and naming examples only in the API pass.",
+        "The passes are independent and run in parallel, and the findings are merged into a single list.",
+        "The two splits complement each other: per file attacks dilution by volume, uneven depth across files; per concern attacks competition between criteria, one problem type always missed while another goes well.",
+        "In a large PR both splits can be combined, but the cost multiplies.",
+        "Conversely, if a single prompt's recall already meets every type, splitting is cost without gain.",
+        "Rule of thumb: uneven attention across files calls for per-file passes plus integration; one concern stealing recall from another calls for one focused pass per concern, with its own few-shot examples."
+      ],
+      "assertions_pt": [
+        "Mesmo num PR pequeno, um prompt único que pede segurança, lógica de negócio e design de API ao mesmo tempo faz os critérios competirem.",
+        "Os exemplos de um tipo puxam o modelo para aquele tipo, e o recall dos outros cai.",
+        "Acrescente few-shot de injeção de SQL e o reviewer passa a achar mais injeção e começa a perder regra de negócio violada.",
+        "É o recall trade-off que o objetivo oficial manda evitar.",
+        "A estrutura certa são passes especializados por concern, cada um com prompt focado e few-shot próprios.",
+        "Exemplos de vulnerabilidade só no passe de segurança, de regra de negócio violada só no de lógica, e de contrato e nomenclatura de endpoint só no de API.",
+        "Os passes são independentes e rodam em paralelo, e os findings se juntam numa lista só.",
+        "As duas divisões se complementam: por arquivo ataca a diluição por volume, profundidade desigual entre arquivos; por concern ataca a competição entre critérios, um tipo de problema sempre perdido enquanto outro vai bem.",
+        "Num PR grande dá para combinar as duas, mas o custo multiplica.",
+        "No caso oposto, se o recall de um prompt único já atende todos os tipos, separar é custo sem ganho.",
+        "Regra de bolso: atenção desigual entre arquivos pede passes por arquivo mais integração; um concern roubando recall de outro pede um passe focado por concern, com few-shot próprios."
+      ]
+    },
+    {
+      "id": "verification-pass-confidence",
+      "heading_en": "Verification pass with confidence (TS 4.6)",
+      "heading_pt": "Verification pass com confidence (TS 4.6)",
+      "assertions_en": [
+        "A useful complement is a verification pass in which the model reviews the findings and reports a self-reported confidence alongside each finding.",
+        "This enables calibrated routing: high-confidence findings go straight to the developer; low-confidence ones go to a human triage queue or to an additional pass.",
+        "Do not treat confidence as truth; treat it as a routing signal.",
+        "The word the exam tests is calibrated: raw confidence is not valid as a threshold.",
+        "Before routing, calibrate the cut-offs against a labeled set, findings the team confirmed or dismissed in the past, and only then decide what goes straight through and what goes to the queue.",
+        "Contrast with lesson 12 (TS 5.2): there, self-reported confidence used raw as an escalation trigger is a distractor; here, calibrated with labeled data, it is a legitimate routing signal.",
+        "Never discard what falls below the cut-off: a low score goes to triage, not to the trash.",
+        "Rule of thumb: raw confidence decides nothing; calibrated against labeled data, it decides where each finding goes."
+      ],
+      "assertions_pt": [
+        "Um complemento útil é um verification pass em que o modelo revisa os findings e reporta uma confidence autorreportada junto de cada finding.",
+        "Isso permite calibrated routing: findings de alta confiança vão direto pro dev; os de baixa confiança vão pra fila de triagem humana ou pra um passe adicional.",
+        "Não trate confidence como verdade; trate como sinal de roteamento.",
+        "A palavra que a prova cobra é calibrated: confiança crua não vale como threshold.",
+        "Antes de rotear, calibre os cortes contra um conjunto rotulado, findings que o time confirmou ou descartou no passado, e só então decida o que vai direto e o que vai pra fila.",
+        "Contraste com a aula 12 (TS 5.2): lá, confiança autorreportada usada crua como gatilho de escalonamento é distrator; aqui, calibrada com dados rotulados, ela é sinal legítimo de roteamento.",
+        "Nunca descarte o que ficou abaixo do corte: score baixo vai pra triagem, não pro lixo.",
+        "Regra de bolso: confiança crua não decide nada; calibrada contra dados rotulados, decide para onde cada finding vai."
+      ]
+    },
+    {
+      "id": "pegadinha-do-dia",
+      "heading_en": "Trap of the day",
+      "heading_pt": "Pegadinha do dia",
+      "assertions_en": [
+        "The most common distractor in both topics is \"migrate everything, run everything at once\": moving every workflow to batch because of the 50%, or reviewing every file in a single pass with a more expensive model.",
+        "Variation: \"polling solves latency\"; polling is the normal way to track a batch, but it creates no SLA and does not make a blocking workload suitable.",
+        "Variation: \"a larger context window solves attention\"; window size is not attention quality.",
+        "Variation: \"self-review with extended thinking is equivalent to an independent reviewer\"; the generation's reasoning context is still there.",
+        "Rule of thumb: batch is a latency decision, not a cost decision; quality review is a decision about clean context and focus, not about a bigger model or more effort in the same session."
+      ],
+      "assertions_pt": [
+        "O distrator mais comum dos dois temas é o \"migra tudo, roda tudo de uma vez\": migrar todos os workflows pra batch por causa dos 50%, ou revisar todos os arquivos num passe único com um modelo mais caro.",
+        "Variação: \"polling resolve a latência\"; polling é o acompanhamento normal de um batch, mas não cria SLA nem torna workload bloqueante adequado.",
+        "Variação: \"context window maior resolve atenção\"; tamanho de janela não é qualidade de atenção.",
+        "Variação: \"self-review com extended thinking equivale a reviewer independente\"; o contexto de raciocínio da geração continua lá.",
+        "Regra de bolso: batch é decisão de latência, não de custo; review de qualidade é decisão de contexto limpo e foco, não de modelo maior ou mais esforço na mesma sessão."
+      ]
+    }
+  ],
+  "glossary": [
+    {"term_en": "Message Batches API", "meaning_en": "Asynchronous message batch API with 50% cost savings.", "meaning_pt": "API de batches de mensagens (assíncrona), com 50% de economia."},
+    {"term_en": "24-hour processing window", "meaning_en": "Processing time of up to 24 hours, with no guaranteed latency.", "meaning_pt": "Janela de processamento de até 24h, sem latência garantida."},
+    {"term_en": "latency SLA", "meaning_en": "A latency guarantee; the Batches API has none.", "meaning_pt": "SLA (garantia) de latência; a Batches API não tem."},
+    {"term_en": "batch status polling", "meaning_en": "Periodically checking the batch status to track completion; it does not create a latency SLA.", "meaning_pt": "Consulta periódica ao status do batch para acompanhar a conclusão; não cria SLA de latência."},
+    {"term_en": "non-blocking workload", "meaning_en": "Latency-tolerant work whose result is consumed hours later.", "meaning_pt": "Carga de trabalho não-bloqueante, tolerante a latência."},
+    {"term_en": "pre-merge check", "meaning_en": "A blocking check that must finish before developers can merge.", "meaning_pt": "Verificação pré-merge, bloqueante."},
+    {"term_en": "custom_id", "meaning_en": "Your own ID per batch request, used to correlate results.", "meaning_pt": "ID customizado por request do batch, usado para correlacionar resultados."},
+    {"term_en": "client tool", "meaning_en": "A tool executed by the application; no tool_result multi-turn loop within the same batch request.", "meaning_pt": "Tool executada pela aplicação; sem loop multi-turn de tool_result na mesma request de batch."},
+    {"term_en": "first-pass success rate", "meaning_en": "Share of items right on the first pass; a sample set raises it, but the 50% discount does not depend on it.", "meaning_pt": "Taxa de acerto na primeira passada; a amostra melhora essa taxa, mas o desconto de 50% não depende dela."},
+    {"term_en": "self-review", "meaning_en": "Review by the same session that generated the output; it retains the generation's reasoning context.", "meaning_pt": "Auto-revisão na mesma sessão que gerou; mantém o contexto de raciocínio da geração."},
+    {"term_en": "independent review instance", "meaning_en": "A separate instance without the prior reasoning context.", "meaning_pt": "Instância independente de revisão, sem o contexto de raciocínio anterior."},
+    {"term_en": "attention dilution", "meaning_en": "Uneven attention when processing many files at once.", "meaning_pt": "Diluição de atenção ao processar muitos arquivos de uma vez."},
+    {"term_en": "cross-file integration pass", "meaning_en": "A separate pass that examines data flow between files.", "meaning_pt": "Passe de integração entre arquivos, focado em data flow."},
+    {"term_en": "specialized review passes", "meaning_en": "Separate focused prompts per concern (security, business logic, API design), each with its own few-shot examples.", "meaning_pt": "Passes de review especializados por concern (segurança, lógica de negócio, design de API), cada um com few-shot próprios."},
+    {"term_en": "recall trade-off", "meaning_en": "Gaining recall on one problem type while losing it on another, caused by competing concerns in one prompt.", "meaning_pt": "Troca de recall: ganhar num tipo de problema perdendo noutro, por concerns competindo num prompt só."},
+    {"term_en": "self-reported confidence", "meaning_en": "Confidence the model reports with each finding; raw it is poorly calibrated, calibrated against labeled data it is a routing signal.", "meaning_pt": "Confiança autorreportada: crua, mal calibrada; calibrada contra dados rotulados, sinal de roteamento."},
+    {"term_en": "verification pass", "meaning_en": "A pass that reviews the findings and reports confidence for each.", "meaning_pt": "Passe de verificação dos findings, com confiança por finding."},
+    {"term_en": "calibrated review routing", "meaning_en": "Routing findings by thresholds calibrated with labeled data.", "meaning_pt": "Roteamento de revisão calibrado com dados rotulados."}
+  ]
+}
