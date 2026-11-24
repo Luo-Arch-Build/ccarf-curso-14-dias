@@ -16,6 +16,7 @@
         "Attempted query: what was attempted, such as the query, the document or the parameters.",
         "Partial results: what was already obtained before the failure.",
         "Alternative approaches: possible alternatives, such as another source or a narrower query.",
+        "The lesson's example payload has status partial_failure, failure_type, attempted_query, partial_results and alternatives.",
         "With that payload, the coordinator can decide intelligently: retry with another query, try an alternative source, or proceed with the partial results and mark the gap in the synthesis."
       ],
       "assertions_pt": [
@@ -26,6 +27,7 @@
         "Attempted query: o que foi tentado, como a query, o documento ou os parâmetros.",
         "Partial results: o que já foi obtido antes da falha.",
         "Alternative approaches: alternativas possíveis, como outra fonte ou uma query mais estreita.",
+        "O payload de exemplo da aula tem status partial_failure, failure_type, attempted_query, partial_results e alternatives.",
         "Com esse payload, o coordinator consegue decidir de forma inteligente: retentar com outra query, tentar uma fonte alternativa, ou seguir com os resultados parciais e marcar a lacuna na síntese."
       ]
     },
@@ -115,11 +117,12 @@
       "assertions_en": [
         "Field-level confidence: the model emits a score per extracted field, not one global number per document.",
         "The raw score is not yet a calibrated probability.",
-        "Calibrate with a labeled validation set: validate performance and calibrate thresholds per field by segment or document type, for example \"below 0.82 on valor_total of a handwritten contract goes to the human queue\".",
+        "Calibrate with a labeled validation set: validate performance and calibrate thresholds for each field-by-segment (or document) slice, for example \"below 0.82 on valor_total of a handwritten contract goes to the human queue\".",
         "Do not lend an unvalidated segment the confidence measured on another one.",
         "Routing uses alternative triggers: low calibrated confidence, an unvalidated segment, ambiguity or contradiction, and high impact are joined by OR, not by AND.",
         "A high score does not cancel the other triggers.",
         "Separately, auto-approved fields remain eligible for their own stratified random sample, by field and segment or document, sent to humans for audit, measurement of the real error rate and detection of new patterns.",
+        "In the lesson's per-field example for a handwritten contract, partes at 0.94 passes, while valor_total at 0.61 and a null data_vigencia at 0.30 go to the human queue.",
         "A self-reported score should not be treated as a calibrated probability before empirical validation.",
         "That does not mean it is always poorly calibrated: it means reading 0.97 as \"97% chance of being right\" must be demonstrated on labeled data, by field and segment.",
         "Until then, the score is an input signal, not a guarantee, and contradiction, an unvalidated segment and high impact still trigger review even with a high score."
@@ -132,6 +135,7 @@
         "O roteamento usa gatilhos alternativos: baixa confiança calibrada, segmento não validado, ambiguidade ou contradição e alto impacto são ligados por OR, não por AND.",
         "Um score alto não cancela os demais gatilhos.",
         "Separadamente, os campos auto-aprovados continuam elegíveis a uma amostra aleatória estratificada própria, por campo e segmento ou documento, enviada a humanos para auditoria, medição do erro real e detecção de padrões novos.",
+        "No exemplo por campo da aula, de um contrato manuscrito, partes a 0,94 passa, enquanto valor_total a 0,61 e data_vigencia nula a 0,30 vão para a fila humana.",
         "Um score autorrelatado não deve ser tratado como probabilidade calibrada antes de validação empírica.",
         "Isso não significa que ele seja sempre mal calibrado: significa que interpretar 0,97 como \"97% de chance de acerto\" precisa ser demonstrado em dados rotulados, por campo e segmento.",
         "Até lá, o score é um sinal de entrada, não uma garantia, e contradição, segmento não validado e alto impacto continuam acionando revisão mesmo com score alto."
@@ -144,12 +148,13 @@
       "assertions_en": [
         "One trigger is enough to send the field to review.",
         "With no active trigger and validated performance in that slice, the field can be auto-approved, without leaving the audit sample population.",
-        "valor_total on a handwritten contract: two contradictory values trigger review even with a score of 0.97; while any trigger is active, the action is blocked, and an irreversible, high-impact payment needs approval from the authorization owner.",
-        "data_vigencia on a handwritten contract: review the date and the minimal excerpt that gives it context, calling in a specialist only if the doubt is about the domain.",
-        "tax_id on a scanned multi-currency invoice: the extraction reviewer checks tax_id and its excerpt, without indiscriminately reopening every field of the invoice.",
-        "cnpj on a validated standard invoice: if no trigger is active, auto-approve and keep the field in the separate stratified human-audit sample.",
+        "valor_total on a handwritten contract: low calibrated confidence, a segment not yet validated, two contradictory values even with a score of 0.97, or an irreversible high-impact payment each trigger review.",
+        "While any valor_total trigger is active, the action is blocked: the extraction reviewer checks the value and its excerpt, a domain specialist steps in if the interpretation is ambiguous, and the authorization owner approves the payment.",
+        "data_vigencia on a handwritten contract: triggered by low calibrated confidence, an illegible or contradictory date, an unvalidated segment or a high-impact obligation; review the date and the minimal excerpt that gives it context, calling in a specialist only if the doubt is about the domain.",
+        "tax_id on a scanned multi-currency invoice: triggered by low calibrated confidence, a partially illegible identifier, or a segment that performs poorly or is not yet validated; the extraction reviewer checks tax_id and its excerpt, without indiscriminately reopening every field of the invoice.",
+        "cnpj on a validated standard invoice: still triggered by low calibrated confidence, a contradiction, a shift to an unvalidated stratum or a high-impact consequence; if no trigger is active, auto-approve and keep the field in the separate stratified human-audit sample.",
         "Calibration is per field and segment: a single threshold for every field and segment is intuition disguised as a rule.",
-        "Each slice errs at a different confidence level: cnpj at 0.80 is almost always right in a validated segment, while valor_total at 0.92 still errs on handwritten contracts.",
+        "Each slice errs at a different confidence level: cnpj at 0.80 is almost always right in a validated segment, while valor_total at 0.92 still errs on handwritten contracts; calibrate each threshold with a labeled validation set representative of the field-by-segment slice.",
         "If the segment has not been validated yet, that alone is a review trigger, not a reason to assume the global threshold applies.",
         "With limited capacity, prioritize the queue by risk and consequence, but do not turn the triggers into a cumulative list: any one of them is enough for review.",
         "Rule of thumb: the threshold comes from labeled data, field by field and segment by segment, never from a guess or from an instruction asking the model to \"be more humble\"."
@@ -157,12 +162,13 @@
       "assertions_pt": [
         "Basta um gatilho para direcionar o campo à revisão.",
         "Sem gatilho ativo e com desempenho validado naquele recorte, o campo pode ser auto-aprovado, sem sair da população da amostra de auditoria.",
-        "valor_total em contrato manuscrito: dois valores contraditórios acionam revisão mesmo com score 0,97; enquanto houver gatilho, a ação fica bloqueada, e um pagamento irreversível de alto impacto precisa da aprovação do responsável por autorização.",
-        "data_vigencia em contrato manuscrito: revisar a data e o trecho mínimo que a contextualiza, acionando especialista apenas se a dúvida for de domínio.",
-        "tax_id em fatura escaneada com várias moedas: o revisor de extração confere tax_id e seu recorte, sem reabrir indiscriminadamente todos os campos da fatura.",
-        "cnpj em nota fiscal padrão validada: se nenhum gatilho estiver ativo, auto-aprovar e manter o campo na amostra estratificada separada de auditoria humana.",
+        "valor_total em contrato manuscrito: baixa confiança calibrada, segmento ainda não validado, dois valores contraditórios mesmo com score 0,97 ou pagamento irreversível de alto impacto acionam revisão, cada um sozinho.",
+        "Enquanto houver gatilho em valor_total, a ação fica bloqueada: o revisor de extração confere o valor e o recorte, o especialista de domínio atua se houver interpretação ambígua e o responsável por autorização aprova o pagamento.",
+        "data_vigencia em contrato manuscrito: acionada por baixa confiança calibrada, data ilegível ou contraditória, segmento não validado ou obrigação de alto impacto; revisar a data e o trecho mínimo que a contextualiza, acionando especialista apenas se a dúvida for de domínio.",
+        "tax_id em fatura escaneada com várias moedas: acionado por baixa confiança calibrada, identificador parcialmente ilegível ou segmento com desempenho ruim ou ainda não validado; o revisor de extração confere tax_id e seu recorte, sem reabrir indiscriminadamente todos os campos da fatura.",
+        "cnpj em nota fiscal padrão validada: ainda acionado por baixa confiança calibrada, contradição, mudança para estrato não validado ou consequência de alto impacto; se nenhum gatilho estiver ativo, auto-aprovar e manter o campo na amostra estratificada separada de auditoria humana.",
         "Calibração é por campo e segmento: um threshold único para todos os campos e segmentos é intuição disfarçada de regra.",
-        "Cada recorte erra num nível de confiança diferente: o cnpj a 0,80 quase sempre certo num segmento validado, o valor_total a 0,92 ainda errando em contratos manuscritos.",
+        "Cada recorte erra num nível de confiança diferente: o cnpj a 0,80 quase sempre certo num segmento validado, o valor_total a 0,92 ainda errando em contratos manuscritos; calibre cada threshold com validation set rotulado representativo do campo × segmento.",
         "Se o segmento ainda não foi validado, isso já é um gatilho de revisão, não motivo para assumir que o threshold global serve.",
         "Com capacidade limitada, priorize a fila pelo risco e pela consequência, mas não transforme os gatilhos em uma lista cumulativa: qualquer um deles basta para revisão.",
         "Regra de bolso: o threshold vem dos dados rotulados, campo a campo e segmento a segmento, nunca do chute nem de uma instrução pedindo ao modelo para \"ser mais humilde\"."
@@ -179,7 +185,7 @@
         "Reviewing an extraction is not the same as authorizing a payment, a cancellation or an external communication.",
         "By default, review the field and the necessary excerpt, with the minimum context needed to decide; the whole document comes in only when the doubt requires more context.",
         "High impact and irreversibility enter the matrix as a recommended architectural reinforcement to prioritize review and require proportional authorization.",
-        "That consequence criterion should not be attributed as a literal requirement of the public text of TS 5.5."
+        "That consequence criterion should not be presented as a literal requirement of the public text of TS 5.5."
       ],
       "assertions_pt": [
         "Revisor de extração: compara o valor extraído ao documento, verificando transcrição, legibilidade e evidência no recorte; é a porta de entrada para erro de leitura ou extração.",
@@ -315,26 +321,110 @@
     }
   ],
   "glossary": [
-    {"term_en": "structured error context", "meaning_en": "Error context with failure type, attempted query, partial results and alternatives.", "meaning_pt": "Contexto de erro estruturado: tipo de falha, query tentada, resultados parciais e alternativas."},
-    {"term_en": "failure type", "meaning_en": "The kind of failure; it tells the coordinator whether a retry makes sense.", "meaning_pt": "Tipo de falha; diz ao coordinator se um retry faz sentido."},
-    {"term_en": "partial results", "meaning_en": "What was obtained before the failure; the coordinator may proceed with them and annotate coverage gaps.", "meaning_pt": "Resultados parciais obtidos antes da falha; dá para seguir com eles e anotar as lacunas."},
-    {"term_en": "access failure", "meaning_en": "A timeout or unavailability; the answer exists but did not arrive.", "meaning_pt": "Falha de acesso (timeout, indisponibilidade); a resposta existe, mas não chegou."},
-    {"term_en": "valid empty result", "meaning_en": "A successful query with no matches.", "meaning_pt": "Resultado vazio válido: query ok, sem matches."},
-    {"term_en": "local recovery", "meaning_en": "The subagent handles transient failures and propagates only unresolvable errors.", "meaning_pt": "Recuperação local no subagent; só propaga o irrecuperável."},
-    {"term_en": "coverage annotation / gap", "meaning_en": "Marking which topic areas have gaps due to unavailable sources.", "meaning_pt": "Anotação / lacuna de cobertura por fontes indisponíveis."},
-    {"term_en": "stratified random sampling", "meaning_en": "A separate stratified sample of auto-approved fields sent to human audit; it complements targeted routing.", "meaning_pt": "Amostragem aleatória estratificada dos auto-aprovados para auditoria humana; complementa a triagem direcionada."},
-    {"term_en": "field-level confidence", "meaning_en": "A score per extracted field; not a calibrated probability before empirical validation.", "meaning_pt": "Confiança por campo; não é probabilidade calibrada antes de validação empírica."},
-    {"term_en": "labeled validation set", "meaning_en": "Labeled data used to calibrate review thresholds by field and document segment.", "meaning_pt": "Conjunto de validação rotulado para calibrar thresholds por campo e segmento."},
-    {"term_en": "aggregate accuracy", "meaning_en": "A single overall accuracy number; it may mask poor performance on specific document types.", "meaning_pt": "Acurácia agregada; mascara segmentos ruins."},
-    {"term_en": "claim-source mapping", "meaning_en": "A structured link from each claim to its source, which synthesis must preserve.", "meaning_pt": "Mapeamento claim → fonte, que a síntese precisa preservar."},
-    {"term_en": "provenance", "meaning_en": "Traceable origin of each claim through summarization steps.", "meaning_pt": "Proveniência: origem rastreável de cada claim."},
-    {"term_en": "publication date", "meaning_en": "Publication or collection date, so time differences are not read as contradictions.", "meaning_pt": "Data de publicação ou coleta, para diferença temporal não virar contradição."},
-    {"term_en": "well-established vs contested findings", "meaning_en": "Explicit separation of findings where sources converge from those where they diverge.", "meaning_pt": "Achados estabelecidos vs contestados, separados explicitamente."},
-    {"term_en": "content-type rendering", "meaning_en": "Financial data as tables, news as prose, technical findings as structured lists.", "meaning_pt": "Renderização por tipo de conteúdo: tabela, prosa, lista estruturada."},
-    {"term_en": "review threshold", "meaning_en": "Cut-off for routing to human review, calibrated per field-by-segment slice instead of a global cut-off.", "meaning_pt": "Corte de roteamento para revisão humana, calibrado por campo × segmento."},
-    {"term_en": "alternative review triggers (OR)", "meaning_en": "Low calibrated confidence, an unvalidated segment, contradiction or high impact each independently triggers review.", "meaning_pt": "Gatilhos alternativos de revisão (OU): cada um, sozinho, já aciona revisão."},
-    {"term_en": "extraction reviewer", "meaning_en": "Checks the flagged field and the necessary source excerpt rather than the whole document.", "meaning_pt": "Revisor de extração: confere o campo sinalizado e o recorte necessário."},
-    {"term_en": "domain specialist", "meaning_en": "Resolves ambiguity or contradiction that requires domain interpretation.", "meaning_pt": "Especialista de domínio: resolve ambiguidade ou contradição que exige interpretação."},
-    {"term_en": "authorization owner", "meaning_en": "Authorizes the high-impact or irreversible action after the required review.", "meaning_pt": "Responsável por autorização da ação de alto impacto ou irreversível."}
+    {
+      "term_en": "structured error context",
+      "meaning_en": "Error context with failure type, attempted query, partial results and alternatives.",
+      "meaning_pt": "Contexto de erro estruturado: tipo de falha, query tentada, resultados parciais e alternativas."
+    },
+    {
+      "term_en": "failure type",
+      "meaning_en": "The kind of failure; it tells the coordinator whether a retry makes sense.",
+      "meaning_pt": "Tipo de falha; diz ao coordinator se um retry faz sentido."
+    },
+    {
+      "term_en": "partial results",
+      "meaning_en": "What was obtained before the failure; the coordinator may proceed with them and annotate coverage gaps.",
+      "meaning_pt": "Resultados parciais obtidos antes da falha; dá para seguir com eles e anotar as lacunas."
+    },
+    {
+      "term_en": "access failure",
+      "meaning_en": "A timeout or unavailability; the answer exists but did not arrive.",
+      "meaning_pt": "Falha de acesso (timeout, indisponibilidade); a resposta existe, mas não chegou."
+    },
+    {
+      "term_en": "valid empty result",
+      "meaning_en": "A successful query with no matches.",
+      "meaning_pt": "Resultado vazio válido: query ok, sem matches."
+    },
+    {
+      "term_en": "local recovery",
+      "meaning_en": "The subagent handles transient failures and propagates only unresolvable errors.",
+      "meaning_pt": "Recuperação local no subagent; só propaga o irrecuperável."
+    },
+    {
+      "term_en": "coverage annotation / gap",
+      "meaning_en": "Marking which topic areas have gaps due to unavailable sources.",
+      "meaning_pt": "Anotação / lacuna de cobertura por fontes indisponíveis."
+    },
+    {
+      "term_en": "stratified random sampling",
+      "meaning_en": "A separate stratified sample of auto-approved fields sent to human audit; it complements targeted routing.",
+      "meaning_pt": "Amostragem aleatória estratificada dos auto-aprovados para auditoria humana; complementa a triagem direcionada."
+    },
+    {
+      "term_en": "field-level confidence",
+      "meaning_en": "A score per extracted field; not a calibrated probability before empirical validation.",
+      "meaning_pt": "Confiança por campo; não é probabilidade calibrada antes de validação empírica."
+    },
+    {
+      "term_en": "labeled validation set",
+      "meaning_en": "Labeled data used to calibrate review thresholds by field and document segment.",
+      "meaning_pt": "Conjunto de validação rotulado para calibrar thresholds por campo e segmento."
+    },
+    {
+      "term_en": "aggregate accuracy",
+      "meaning_en": "A single overall accuracy number; it may mask poor performance on specific document types.",
+      "meaning_pt": "Acurácia agregada; mascara segmentos ruins."
+    },
+    {
+      "term_en": "claim-source mapping",
+      "meaning_en": "A structured link from each claim to its source, which synthesis must preserve.",
+      "meaning_pt": "Mapeamento claim → fonte, que a síntese precisa preservar."
+    },
+    {
+      "term_en": "provenance",
+      "meaning_en": "Traceable origin of each claim through summarization steps.",
+      "meaning_pt": "Proveniência: origem rastreável de cada claim."
+    },
+    {
+      "term_en": "publication date",
+      "meaning_en": "Publication or collection date, so time differences are not read as contradictions.",
+      "meaning_pt": "Data de publicação ou coleta, para diferença temporal não virar contradição."
+    },
+    {
+      "term_en": "well-established vs contested findings",
+      "meaning_en": "Explicit separation of findings where sources converge from those where they diverge.",
+      "meaning_pt": "Achados estabelecidos vs contestados, separados explicitamente."
+    },
+    {
+      "term_en": "content-type rendering",
+      "meaning_en": "Financial data as tables, news as prose, technical findings as structured lists.",
+      "meaning_pt": "Renderização por tipo de conteúdo: tabela, prosa, lista estruturada."
+    },
+    {
+      "term_en": "review threshold",
+      "meaning_en": "Cut-off for routing to human review, calibrated per field-by-segment slice instead of a global cut-off.",
+      "meaning_pt": "Corte de roteamento para revisão humana, calibrado por campo × segmento."
+    },
+    {
+      "term_en": "alternative review triggers (OR)",
+      "meaning_en": "Low calibrated confidence, an unvalidated segment, contradiction or high impact each independently triggers review.",
+      "meaning_pt": "Gatilhos alternativos de revisão (OU): cada um, sozinho, já aciona revisão."
+    },
+    {
+      "term_en": "extraction reviewer",
+      "meaning_en": "Checks the flagged field and the necessary source excerpt rather than the whole document.",
+      "meaning_pt": "Revisor de extração: confere o campo sinalizado e o recorte necessário."
+    },
+    {
+      "term_en": "domain specialist",
+      "meaning_en": "Resolves ambiguity or contradiction that requires domain interpretation.",
+      "meaning_pt": "Especialista de domínio: resolve ambiguidade ou contradição que exige interpretação."
+    },
+    {
+      "term_en": "authorization owner",
+      "meaning_en": "Authorizes the high-impact or irreversible action after the required review.",
+      "meaning_pt": "Responsável por autorização da ação de alto impacto ou irreversível."
+    }
   ]
 }

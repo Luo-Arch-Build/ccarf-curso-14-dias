@@ -90,7 +90,7 @@
         "If a batch can take up to 24 hours and you have a 30-hour SLA to deliver results, you cannot submit once a day.",
         "The worst case is the document that arrives right after a submission: it waits the whole interval until the next one and may still take 24 hours to process.",
         "The math is: interval between submissions plus 24 hours plus margin must be less than or equal to the SLA.",
-        "With a 30-hour SLA the theoretical ceiling is 6 hours with no margin at all; the guide's example uses 4-hour windows, 4 plus 24 equals 28 hours, leaving 2 hours of margin.",
+        "With a 30-hour SLA the theoretical ceiling is 6 hours with no margin at all; the guide's example uses 4-hour windows (4 + 24 = 28 hours), leaving 2 hours of margin.",
         "If the question repeats the guide's numbers, the answer is 4 hours.",
         "On failures, do not resubmit the whole batch.",
         "Filter the failed results by custom_id, fix the cause, for example chunking a document that overflowed the context, and resubmit only the failed items.",
@@ -102,7 +102,7 @@
         "Se um batch pode levar até 24 horas e você tem um SLA de 30 horas para entregar resultados, não dá para submeter uma vez por dia.",
         "O pior caso é o documento que chega logo depois de uma submissão: ele espera o intervalo inteiro até a próxima e ainda pode levar 24 horas de processamento.",
         "A conta é: intervalo entre submissões mais 24 horas mais folga deve ser menor ou igual ao SLA.",
-        "Com SLA de 30 horas o teto teórico é 6 horas, sem folga nenhuma; o exemplo do guia usa janelas de 4 horas, 4 mais 24 dá 28 horas, com 2 horas de margem.",
+        "Com SLA de 30 horas o teto teórico é 6 horas, sem folga nenhuma; o exemplo do guia usa janelas de 4 horas (4 + 24 = 28 horas), com 2 horas de margem.",
         "Se a questão repetir os números do guia, a resposta é 4 horas.",
         "Em falhas, não resubmeta o batch inteiro.",
         "Filtre os resultados com erro pelo custom_id, corrija a causa, por exemplo chunking de um documento que estourou o contexto, e resubmeta só os itens que falharam.",
@@ -234,23 +234,95 @@
     }
   ],
   "glossary": [
-    {"term_en": "Message Batches API", "meaning_en": "Asynchronous message batch API with 50% cost savings.", "meaning_pt": "API de batches de mensagens (assíncrona), com 50% de economia."},
-    {"term_en": "24-hour processing window", "meaning_en": "Processing time of up to 24 hours, with no guaranteed latency.", "meaning_pt": "Janela de processamento de até 24h, sem latência garantida."},
-    {"term_en": "latency SLA", "meaning_en": "A latency guarantee; the Batches API has none.", "meaning_pt": "SLA (garantia) de latência; a Batches API não tem."},
-    {"term_en": "batch status polling", "meaning_en": "Periodically checking the batch status to track completion; it does not create a latency SLA.", "meaning_pt": "Consulta periódica ao status do batch para acompanhar a conclusão; não cria SLA de latência."},
-    {"term_en": "non-blocking workload", "meaning_en": "Latency-tolerant work whose result is consumed hours later.", "meaning_pt": "Carga de trabalho não-bloqueante, tolerante a latência."},
-    {"term_en": "pre-merge check", "meaning_en": "A blocking check that must finish before developers can merge.", "meaning_pt": "Verificação pré-merge, bloqueante."},
-    {"term_en": "custom_id", "meaning_en": "Your own ID per batch request, used to correlate results.", "meaning_pt": "ID customizado por request do batch, usado para correlacionar resultados."},
-    {"term_en": "client tool", "meaning_en": "A tool executed by the application; no tool_result multi-turn loop within the same batch request.", "meaning_pt": "Tool executada pela aplicação; sem loop multi-turn de tool_result na mesma request de batch."},
-    {"term_en": "first-pass success rate", "meaning_en": "Share of items right on the first pass; a sample set raises it, but the 50% discount does not depend on it.", "meaning_pt": "Taxa de acerto na primeira passada; a amostra melhora essa taxa, mas o desconto de 50% não depende dela."},
-    {"term_en": "self-review", "meaning_en": "Review by the same session that generated the output; it retains the generation's reasoning context.", "meaning_pt": "Auto-revisão na mesma sessão que gerou; mantém o contexto de raciocínio da geração."},
-    {"term_en": "independent review instance", "meaning_en": "A separate instance without the prior reasoning context.", "meaning_pt": "Instância independente de revisão, sem o contexto de raciocínio anterior."},
-    {"term_en": "attention dilution", "meaning_en": "Uneven attention when processing many files at once.", "meaning_pt": "Diluição de atenção ao processar muitos arquivos de uma vez."},
-    {"term_en": "cross-file integration pass", "meaning_en": "A separate pass that examines data flow between files.", "meaning_pt": "Passe de integração entre arquivos, focado em data flow."},
-    {"term_en": "specialized review passes", "meaning_en": "Separate focused prompts per concern (security, business logic, API design), each with its own few-shot examples.", "meaning_pt": "Passes de review especializados por concern (segurança, lógica de negócio, design de API), cada um com few-shot próprios."},
-    {"term_en": "recall trade-off", "meaning_en": "Gaining recall on one problem type while losing it on another, caused by competing concerns in one prompt.", "meaning_pt": "Troca de recall: ganhar num tipo de problema perdendo noutro, por concerns competindo num prompt só."},
-    {"term_en": "self-reported confidence", "meaning_en": "Confidence the model reports with each finding; raw it is poorly calibrated, calibrated against labeled data it is a routing signal.", "meaning_pt": "Confiança autorreportada: crua, mal calibrada; calibrada contra dados rotulados, sinal de roteamento."},
-    {"term_en": "verification pass", "meaning_en": "A pass that reviews the findings and reports confidence for each.", "meaning_pt": "Passe de verificação dos findings, com confiança por finding."},
-    {"term_en": "calibrated review routing", "meaning_en": "Routing findings by thresholds calibrated with labeled data.", "meaning_pt": "Roteamento de revisão calibrado com dados rotulados."}
+    {
+      "term_en": "Message Batches API",
+      "meaning_en": "Asynchronous message batch API with 50% cost savings.",
+      "meaning_pt": "API de batches de mensagens (assíncrona), com 50% de economia."
+    },
+    {
+      "term_en": "24-hour processing window",
+      "meaning_en": "Processing time of up to 24 hours, with no guaranteed latency.",
+      "meaning_pt": "Janela de processamento de até 24h, sem latência garantida."
+    },
+    {
+      "term_en": "latency SLA",
+      "meaning_en": "A latency guarantee; the Batches API has none.",
+      "meaning_pt": "SLA (garantia) de latência; a Batches API não tem."
+    },
+    {
+      "term_en": "batch status polling",
+      "meaning_en": "Periodically checking the batch status to track completion; it does not create a latency SLA.",
+      "meaning_pt": "Consulta periódica ao status do batch para acompanhar a conclusão; não cria SLA de latência."
+    },
+    {
+      "term_en": "non-blocking workload",
+      "meaning_en": "Latency-tolerant work whose result is consumed hours later.",
+      "meaning_pt": "Carga de trabalho não-bloqueante, tolerante a latência."
+    },
+    {
+      "term_en": "pre-merge check",
+      "meaning_en": "A blocking check that must finish before developers can merge.",
+      "meaning_pt": "Verificação pré-merge, bloqueante."
+    },
+    {
+      "term_en": "custom_id",
+      "meaning_en": "Your own ID per batch request, used to correlate results.",
+      "meaning_pt": "ID customizado por request do batch, usado para correlacionar resultados."
+    },
+    {
+      "term_en": "client tool",
+      "meaning_en": "A tool executed by the application; no tool_result multi-turn loop within the same batch request.",
+      "meaning_pt": "Tool executada pela aplicação; sem loop multi-turn de tool_result na mesma request de batch."
+    },
+    {
+      "term_en": "first-pass success rate",
+      "meaning_en": "Share of items right on the first pass; a sample set raises it, but the 50% discount does not depend on it.",
+      "meaning_pt": "Taxa de acerto na primeira passada; a amostra melhora essa taxa, mas o desconto de 50% não depende dela."
+    },
+    {
+      "term_en": "self-review",
+      "meaning_en": "Review by the same session that generated the output; it retains the generation's reasoning context.",
+      "meaning_pt": "Auto-revisão na mesma sessão que gerou; mantém o contexto de raciocínio da geração."
+    },
+    {
+      "term_en": "independent review instance",
+      "meaning_en": "A separate instance without the prior reasoning context.",
+      "meaning_pt": "Instância independente de revisão, sem o contexto de raciocínio anterior."
+    },
+    {
+      "term_en": "attention dilution",
+      "meaning_en": "Uneven attention when processing many files at once.",
+      "meaning_pt": "Diluição de atenção ao processar muitos arquivos de uma vez."
+    },
+    {
+      "term_en": "cross-file integration pass",
+      "meaning_en": "A separate pass that examines data flow between files.",
+      "meaning_pt": "Passe de integração entre arquivos, focado em data flow."
+    },
+    {
+      "term_en": "specialized review passes",
+      "meaning_en": "Separate focused prompts per concern (security, business logic, API design), each with its own few-shot examples.",
+      "meaning_pt": "Passes de review especializados por concern (segurança, lógica de negócio, design de API), cada um com few-shot próprios."
+    },
+    {
+      "term_en": "recall trade-off",
+      "meaning_en": "Gaining recall on one problem type while losing it on another, caused by competing concerns in one prompt.",
+      "meaning_pt": "Troca de recall: ganhar num tipo de problema perdendo noutro, por concerns competindo num prompt só."
+    },
+    {
+      "term_en": "self-reported confidence",
+      "meaning_en": "Confidence the model reports with each finding; raw it is poorly calibrated, calibrated against labeled data it is a routing signal.",
+      "meaning_pt": "Confiança autorreportada: crua, mal calibrada; calibrada contra dados rotulados, sinal de roteamento."
+    },
+    {
+      "term_en": "verification pass",
+      "meaning_en": "A pass that reviews the findings and reports confidence for each.",
+      "meaning_pt": "Passe de verificação dos findings, com confiança por finding."
+    },
+    {
+      "term_en": "calibrated review routing",
+      "meaning_en": "Routing findings by thresholds calibrated with labeled data.",
+      "meaning_pt": "Roteamento de revisão calibrado com dados rotulados."
+    }
   ]
 }

@@ -81,6 +81,7 @@
     <li>Attempted query: what was attempted, such as the query, the document or the parameters.</li>
     <li>Partial results: what was already obtained before the failure.</li>
     <li>Alternative approaches: possible alternatives, such as another source or a narrower query.</li>
+    <li>The lesson's example payload has status partial_failure, failure_type, attempted_query, partial_results and alternatives.</li>
     <li>With that payload, the coordinator can decide intelligently: retry with another query, try an alternative source, or proceed with the partial results and mark the gap in the synthesis.</li>
   </ul>
   <ul class="assert pt-block pt">
@@ -91,6 +92,7 @@
     <li>Attempted query: o que foi tentado, como a query, o documento ou os parâmetros.</li>
     <li>Partial results: o que já foi obtido antes da falha.</li>
     <li>Alternative approaches: alternativas possíveis, como outra fonte ou uma query mais estreita.</li>
+    <li>O payload de exemplo da aula tem status partial_failure, failure_type, attempted_query, partial_results e alternatives.</li>
     <li>Com esse payload, o coordinator consegue decidir de forma inteligente: retentar com outra query, tentar uma fonte alternativa, ou seguir com os resultados parciais e marcar a lacuna na síntese.</li>
   </ul>
 </section>
@@ -198,11 +200,12 @@
   <ul class="assert">
     <li>Field-level confidence: the model emits a score per extracted field, not one global number per document.</li>
     <li>The raw score is not yet a calibrated probability.</li>
-    <li>Calibrate with a labeled validation set: validate performance and calibrate thresholds per field by segment or document type, for example "below 0.82 on valor_total of a handwritten contract goes to the human queue".</li>
+    <li>Calibrate with a labeled validation set: validate performance and calibrate thresholds for each field-by-segment (or document) slice, for example "below 0.82 on valor_total of a handwritten contract goes to the human queue".</li>
     <li>Do not lend an unvalidated segment the confidence measured on another one.</li>
     <li>Routing uses alternative triggers: low calibrated confidence, an unvalidated segment, ambiguity or contradiction, and high impact are joined by OR, not by AND.</li>
     <li>A high score does not cancel the other triggers.</li>
     <li>Separately, auto-approved fields remain eligible for their own stratified random sample, by field and segment or document, sent to humans for audit, measurement of the real error rate and detection of new patterns.</li>
+    <li>In the lesson's per-field example for a handwritten contract, partes at 0.94 passes, while valor_total at 0.61 and a null data_vigencia at 0.30 go to the human queue.</li>
     <li>A self-reported score should not be treated as a calibrated probability before empirical validation.</li>
     <li>That does not mean it is always poorly calibrated: it means reading 0.97 as "97% chance of being right" must be demonstrated on labeled data, by field and segment.</li>
     <li>Until then, the score is an input signal, not a guarantee, and contradiction, an unvalidated segment and high impact still trigger review even with a high score.</li>
@@ -215,6 +218,7 @@
     <li>O roteamento usa gatilhos alternativos: baixa confiança calibrada, segmento não validado, ambiguidade ou contradição e alto impacto são ligados por OR, não por AND.</li>
     <li>Um score alto não cancela os demais gatilhos.</li>
     <li>Separadamente, os campos auto-aprovados continuam elegíveis a uma amostra aleatória estratificada própria, por campo e segmento ou documento, enviada a humanos para auditoria, medição do erro real e detecção de padrões novos.</li>
+    <li>No exemplo por campo da aula, de um contrato manuscrito, partes a 0,94 passa, enquanto valor_total a 0,61 e data_vigencia nula a 0,30 vão para a fila humana.</li>
     <li>Um score autorrelatado não deve ser tratado como probabilidade calibrada antes de validação empírica.</li>
     <li>Isso não significa que ele seja sempre mal calibrado: significa que interpretar 0,97 como "97% de chance de acerto" precisa ser demonstrado em dados rotulados, por campo e segmento.</li>
     <li>Até lá, o score é um sinal de entrada, não uma garantia, e contradição, segmento não validado e alto impacto continuam acionando revisão mesmo com score alto.</li>
@@ -230,12 +234,13 @@
   <ul class="assert">
     <li>One trigger is enough to send the field to review.</li>
     <li>With no active trigger and validated performance in that slice, the field can be auto-approved, without leaving the audit sample population.</li>
-    <li>valor_total on a handwritten contract: two contradictory values trigger review even with a score of 0.97; while any trigger is active, the action is blocked, and an irreversible, high-impact payment needs approval from the authorization owner.</li>
-    <li>data_vigencia on a handwritten contract: review the date and the minimal excerpt that gives it context, calling in a specialist only if the doubt is about the domain.</li>
-    <li>tax_id on a scanned multi-currency invoice: the extraction reviewer checks tax_id and its excerpt, without indiscriminately reopening every field of the invoice.</li>
-    <li>cnpj on a validated standard invoice: if no trigger is active, auto-approve and keep the field in the separate stratified human-audit sample.</li>
+    <li>valor_total on a handwritten contract: low calibrated confidence, a segment not yet validated, two contradictory values even with a score of 0.97, or an irreversible high-impact payment each trigger review.</li>
+    <li>While any valor_total trigger is active, the action is blocked: the extraction reviewer checks the value and its excerpt, a domain specialist steps in if the interpretation is ambiguous, and the authorization owner approves the payment.</li>
+    <li>data_vigencia on a handwritten contract: triggered by low calibrated confidence, an illegible or contradictory date, an unvalidated segment or a high-impact obligation; review the date and the minimal excerpt that gives it context, calling in a specialist only if the doubt is about the domain.</li>
+    <li>tax_id on a scanned multi-currency invoice: triggered by low calibrated confidence, a partially illegible identifier, or a segment that performs poorly or is not yet validated; the extraction reviewer checks tax_id and its excerpt, without indiscriminately reopening every field of the invoice.</li>
+    <li>cnpj on a validated standard invoice: still triggered by low calibrated confidence, a contradiction, a shift to an unvalidated stratum or a high-impact consequence; if no trigger is active, auto-approve and keep the field in the separate stratified human-audit sample.</li>
     <li>Calibration is per field and segment: a single threshold for every field and segment is intuition disguised as a rule.</li>
-    <li>Each slice errs at a different confidence level: cnpj at 0.80 is almost always right in a validated segment, while valor_total at 0.92 still errs on handwritten contracts.</li>
+    <li>Each slice errs at a different confidence level: cnpj at 0.80 is almost always right in a validated segment, while valor_total at 0.92 still errs on handwritten contracts; calibrate each threshold with a labeled validation set representative of the field-by-segment slice.</li>
     <li>If the segment has not been validated yet, that alone is a review trigger, not a reason to assume the global threshold applies.</li>
     <li>With limited capacity, prioritize the queue by risk and consequence, but do not turn the triggers into a cumulative list: any one of them is enough for review.</li>
     <li>Rule of thumb: the threshold comes from labeled data, field by field and segment by segment, never from a guess or from an instruction asking the model to "be more humble".</li>
@@ -243,12 +248,13 @@
   <ul class="assert pt-block pt">
     <li>Basta um gatilho para direcionar o campo à revisão.</li>
     <li>Sem gatilho ativo e com desempenho validado naquele recorte, o campo pode ser auto-aprovado, sem sair da população da amostra de auditoria.</li>
-    <li>valor_total em contrato manuscrito: dois valores contraditórios acionam revisão mesmo com score 0,97; enquanto houver gatilho, a ação fica bloqueada, e um pagamento irreversível de alto impacto precisa da aprovação do responsável por autorização.</li>
-    <li>data_vigencia em contrato manuscrito: revisar a data e o trecho mínimo que a contextualiza, acionando especialista apenas se a dúvida for de domínio.</li>
-    <li>tax_id em fatura escaneada com várias moedas: o revisor de extração confere tax_id e seu recorte, sem reabrir indiscriminadamente todos os campos da fatura.</li>
-    <li>cnpj em nota fiscal padrão validada: se nenhum gatilho estiver ativo, auto-aprovar e manter o campo na amostra estratificada separada de auditoria humana.</li>
+    <li>valor_total em contrato manuscrito: baixa confiança calibrada, segmento ainda não validado, dois valores contraditórios mesmo com score 0,97 ou pagamento irreversível de alto impacto acionam revisão, cada um sozinho.</li>
+    <li>Enquanto houver gatilho em valor_total, a ação fica bloqueada: o revisor de extração confere o valor e o recorte, o especialista de domínio atua se houver interpretação ambígua e o responsável por autorização aprova o pagamento.</li>
+    <li>data_vigencia em contrato manuscrito: acionada por baixa confiança calibrada, data ilegível ou contraditória, segmento não validado ou obrigação de alto impacto; revisar a data e o trecho mínimo que a contextualiza, acionando especialista apenas se a dúvida for de domínio.</li>
+    <li>tax_id em fatura escaneada com várias moedas: acionado por baixa confiança calibrada, identificador parcialmente ilegível ou segmento com desempenho ruim ou ainda não validado; o revisor de extração confere tax_id e seu recorte, sem reabrir indiscriminadamente todos os campos da fatura.</li>
+    <li>cnpj em nota fiscal padrão validada: ainda acionado por baixa confiança calibrada, contradição, mudança para estrato não validado ou consequência de alto impacto; se nenhum gatilho estiver ativo, auto-aprovar e manter o campo na amostra estratificada separada de auditoria humana.</li>
     <li>Calibração é por campo e segmento: um threshold único para todos os campos e segmentos é intuição disfarçada de regra.</li>
-    <li>Cada recorte erra num nível de confiança diferente: o cnpj a 0,80 quase sempre certo num segmento validado, o valor_total a 0,92 ainda errando em contratos manuscritos.</li>
+    <li>Cada recorte erra num nível de confiança diferente: o cnpj a 0,80 quase sempre certo num segmento validado, o valor_total a 0,92 ainda errando em contratos manuscritos; calibre cada threshold com validation set rotulado representativo do campo × segmento.</li>
     <li>Se o segmento ainda não foi validado, isso já é um gatilho de revisão, não motivo para assumir que o threshold global serve.</li>
     <li>Com capacidade limitada, priorize a fila pelo risco e pela consequência, mas não transforme os gatilhos em uma lista cumulativa: qualquer um deles basta para revisão.</li>
     <li>Regra de bolso: o threshold vem dos dados rotulados, campo a campo e segmento a segmento, nunca do chute nem de uma instrução pedindo ao modelo para "ser mais humilde".</li>
@@ -268,7 +274,7 @@
     <li>Reviewing an extraction is not the same as authorizing a payment, a cancellation or an external communication.</li>
     <li>By default, review the field and the necessary excerpt, with the minimum context needed to decide; the whole document comes in only when the doubt requires more context.</li>
     <li>High impact and irreversibility enter the matrix as a recommended architectural reinforcement to prioritize review and require proportional authorization.</li>
-    <li>That consequence criterion should not be attributed as a literal requirement of the public text of TS 5.5.</li>
+    <li>That consequence criterion should not be presented as a literal requirement of the public text of TS 5.5.</li>
   </ul>
   <ul class="assert pt-block pt">
     <li>Revisor de extração: compara o valor extraído ao documento, verificando transcrição, legibilidade e evidência no recorte; é a porta de entrada para erro de leitura ou extração.</li>

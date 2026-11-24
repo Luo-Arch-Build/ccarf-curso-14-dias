@@ -167,7 +167,7 @@
     <li>If a batch can take up to 24 hours and you have a 30-hour SLA to deliver results, you cannot submit once a day.</li>
     <li>The worst case is the document that arrives right after a submission: it waits the whole interval until the next one and may still take 24 hours to process.</li>
     <li>The math is: interval between submissions plus 24 hours plus margin must be less than or equal to the SLA.</li>
-    <li>With a 30-hour SLA the theoretical ceiling is 6 hours with no margin at all; the guide's example uses 4-hour windows, 4 plus 24 equals 28 hours, leaving 2 hours of margin.</li>
+    <li>With a 30-hour SLA the theoretical ceiling is 6 hours with no margin at all; the guide's example uses 4-hour windows (4 + 24 = 28 hours), leaving 2 hours of margin.</li>
     <li>If the question repeats the guide's numbers, the answer is 4 hours.</li>
     <li>On failures, do not resubmit the whole batch.</li>
     <li>Filter the failed results by custom_id, fix the cause, for example chunking a document that overflowed the context, and resubmit only the failed items.</li>
@@ -179,7 +179,7 @@
     <li>Se um batch pode levar até 24 horas e você tem um SLA de 30 horas para entregar resultados, não dá para submeter uma vez por dia.</li>
     <li>O pior caso é o documento que chega logo depois de uma submissão: ele espera o intervalo inteiro até a próxima e ainda pode levar 24 horas de processamento.</li>
     <li>A conta é: intervalo entre submissões mais 24 horas mais folga deve ser menor ou igual ao SLA.</li>
-    <li>Com SLA de 30 horas o teto teórico é 6 horas, sem folga nenhuma; o exemplo do guia usa janelas de 4 horas, 4 mais 24 dá 28 horas, com 2 horas de margem.</li>
+    <li>Com SLA de 30 horas o teto teórico é 6 horas, sem folga nenhuma; o exemplo do guia usa janelas de 4 horas (4 + 24 = 28 horas), com 2 horas de margem.</li>
     <li>Se a questão repetir os números do guia, a resposta é 4 horas.</li>
     <li>Em falhas, não resubmeta o batch inteiro.</li>
     <li>Filtre os resultados com erro pelo custom_id, corrija a causa, por exemplo chunking de um documento que estourou o contexto, e resubmeta só os itens que falharam.</li>
