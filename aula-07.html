@@ -196,7 +196,7 @@ começa": a premissa é falsa, e o mecanismo para o que vale em toda sessão é 
   <tr><td>Algo que precisa acontecer sempre, sem exceção (ex.: rodar o linter depois de toda edição)</td><td>Hook, configurado em <code>settings.json</code> — enforcement programático, não instrução; a lógica do TS 1.5 (aula 03)</td></tr>
   <tr><td>Mudar a autonomia e a aprovação gerais da sessão (parar de pedir aprovação a cada edição, só planejar)</td><td>Permission mode da sessão (a Aula 08 enumera os modos)</td></tr>
   <tr><td>Bloquear sempre um comando ou um arquivo (ex.: o <code>.env</code>, a pasta <code>secrets/</code>)</td><td>Regra <code>deny</code> em <code>permissions</code> no <code>.claude/settings.json</code> do projeto (versionado)</td></tr>
-  <tr><td>Proibir algo só sob uma condição (só em produção, só acima de um valor, só o push para a <code>main</code>) ou reescrever a chamada antes de ela rodar</td><td>Hook <code>PreToolUse</code> com lógica, versionado, que nega com <strong>exit 2</strong> ou <code>permissionDecision: "deny"</code> (exit 1 não bloqueia)</td></tr>
+  <tr><td>Proibir algo só sob uma condição (só em produção, só acima de um valor, só o push para a <code>main</code>) ou reescrever a chamada antes de ela rodar</td><td>Hook <code>PreToolUse</code> com lógica, versionado, que nega com <strong>exit 2</strong> ou <code>permissionDecision: "deny"</code> (por padrão, exit 1 não bloqueia)</td></tr>
   <tr><td>Impedir que <em>qualquer</em> processo de shell, inclusive um script, acesse um caminho ou a rede</td><td>Sandbox ligado, com <code>allowUnsandboxedCommands: false</code> para o Claude não repetir o comando fora dele e <code>failIfUnavailable: true</code> para não rodar sem sandbox se ele não subir; recebe também as regras <code>Read</code>/<code>Edit</code> deny (produto; fora do guia da prova)</td></tr>
 </table>
 <p>As <strong>regras de permissão</strong> ficam em <code>permissions</code> (<code>allow</code>, <code>ask</code>, <code>deny</code>) nos arquivos
@@ -244,9 +244,9 @@ convencional. Como os três controles atuam juntos, valem estas regras de preced
       como um exit 2. Para um hook ser uma garantia, ele precisa negar de forma explícita ou estar configurado para bloquear quando falha.</li>
 </ul>
 <p><strong>Exemplo: deploy liberado em dev, proibido em produção.</strong> Uma regra deny para todo comando de deploy bloquearia
-os dois ambientes, porque a regra casa o padrão do comando e não sabe qual destino é permitido. O hook <code>PreToolUse</code> lê o
+os dois ambientes, porque a regra casa um padrão de texto, sem lógica condicional sobre o destino. O hook <code>PreToolUse</code> lê o
 destino no comando e nega só a produção (exit 2 ou <code>permissionDecision: "deny"</code>); numa chamada para dev ele fica em silêncio,
-e a chamada segue o fluxo normal: as regras <code>ask</code>/<code>deny</code> e o permission mode continuam decidindo. Não ser negado pelo
+e a chamada segue o fluxo normal: as regras de permissão (<code>allow</code>/<code>ask</code>/<code>deny</code>) e o permission mode continuam decidindo. Não ser negado pelo
 hook não é ser permitido.</p>
 
 <p>Regra de bolso: <em>orientação persistente → CLAUDE.md; depende do arquivo → rule com glob; procedimento sob demanda → skill ou comando;
@@ -343,7 +343,7 @@ quantidade de etapas mencionadas que decide: procure artefatos, handoffs e gates
   <tr><td class="en">verbose discovery output</td><td>saída verbosa da fase de descoberta</td><td class="uso">"isolate verbose discovery output and return summaries"</td></tr>
   <tr><td class="en">context window exhaustion</td><td>estouro da janela de contexto</td><td class="uso">"prevent context window exhaustion during multi-phase tasks"</td></tr>
   <tr><td class="en">always-loaded</td><td>sempre carregado: o termo da prova para o CLAUDE.md (no produto, o de subdiretório carrega sob demanda)</td><td class="uso">"CLAUDE.md for always-loaded universal standards"</td></tr>
-  <tr><td class="en">path-scoped rule</td><td>arquivo em <code>.claude/rules/</code> com <code>paths</code> glob, que vale para os arquivos que casam em qualquer pasta</td><td class="uso">"use a rule with paths: ["**/*.sql"], not a CLAUDE.md inside one folder"</td></tr>
+  <tr><td class="en">path-scoped rule</td><td>arquivo em <code>.claude/rules/</code> com <code>paths</code> glob, que vale para os arquivos que casam em qualquer pasta</td><td class="uso">"use a rule with paths: ['**/*.sql'], not a CLAUDE.md inside one folder"</td></tr>
   <tr><td class="en">permission prompt</td><td>pedido de aprovação de uma tool call (uma edição, um comando), não de um plano</td><td class="uso">"approving a tool call is not approving a plan"</td></tr>
   <tr><td class="en">settings permissions</td><td>regras de permissão (allow / ask / deny) nos arquivos de settings</td><td class="uso">"select CLAUDE.md, rules, skills, hooks, or settings permissions"</td></tr>
   <tr><td class="en">deny rule</td><td>regra que bloqueia toda chamada que casa com o padrão (tool, comando ou caminho), sem lógica condicional</td><td class="uso">"add a deny rule to block reading .env in every context"</td></tr>
@@ -365,7 +365,7 @@ quantidade de etapas mencionadas que decide: procure artefatos, handoffs e gates
   seguido de execução não basta; procure fases com artefatos, handoffs e gates. (4) <strong>Aprovação ou memória invisível</strong>:
   aprovar o plano do Claude não autoriza produção/deploy, e uma nova execução headless não herda o plano sem retomar a sessão
   ou receber o artefato. (5) <strong>Texto ou bloqueio errado</strong>: instrução não garante enforcement; use <code>deny</code> para
-  proibição incondicional e hook com lógica quando a decisão depender do contexto; o hook bloqueia com exit 2, não com exit 1.
+  proibição incondicional e hook com lógica quando a decisão depender do contexto; o hook bloqueia com exit 2; por padrão, exit 1 não bloqueia.
   (6) <strong>Carregamento errado</strong>: a skill não carrega no início da sessão (só a descrição dela), então o que vale em toda
   sessão é o CLAUDE.md do projeto; e o CLAUDE.md de uma pasta só vale ali, então convenção de um tipo de arquivo espalhado pelo
   repo é rule com <code>paths</code>.</p>
