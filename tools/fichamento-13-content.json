@@ -1,0 +1,430 @@
+{
+  "lesson": "13",
+  "title_en": "Error propagation, human review and provenance",
+  "title_pt": "Propagação de erros, human review e proveniência",
+  "domain_en": "Domain 5 · Context Management & Reliability (15%)",
+  "sections": [
+    {
+      "id": "structured-error-context",
+      "heading_en": "Structured error propagation (TS 5.3)",
+      "heading_pt": "Propagação de erros estruturada (TS 5.3)",
+      "assertions_en": [
+        "In a multi-agent system, a failure in a subagent is information, not a disaster.",
+        "The exam always asks the same question: what does the coordinator receive when something breaks?",
+        "The correct answer is structured error context with four fields.",
+        "Failure type: the kind of failure, such as timeout, rate limit or permission denied.",
+        "Attempted query: what was attempted, such as the query, the document or the parameters.",
+        "Partial results: what was already obtained before the failure.",
+        "Alternative approaches: possible alternatives, such as another source or a narrower query.",
+        "The lesson's example payload has status partial_failure, failure_type, attempted_query, partial_results and alternatives.",
+        "With that payload, the coordinator can decide intelligently: retry with another query, try an alternative source, or proceed with the partial results and mark the gap in the synthesis."
+      ],
+      "assertions_pt": [
+        "Num sistema multi-agent, uma falha num subagent é informação, não um desastre.",
+        "A pergunta da prova é sempre a mesma: o que o coordinator recebe quando algo quebra?",
+        "A resposta correta é contexto de erro estruturado com quatro campos.",
+        "Failure type: o tipo de falha, como timeout, rate limit ou permissão negada.",
+        "Attempted query: o que foi tentado, como a query, o documento ou os parâmetros.",
+        "Partial results: o que já foi obtido antes da falha.",
+        "Alternative approaches: alternativas possíveis, como outra fonte ou uma query mais estreita.",
+        "O payload de exemplo da aula tem status partial_failure, failure_type, attempted_query, partial_results e alternatives.",
+        "Com esse payload, o coordinator consegue decidir de forma inteligente: retentar com outra query, tentar uma fonte alternativa, ou seguir com os resultados parciais e marcar a lacuna na síntese."
+      ]
+    },
+    {
+      "id": "access-failure-vs-empty-result",
+      "heading_en": "Access failure is not a valid empty result (TS 5.3)",
+      "heading_pt": "Access failure ≠ empty result válido (TS 5.3)",
+      "assertions_en": [
+        "An access failure, such as a timeout or a service outage, calls for a retry decision: the answer exists, it just did not arrive.",
+        "A valid empty result is a successful query that simply had no matches; it is information, \"there are no results for X\", not a failure.",
+        "Confusing the two corrupts the coordinator's decision: it may retry a query that already answered \"does not exist\", or accept as empty a result that actually failed."
+      ],
+      "assertions_pt": [
+        "Uma falha de acesso, como timeout ou serviço fora, exige decisão de retry: a resposta existe, só não chegou.",
+        "Um resultado vazio válido é uma query bem-sucedida que simplesmente não teve matches; é informação, \"não há resultados para X\", não falha.",
+        "Confundir os dois corrompe a decisão do coordinator: ele pode retentar uma query que já respondeu \"não existe\", ou aceitar como vazio um resultado que na verdade falhou."
+      ]
+    },
+    {
+      "id": "three-anti-patterns",
+      "heading_en": "The three anti-patterns (TS 5.3)",
+      "heading_pt": "Os três anti-padrões (TS 5.3)",
+      "assertions_en": [
+        "Suppressing the error: catching the exception and returning an empty result marked as success.",
+        "With a suppressed error, the coordinator thinks there is nothing on the topic and produces silently incomplete research.",
+        "Bringing everything down: propagating the exception up to a top-level handler that terminates the whole workflow because of one recoverable failure.",
+        "Generic status: returning only \"search unavailable\", which hides from the coordinator the context that would allow an informed recovery.",
+        "Internal retry with backoff is legitimate, but what goes up after it is exhausted must be the structured context, not a vague string."
+      ],
+      "assertions_pt": [
+        "Suprimir o erro: capturar a exceção e devolver um resultado vazio marcado como sucesso.",
+        "Com o erro suprimido, o coordinator acha que não há nada sobre o tema e produz uma pesquisa silenciosamente incompleta.",
+        "Derrubar tudo: propagar a exceção até um handler de topo que termina o workflow inteiro por causa de uma falha recuperável.",
+        "Status genérico: devolver só \"search unavailable\", o que esconde do coordinator o contexto que permitiria uma recuperação informada.",
+        "Retry interno com backoff é legítimo, mas o que sobe depois de esgotado precisa ser o contexto estruturado, não uma string vaga."
+      ]
+    },
+    {
+      "id": "local-recovery-first",
+      "heading_en": "Local recovery first; propagate only the unrecoverable (TS 5.3)",
+      "heading_pt": "Recovery local primeiro; propaga só o irrecuperável (TS 5.3)",
+      "assertions_en": [
+        "The subagent resolves transient failures locally, with retry with backoff or a reformulated query.",
+        "Only what it could not resolve goes up to the coordinator, always with what was attempted and the partial results.",
+        "The coordinator then decides the global outcome: re-delegate, switch source, or proceed with an annotated gap."
+      ],
+      "assertions_pt": [
+        "O subagent resolve localmente falhas transitórias, com retry com backoff ou query reformulada.",
+        "Só sobe para o coordinator o que ele não conseguiu resolver, sempre acompanhado do que foi tentado e dos resultados parciais.",
+        "O coordinator então decide o destino global: re-delegar, trocar de fonte, ou seguir com lacuna anotada."
+      ]
+    },
+    {
+      "id": "coverage-annotations",
+      "heading_en": "Coverage annotations in the synthesis (TS 5.3)",
+      "heading_pt": "Coverage annotations na síntese (TS 5.3)",
+      "assertions_en": [
+        "When the coordinator decides to proceed with partial results, the synthesis must annotate coverage: which findings are well supported and which areas have gaps because sources were unavailable.",
+        "The final report must say explicitly, for example, \"the section on European regulation is incomplete because the primary source failed\"; the gap is never left invisible."
+      ],
+      "assertions_pt": [
+        "Quando o coordinator decide seguir com parciais, a síntese precisa anotar a cobertura: quais findings estão bem suportados e quais áreas têm gaps por fontes indisponíveis.",
+        "O relatório final deve dizer explicitamente, por exemplo, \"a seção sobre regulação europeia está incompleta porque a fonte primária falhou\"; a lacuna nunca fica invisível."
+      ]
+    },
+    {
+      "id": "aggregate-accuracy-masks-segments",
+      "heading_en": "Human review: aggregate accuracy masks segments (TS 5.5)",
+      "heading_pt": "Human review: acurácia agregada mascara segmentos (TS 5.5)",
+      "assertions_en": [
+        "The typical exam context, scenario 6, is an extraction pipeline that claims 97% aggregate accuracy.",
+        "The number is real and still misleading: aggregate accuracy masks poor segments.",
+        "It may be 99.5% on standard invoices and 71% on handwritten contracts.",
+        "Before automating, that is, before reducing human review, measure accuracy by document type and by field."
+      ],
+      "assertions_pt": [
+        "O contexto típico da prova, cenário 6, é um pipeline de extração que afirma 97% de acurácia agregada.",
+        "O número é real e mesmo assim enganoso: acurácia agregada mascara segmentos ruins.",
+        "Pode ser 99,5% em notas fiscais padrão e 71% em contratos manuscritos.",
+        "Antes de automatizar, isto é, antes de reduzir revisão humana, meça a acurácia por tipo de documento e por campo."
+      ]
+    },
+    {
+      "id": "from-raw-to-calibrated-confidence",
+      "heading_en": "From raw confidence to a calibrated decision (TS 5.5)",
+      "heading_pt": "Da confiança bruta à decisão calibrada (TS 5.5)",
+      "assertions_en": [
+        "Field-level confidence: the model emits a score per extracted field, not one global number per document.",
+        "The raw score is not yet a calibrated probability.",
+        "Calibrate with a labeled validation set: validate performance and calibrate thresholds for each field-by-segment (or document-type) slice, for example \"below 0.82 on valor_total of a handwritten contract goes to the human queue\".",
+        "Do not lend an unvalidated segment the confidence measured on another one.",
+        "Routing uses alternative triggers: low calibrated confidence, an unvalidated segment, ambiguity or contradiction, and high impact are joined by OR, not by AND.",
+        "A high score does not cancel the other triggers.",
+        "Separately, auto-approved fields remain eligible for their own stratified random sample, by field and segment or document, sent to humans for audit, measurement of the real error rate and detection of new patterns.",
+        "In the lesson's per-field example for a handwritten contract, valor_total at 0.61 and a null data_vigencia at 0.30 go to the human queue.",
+        "A self-reported score should not be treated as a calibrated probability before empirical validation.",
+        "That does not mean it is always poorly calibrated: it means reading 0.97 as \"97% chance of being right\" must be demonstrated on labeled data, by field and segment.",
+        "Until then, the score is an input signal, not a guarantee, and contradiction, an unvalidated segment and high impact still trigger review even with a high score."
+      ],
+      "assertions_pt": [
+        "Confidence por campo: o modelo emite um score por campo extraído, não um número global por documento.",
+        "O score bruto ainda não é uma probabilidade calibrada.",
+        "Calibração com validation set rotulado: valide o desempenho e calibre os thresholds por campo × segmento ou tipo de documento, por exemplo \"abaixo de 0,82 em valor_total de contrato manuscrito vai para a fila humana\".",
+        "Não empreste a um segmento não validado a confiança medida em outro.",
+        "O roteamento usa gatilhos alternativos: baixa confiança calibrada, segmento não validado, ambiguidade ou contradição e alto impacto são ligados por OR, não por AND.",
+        "Um score alto não cancela os demais gatilhos.",
+        "Separadamente, os campos auto-aprovados continuam elegíveis a uma amostra aleatória estratificada própria, por campo e segmento ou documento, enviada a humanos para auditoria, medição do erro real e detecção de padrões novos.",
+        "No exemplo por campo da aula, de um contrato manuscrito, valor_total a 0,61 e data_vigencia nula a 0,30 vão para a fila humana.",
+        "Um score autorrelatado não deve ser tratado como probabilidade calibrada antes de validação empírica.",
+        "Isso não significa que ele seja sempre mal calibrado: significa que interpretar 0,97 como \"97% de chance de acerto\" precisa ser demonstrado em dados rotulados, por campo e segmento.",
+        "Até lá, o score é um sinal de entrada, não uma garantia, e contradição, segmento não validado e alto impacto continuam acionando revisão mesmo com score alto."
+      ]
+    },
+    {
+      "id": "decision-matrix",
+      "heading_en": "Decision matrix: field by segment or document (TS 5.5)",
+      "heading_pt": "Matriz de decisão: campo × segmento/documento (TS 5.5)",
+      "assertions_en": [
+        "One trigger is enough to send the field to review.",
+        "With no active trigger and validated performance in that slice, the field can be auto-approved, without leaving the audit sample population.",
+        "valor_total on a handwritten contract: low calibrated confidence, a segment not yet validated, two contradictory values even with a score of 0.97, or an irreversible high-impact payment each trigger review.",
+        "While any valor_total trigger is active, the action is blocked: the extraction reviewer checks the value and its excerpt, a domain specialist steps in if the interpretation is ambiguous, and the authorization owner approves the payment.",
+        "data_vigencia on a handwritten contract: triggered by low calibrated confidence, an illegible or contradictory date, an unvalidated segment or a high-impact obligation; review the date and the minimal excerpt that gives it context, calling in a specialist only if the doubt is about the domain.",
+        "tax_id on a scanned multi-currency invoice: triggered by low calibrated confidence, a partially illegible identifier, or a segment that performs poorly or is not yet validated; the extraction reviewer checks tax_id and its excerpt, without indiscriminately reopening every field of the invoice.",
+        "cnpj on a validated standard invoice: still triggered by low calibrated confidence, a contradiction, a shift to an unvalidated stratum or a high-impact consequence; if no trigger is active, auto-approve and keep the field in the separate stratified human-audit sample.",
+        "Calibration is per field and segment: a single threshold for every field and segment is intuition disguised as a rule.",
+        "Each slice errs at a different confidence level: cnpj at 0.80 is almost always right in a validated segment, while valor_total at 0.92 still errs on handwritten contracts; calibrate each threshold with a labeled validation set representative of the field-by-segment slice.",
+        "If the segment has not been validated yet, that alone is a review trigger, not a reason to assume the global threshold applies.",
+        "With limited capacity, prioritize the queue by risk and consequence, but do not turn the triggers into a cumulative list: any one of them is enough for review.",
+        "Rule of thumb: the threshold comes from labeled data, field by field and segment by segment, never from a guess or from an instruction asking the model to \"be more humble\"."
+      ],
+      "assertions_pt": [
+        "Basta um gatilho para direcionar o campo à revisão.",
+        "Sem gatilho ativo e com desempenho validado naquele recorte, o campo pode ser auto-aprovado, sem sair da população da amostra de auditoria.",
+        "valor_total em contrato manuscrito: baixa confiança calibrada, segmento ainda não validado, dois valores contraditórios mesmo com score 0,97 ou pagamento irreversível de alto impacto acionam revisão, cada um sozinho.",
+        "Enquanto houver gatilho em valor_total, a ação fica bloqueada: o revisor de extração confere o valor e o recorte, o especialista de domínio atua se houver interpretação ambígua e o responsável por autorização aprova o pagamento.",
+        "data_vigencia em contrato manuscrito: acionada por baixa confiança calibrada, data ilegível ou contraditória, segmento não validado ou obrigação de alto impacto; revisar a data e o trecho mínimo que a contextualiza, acionando especialista apenas se a dúvida for de domínio.",
+        "tax_id em fatura escaneada com várias moedas: acionado por baixa confiança calibrada, identificador parcialmente ilegível ou segmento com desempenho ruim ou ainda não validado; o revisor de extração confere tax_id e seu recorte, sem reabrir indiscriminadamente todos os campos da fatura.",
+        "cnpj em nota fiscal padrão validada: ainda acionado por baixa confiança calibrada, contradição, mudança para estrato não validado ou consequência de alto impacto; se nenhum gatilho estiver ativo, auto-aprovar e manter o campo na amostra estratificada separada de auditoria humana.",
+        "Calibração é por campo e segmento: um threshold único para todos os campos e segmentos é intuição disfarçada de regra.",
+        "Cada recorte erra num nível de confiança diferente: o cnpj a 0,80 quase sempre certo num segmento validado, o valor_total a 0,92 ainda errando em contratos manuscritos; calibre cada threshold com validation set rotulado representativo do campo × segmento.",
+        "Se o segmento ainda não foi validado, isso já é um gatilho de revisão, não motivo para assumir que o threshold global serve.",
+        "Com capacidade limitada, priorize a fila pelo risco e pela consequência, mas não transforme os gatilhos em uma lista cumulativa: qualquer um deles basta para revisão.",
+        "Regra de bolso: o threshold vem dos dados rotulados, campo a campo e segmento a segmento, nunca do chute nem de uma instrução pedindo ao modelo para \"ser mais humilde\"."
+      ]
+    },
+    {
+      "id": "human-roles-and-scope",
+      "heading_en": "Human roles and review scope (TS 5.5)",
+      "heading_pt": "Papéis humanos e escopo da revisão (TS 5.5)",
+      "assertions_en": [
+        "Extraction reviewer: compares the extracted value with the document, checking transcription, legibility and evidence in the excerpt; it is the entry point for reading or extraction errors.",
+        "Domain specialist: resolves semantic, legal or financial ambiguities and contradictions that require interpretation, without mechanically rechecking every field.",
+        "Authorization owner: decides whether the high-impact or irreversible action may proceed after the review.",
+        "Reviewing an extraction is not the same as authorizing a payment, a cancellation or an external communication.",
+        "By default, review the field and the necessary excerpt, with the minimum context needed to decide; the whole document comes in only when the doubt requires more context.",
+        "High impact and irreversibility enter the matrix as a recommended architectural reinforcement to prioritize review and require proportional authorization.",
+        "That consequence criterion should not be presented as a literal requirement of the public text of TS 5.5."
+      ],
+      "assertions_pt": [
+        "Revisor de extração: compara o valor extraído ao documento, verificando transcrição, legibilidade e evidência no recorte; é a porta de entrada para erro de leitura ou extração.",
+        "Especialista de domínio: resolve ambiguidades semânticas, jurídicas ou financeiras e contradições que exigem interpretação, sem reconferir mecanicamente todos os campos.",
+        "Responsável por autorização: decide se a ação de alto impacto ou irreversível pode prosseguir depois da revisão.",
+        "Revisar extração não equivale a autorizar pagamento, cancelamento ou comunicação externa.",
+        "Por padrão, revise o campo e o recorte necessário, com o mínimo de contexto para decidir; o documento inteiro só entra quando a dúvida exigir contexto adicional.",
+        "Alto impacto e irreversibilidade entram na matriz como reforço arquitetural recomendado para priorizar revisão e exigir autorização proporcional.",
+        "Esse critério de consequência não deve ser atribuído como requisito literal do texto público da TS 5.5."
+      ]
+    },
+    {
+      "id": "targeted-triage-vs-audit-sampling",
+      "heading_en": "Targeted triage versus audit sampling (TS 5.5)",
+      "heading_pt": "Triagem direcionada × auditoria amostral (TS 5.5)",
+      "assertions_en": [
+        "They are two different functions, and both may send items to humans.",
+        "Targeted triage uses the matrix triggers to attack known risk.",
+        "The stratified sample of auto-approved items goes to humans for audit: it measures the real error rate, reveals patterns the triggers miss and feeds recalibration.",
+        "Audit sampling does not replace targeted triage; drawing more items at random does not guarantee reviewing the contradiction or the problematic segment.",
+        "Do not generically prescribe a \"small\" sample: its size and distribution depend on the desired statistical precision, on the strata and their volumes, and on available capacity.",
+        "Plan the sample separately from the targeted queue and reserve capacity for both activities."
+      ],
+      "assertions_pt": [
+        "São duas funções diferentes, e ambas podem enviar itens a humanos.",
+        "A triagem direcionada usa os gatilhos da matriz para atacar o risco conhecido.",
+        "A amostra estratificada dos auto-aprovados vai a humanos para auditoria: mede a taxa de erro real, revela padrões que os gatilhos não capturam e alimenta a recalibração.",
+        "A auditoria amostral não substitui a triagem direcionada; sortear mais itens ao acaso não garante revisar a contradição ou o segmento problemático.",
+        "Não prescreva genericamente uma amostra \"pequena\": seu tamanho e sua distribuição dependem da precisão estatística desejada, dos estratos e de seus volumes, e da capacidade disponível.",
+        "Planeje a amostra separadamente da fila direcionada e reserve capacidade para as duas atividades."
+      ]
+    },
+    {
+      "id": "claim-source-mappings",
+      "heading_en": "Provenance: claim-source mappings (TS 5.6)",
+      "heading_pt": "Proveniência: claim-source mappings (TS 5.6)",
+      "assertions_en": [
+        "When findings pass through summarization steps, source attribution is lost: three sources become \"studies indicate that...\".",
+        "The architectural defense is to require structured claim-source mappings from the subagents: each claim with the URL or document name, the relevant excerpt and the date.",
+        "The synthesis must preserve and merge those mappings when combining findings.",
+        "The lesson's mapping example has the fields claim, evidence_excerpt, source_url and publication_date."
+      ],
+      "assertions_pt": [
+        "Quando findings passam por etapas de sumarização, a atribuição de fonte se perde: três fontes viram \"estudos indicam que...\".",
+        "A defesa arquitetural é exigir dos subagents claim-source mappings estruturados: cada claim com URL ou nome do documento, trecho relevante e data.",
+        "A síntese precisa preservar e mesclar esses mappings ao combinar findings.",
+        "O exemplo de mapping da aula tem os campos claim, evidence_excerpt, source_url e publication_date."
+      ]
+    },
+    {
+      "id": "conflicting-statistics",
+      "heading_en": "Conflicting statistics from credible sources (TS 5.6)",
+      "heading_pt": "Estatísticas conflitantes de fontes críveis (TS 5.6)",
+      "assertions_en": [
+        "Two reputable sources say 62% and 41%: the temptation, and the classic distractor, is to pick one value, the most recent, the most conservative or the average.",
+        "The right answer is to annotate both values, each with its source and methodological context, and keep the divergence visible.",
+        "The document analysis agent completes the analysis with the conflicting values included and annotated; the coordinator decides how to reconcile them, before the synthesis.",
+        "Aborting the analysis with \"inconsistent data\" is the symmetric anti-pattern: it throws away legitimate evidence and the topic disappears from the report.",
+        "Rule of thumb: a conflict is annotated and passed up; the coordinator reconciles, never a subagent heuristic."
+      ],
+      "assertions_pt": [
+        "Duas fontes respeitáveis dizem 62% e 41%: a tentação, e o distrator clássico, é escolher um valor, o mais recente, o mais conservador ou a média.",
+        "A resposta certa é anotar os dois valores, cada um com sua fonte e seu contexto metodológico, e deixar a divergência visível.",
+        "O document analysis agent completa a análise com os valores conflitantes incluídos e anotados; quem decide como reconciliar é o coordinator, antes da síntese.",
+        "Abortar a análise com \"dados inconsistentes\" é o anti-padrão simétrico: joga fora evidência legítima e o tema some do relatório.",
+        "Regra de bolso: conflito se anota e sobe; quem reconcilia é o coordinator, nunca uma heurística do subagent."
+      ]
+    },
+    {
+      "id": "publication-dates",
+      "heading_en": "Publication dates: a time difference is not a contradiction (TS 5.6)",
+      "heading_pt": "Datas de publicação: diferença temporal não é contradição (TS 5.6)",
+      "assertions_en": [
+        "41% from 2023 and 62% from 2026 may be no conflict at all; it may be real growth.",
+        "Without the publication or collection date in the structured output, the synthesis reads a time difference as a contradiction.",
+        "That is why publication_date goes into every mapping: the subagent is required to report it.",
+        "If the source has no date, the value is null, preferably with the reason, never an invented date.",
+        "A required field without null induces fabrication (lesson 10, TS 4.3)."
+      ],
+      "assertions_pt": [
+        "\"41%\" de 2023 e \"62%\" de 2026 podem não ser conflito nenhum; pode ser crescimento real.",
+        "Sem a data de publicação ou coleta no output estruturado, a síntese interpreta diferença temporal como contradição.",
+        "Por isso publication_date entra em todo mapping: o subagent é obrigado a reportá-la.",
+        "Se a fonte não traz data, o valor é null, de preferência com o motivo, nunca uma data inventada.",
+        "Campo required sem null induz fabricação (aula 10, TS 4.3)."
+      ]
+    },
+    {
+      "id": "final-report-structure",
+      "heading_en": "Final report structure (TS 5.6)",
+      "heading_pt": "Estrutura do relatório final (TS 5.6)",
+      "assertions_en": [
+        "The synthesis must explicitly separate well-established findings, where multiple sources converge, from contested findings, where sources diverge, with the original characterizations preserved.",
+        "A generic warning at the top or a \"may be\" applied to everything does not solve it: the reader still does not know which finding is solid and which is disputed.",
+        "Each content type goes in the format that suits it, instead of flattening everything into one uniform format.",
+        "Financial data goes in a table, for side-by-side comparison.",
+        "News and sequences of events go in prose, for context and chaining.",
+        "Technical findings go in a structured list, with items verifiable one by one.",
+        "Rule of thumb: the reader must see the certainty level of each finding and read each content type in its natural format; format uniformity is not a virtue."
+      ],
+      "assertions_pt": [
+        "A síntese deve separar explicitamente findings estabelecidos, em que múltiplas fontes convergem, de findings contestados, em que as fontes divergem, com as caracterizações originais preservadas.",
+        "Um aviso genérico no topo ou um \"pode ser\" aplicado a tudo não resolve: o leitor continua sem saber qual achado é sólido e qual é disputado.",
+        "Cada tipo de conteúdo vai no formato que lhe serve, em vez de achatar tudo num formato uniforme.",
+        "Dados financeiros vão em tabela, para comparação lado a lado.",
+        "Notícias e sequência de eventos vão em prosa, para contexto e encadeamento.",
+        "Achados técnicos vão em lista estruturada, com itens verificáveis um a um.",
+        "Regra de bolso: o leitor precisa ver o grau de certeza de cada achado e ler cada tipo de conteúdo no formato natural dele; uniformidade de formato não é virtude."
+      ]
+    },
+    {
+      "id": "pegadinha-do-dia",
+      "heading_en": "Trap of the day",
+      "heading_pt": "Pegadinha do dia",
+      "assertions_en": [
+        "Multi-agent error questions come with two symmetric, seductive distractors.",
+        "\"Catch and return empty as success\" looks robust, but it suppresses information and produces silently incomplete research.",
+        "\"Propagate the exception and end the workflow\" looks safe, but it kills all the work over one recoverable failure.",
+        "The third distractor is a generic status such as \"search unavailable\", which hides the context from the coordinator.",
+        "Rule of thumb: an error goes up as structured data, type plus attempt plus partial results plus alternatives, never as silence, never as a fatal exception, never as a vague string.",
+        "In human review, a nice aggregate number or a 0.97 score does not cancel the other triggers: low calibrated confidence OR an unvalidated segment OR ambiguity or contradiction OR high impact is already enough to review the field or excerpt.",
+        "The sample of auto-approved items also goes to humans for audit, but it does not replace that triage; its size depends on precision, strata and capacity, not on a generic \"small sample\" rule."
+      ],
+      "assertions_pt": [
+        "Questões de erro em multi-agent vêm com dois distratores simétricos e sedutores.",
+        "\"Catch e retornar vazio como sucesso\" parece robusto, mas suprime informação e gera pesquisa silenciosamente incompleta.",
+        "\"Propagar a exceção e encerrar o workflow\" parece seguro, mas mata o trabalho todo por uma falha recuperável.",
+        "O terceiro distrator é o status genérico tipo \"search unavailable\", que esconde o contexto do coordinator.",
+        "Regra de bolso: erro sobe como dado estruturado, tipo mais tentativa mais parciais mais alternativas, nunca como silêncio, nunca como exceção fatal, nunca como string vaga.",
+        "Em revisão humana, número agregado bonito ou score 0,97 não anula os demais gatilhos: baixa confiança calibrada OU segmento não validado OU ambiguidade ou contradição OU alto impacto já basta para revisar o campo ou recorte.",
+        "A amostra dos auto-aprovados também vai a humanos, para auditoria, mas não substitui essa triagem; seu tamanho depende de precisão, estratos e capacidade, não de uma regra genérica de \"amostra pequena\"."
+      ]
+    }
+  ],
+  "glossary": [
+    {
+      "term_en": "structured error context",
+      "meaning_en": "Error context with failure type, attempted query, partial results and alternatives.",
+      "meaning_pt": "Contexto de erro estruturado: tipo de falha, query tentada, resultados parciais e alternativas."
+    },
+    {
+      "term_en": "failure type",
+      "meaning_en": "The kind of failure; it tells the coordinator whether a retry makes sense.",
+      "meaning_pt": "Tipo de falha; diz ao coordinator se um retry faz sentido."
+    },
+    {
+      "term_en": "partial results",
+      "meaning_en": "What was obtained before the failure; the coordinator may proceed with them and annotate coverage gaps.",
+      "meaning_pt": "Resultados parciais obtidos antes da falha; dá para seguir com eles e anotar as lacunas."
+    },
+    {
+      "term_en": "access failure",
+      "meaning_en": "A timeout or unavailability; the answer exists but did not arrive.",
+      "meaning_pt": "Falha de acesso (timeout, indisponibilidade); a resposta existe, mas não chegou."
+    },
+    {
+      "term_en": "valid empty result",
+      "meaning_en": "A successful query with no matches.",
+      "meaning_pt": "Resultado vazio válido: query ok, sem matches."
+    },
+    {
+      "term_en": "local recovery",
+      "meaning_en": "The subagent handles transient failures and propagates only unresolvable errors.",
+      "meaning_pt": "Recuperação local no subagent; só propaga o irrecuperável."
+    },
+    {
+      "term_en": "coverage annotation / gap",
+      "meaning_en": "Marking which topic areas have gaps due to unavailable sources.",
+      "meaning_pt": "Anotação / lacuna de cobertura por fontes indisponíveis."
+    },
+    {
+      "term_en": "stratified random sampling",
+      "meaning_en": "A separate stratified sample of auto-approved fields sent to human audit; it complements targeted routing.",
+      "meaning_pt": "Amostragem aleatória estratificada dos auto-aprovados para auditoria humana; complementa a triagem direcionada."
+    },
+    {
+      "term_en": "field-level confidence",
+      "meaning_en": "A score per extracted field; not a calibrated probability before empirical validation.",
+      "meaning_pt": "Confiança por campo; não é probabilidade calibrada antes de validação empírica."
+    },
+    {
+      "term_en": "labeled validation set",
+      "meaning_en": "Labeled data used to calibrate review thresholds by field and document segment.",
+      "meaning_pt": "Conjunto de validação rotulado para calibrar thresholds por campo e segmento."
+    },
+    {
+      "term_en": "aggregate accuracy",
+      "meaning_en": "A single overall accuracy number; it may mask poor performance on specific document types.",
+      "meaning_pt": "Acurácia agregada; mascara segmentos ruins."
+    },
+    {
+      "term_en": "claim-source mapping",
+      "meaning_en": "A structured link from each claim to its source, which synthesis must preserve.",
+      "meaning_pt": "Mapeamento claim → fonte, que a síntese precisa preservar."
+    },
+    {
+      "term_en": "provenance",
+      "meaning_en": "Traceable origin of each claim through summarization steps.",
+      "meaning_pt": "Proveniência: origem rastreável de cada claim."
+    },
+    {
+      "term_en": "publication date",
+      "meaning_en": "Publication or collection date, so time differences are not read as contradictions.",
+      "meaning_pt": "Data de publicação ou coleta, para diferença temporal não virar contradição."
+    },
+    {
+      "term_en": "well-established vs contested findings",
+      "meaning_en": "Explicit separation of findings where sources converge from those where they diverge.",
+      "meaning_pt": "Achados estabelecidos vs contestados, separados explicitamente."
+    },
+    {
+      "term_en": "content-type rendering",
+      "meaning_en": "Financial data as tables, news as prose, technical findings as structured lists.",
+      "meaning_pt": "Renderização por tipo de conteúdo: tabela, prosa, lista estruturada."
+    },
+    {
+      "term_en": "review threshold",
+      "meaning_en": "Cut-off for routing to human review, calibrated per field-by-segment slice instead of a global cut-off.",
+      "meaning_pt": "Corte de roteamento para revisão humana, calibrado por campo × segmento."
+    },
+    {
+      "term_en": "alternative review triggers (OR)",
+      "meaning_en": "Low calibrated confidence, an unvalidated segment, contradiction or high impact each independently triggers review.",
+      "meaning_pt": "Gatilhos alternativos de revisão (OU): cada um, sozinho, já aciona revisão."
+    },
+    {
+      "term_en": "extraction reviewer",
+      "meaning_en": "Checks the flagged field and the necessary source excerpt rather than the whole document.",
+      "meaning_pt": "Revisor de extração: confere o campo sinalizado e o recorte necessário."
+    },
+    {
+      "term_en": "domain specialist",
+      "meaning_en": "Resolves ambiguity or contradiction that requires domain interpretation.",
+      "meaning_pt": "Especialista de domínio: resolve ambiguidade ou contradição que exige interpretação."
+    },
+    {
+      "term_en": "authorization owner",
+      "meaning_en": "Authorizes the high-impact or irreversible action after the required review.",
+      "meaning_pt": "Responsável por autorização da ação de alto impacto ou irreversível."
+    }
+  ]
+}
