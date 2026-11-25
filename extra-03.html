@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extra 03 — Modelos, esforço e cota · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q .feedback .ts { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+  .aviso { border-left: 3px solid var(--accent2); }
+  .fontes { font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Extra 03</div>
+  <h1>Extra 03 — Modelos, esforço e cota</h1>
+  <div class="meta">
+    <span class="tag">/model · opusplan · /effort · /advisor · cache · modelo por subagent · /usage</span>
+    <span class="tag">Produto atual · fora da prova</span>
+  </div>
+</header>
+
+<div class="card aviso">
+  <strong>Na prova, vale o guia.</strong> Esta aula extra cobre novidades que a Anthropic apresentou em
+  24/11/2026 (live <em>Claude Code: Advanced</em> e anúncios do mesmo dia), conferidas na documentação
+  em 24/11/2026. Nada daqui cai na CCAR-F como está; as questões são de fixação e não
+  entram no simulado nem no progresso das 14 aulas.
+</div>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo.</strong> Ficar no modelo padrão e trocar com motivo: saber o que cada alias de <code>/model</code> entrega, quando usar <code>opusplan</code> e o <code>/advisor</code>, a diferença entre trocar o <strong>esforço</strong> e trocar o <strong>modelo</strong> (o cache), e como medir o gasto com <code>/usage</code>.
+</div>
+
+<h2 id="aliases">1. Os modelos e quando usar cada um</h2>
+<p>Na Anthropic API e nos planos Pro, Max, Ultra, Team e Enterprise, o padrão é o <strong>Opus 5.5</strong>. A live resumiu: fique no padrão e troque com motivo.</p>
+<table class="gloss">
+  <tr><th>Comando</th><th>Quando usar</th></tr>
+  <tr><td class="en">/model haiku</td><td>Tarefa simples, pequena e bem definida (Haiku 5.5).</td></tr>
+  <tr><td class="en">/model sonnet</td><td>Rotina de código do dia a dia, gastando menos cota (Sonnet 5.5).</td></tr>
+  <tr><td class="en">/model opus</td><td>O padrão: raciocínio complexo e a maior parte do trabalho de código. <code>best</code> é sinônimo.</td></tr>
+  <tr><td class="en">/model fable</td><td>O mais difícil e mais longo: problemas ambíguos, investigação de causa raiz, decisões de arquitetura. Descreva o resultado, não os passos.</td></tr>
+  <tr><td class="en">/model opusplan</td><td>Opus enquanto está em plan mode, Sonnet quando sai para executar.</td></tr>
+  <tr><td class="en">/model default</td><td>Limpa a escolha e volta ao padrão da conta.</td></tr>
+</table>
+<p>O Fable nunca é o padrão de nenhum plano: precisa ser escolhido, exige acesso ao Fable e, em alguns planos, consome créditos de uso. Na Anthropic API, o Sonnet 5.5 e o Opus 5.5 já têm janela de 1 milhão de tokens; os aliases <code>sonnet[1m]</code> e <code>opus[1m]</code> importam em modelos anteriores, como o Opus 4.6 e o Sonnet 4.6, em que são o único jeito de chegar a 1 milhão.</p>
+
+<h2 id="esforco">2. Esforço: quanto o modelo pensa</h2>
+<p>O <strong>esforço</strong> (effort) controla o raciocínio adaptativo: o modelo decide se e quanto pensar em cada passo. Os níveis são <code>low</code>, <code>medium</code>, <code>high</code>, <code>xhigh</code> e <code>max</code>; no Opus 5.5, Sonnet 5.5, Haiku 5.5 e Fable 5.2 o padrão é <code>medium</code>.</p>
+<ul>
+  <li><code>low</code> para trocas rápidas; <code>medium</code> para o dia a dia; <code>high</code> quando a verificação importa; <code>max</code> para problemas difíceis, com o aviso de que tende a pensar demais.</li>
+  <li>Muda com <code>/effort</code>, com o controle no seletor do <code>/model</code>, com <code>--effort</code> na abertura ou nas configurações.</li>
+  <li>Uma skill ou um subagent pode fixar o próprio esforço no frontmatter (<code>effort</code>), que vale enquanto ele roda.</li>
+</ul>
+
+<h2 id="cache">3. Trocar esforço × trocar modelo: o que acontece com o cache</h2>
+<p>Trocar de modelo <strong>não apaga o contexto</strong>: a conversa continua inteira. O que muda é o <strong>cache do prompt</strong>, e isso pesa no tempo e no custo.</p>
+<ul>
+  <li><strong>Cada modelo tem o próprio cache.</strong> Depois de um <code>/model</code>, a próxima requisição relê todo o histórico sem cache: uma resposta mais lenta e mais cara. Com o cache ainda quente, o Claude Code pede confirmação antes de trocar.</li>
+  <li><strong>Esforço</strong>: na maioria dos modelos também tem cache próprio, mas com assinatura ou chave de API o cache se mantém no Opus 5.5, Sonnet 5.5, Haiku 5.5 e Fable 5.1 em diante. Nesses, mudar o esforço entre tarefas sai barato. As exceções, em que o esforço volta a invalidar o cache mesmo nesses modelos: Bedrock, Agent Platform do Google Cloud, Claude apps gateway, a variável <code>CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS</code> e a configuração HIPAA.</li>
+  <li><strong><code>opusplan</code></strong> troca de modelo a cada entrada e saída do plan mode, e cada troca começa um cache novo.</li>
+  <li>Uma skill ou um comando com <code>model</code> próprio vira uma troca de modelo naquele turno, a menos que rode num subagent (<code>context: fork</code>), que tem cache próprio.</li>
+</ul>
+<p>Dica da documentação: escolha modelo e esforço no começo da sessão e deixe o <code>/compact</code> para as pausas naturais entre tarefas.</p>
+
+<h2 id="advisor">4. O advisor: um modelo mais forte nos momentos-chave</h2>
+<p>Com <code>/advisor fable</code> (ou <code>opus</code>, <code>sonnet</code>), o Claude passa a consultar um segundo modelo, em geral mais forte, nos pontos de decisão: antes de escolher uma abordagem, quando um erro se repete e antes de declarar a tarefa pronta. O advisor recebe a conversa inteira e devolve orientação; quem decide quando chamar é o Claude.</p>
+<ul>
+  <li>É <strong>experimental</strong> e precisa da Anthropic API (ou da Claude Platform on AWS / Claude Models on Google Cloud); não existe no Bedrock, no Agent Platform do Google Cloud nem no Foundry.</li>
+  <li>O advisor precisa estar no mesmo nível ou acima do modelo principal. Com o Opus 5.5 como principal, só Fable ou Opus servem.</li>
+  <li>Cada consulta gasta tokens no preço do advisor, além do modelo principal; o Fable como advisor vai para créditos de uso nos planos em que o Fable vai.</li>
+  <li>Ligar ou desligar o advisor no meio da sessão não invalida o cache do modelo principal.</li>
+  <li><code>/advisor off</code> desliga.</li>
+</ul>
+<p>Comparação: o <code>opusplan</code> usa o modelo forte durante o plan mode inteiro; o advisor só nos pontos de decisão; um subagent com <code>model</code> próprio, durante toda a subtarefa delegada. Na live, a Anthropic desaconselhou somar um planejador forte e um advisor forte na mesma sessão, porque o custo dobra: melhor um planejar e o outro auditar.</p>
+
+<h2 id="subagent-usage">5. Modelo por subagent e /usage</h2>
+<p>Um subagent definido em arquivo escolhe o modelo no campo <code>model</code> do frontmatter (<code>haiku</code>, <code>sonnet</code>, <code>opus</code>, <code>fable</code>, um ID ou <code>inherit</code>). A precedência é: o modelo passado na chamada, depois o frontmatter, depois a variável <code>CLAUDE_CODE_SUBAGENT_MODEL</code>; sem nenhum deles, o subagent usa o modelo da conversa. Padrão da live: a sessão principal fica no Opus orquestrando, e cada subagent usa o modelo que a tarefa dele pede.</p>
+<p><code>/usage</code> (também <code>/cost</code> ou <code>/stats</code>) mostra o custo da sessão, os limites do plano e estatísticas de uso. Desde a v2.1.251 traz a linha <code>Prompt cache (main)</code>, com a taxa de acerto do cache; desde a v2.1.260, também a causa provável da última perda, quando dá para identificar. O uso do advisor entra nesse total.</p>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha</h3>
+  <p>A frase "trocar de modelo reinicia o contexto" é <strong>falsa</strong>: a conversa continua inteira. O que se perde é o <em>cache</em>, e a próxima resposta sai mais lenta e mais cara.</p>
+<p>E o <code>opusplan</code> não é de graça para o cache: cada entrada ou saída do plan mode é uma troca de modelo. Trocar o esforço, nos modelos 5.5 com assinatura ou chave de API, é o ajuste barato.</p>
+</div>
+
+<h2 id="glossario">6. Glossário</h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Significado</th></tr>
+  <tr><td class="en">model alias</td><td>nome curto (opus, sonnet, haiku, fable) que aponta para a versão atual do modelo</td></tr>
+  <tr><td class="en">opusplan</td><td>modo que usa Opus no plan mode e Sonnet na execução</td></tr>
+  <tr><td class="en">effort level</td><td>quanto o modelo pensa em cada passo (low a max)</td></tr>
+  <tr><td class="en">prompt cache</td><td>reaproveitamento do início já processado da requisição; cada modelo tem o seu</td></tr>
+  <tr><td class="en">advisor tool</td><td>segundo modelo que o Claude consulta nos pontos de decisão</td></tr>
+  <tr><td class="en">usage credits</td><td>créditos de uso cobrados além do plano</td></tr>
+  <tr><td class="en">inherit</td><td>valor do campo model do subagent que usa o modelo da conversa</td></tr>
+  <tr><td class="en">/usage</td><td>comando que mostra custo da sessão, limites do plano e estatísticas</td></tr>
+</table>
+
+<h2 id="questoes">7. Questões de fixação</h2>
+<div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
+
+<div class="q" data-correct="c">
+  <div class="qnum">Questão 1 · múltipla escolha</div>
+  <div class="stem">No meio de uma sessão longa com o Opus 5.5, você roda <code>/model sonnet</code>. O que acontece?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q1" value="a">A. A conversa é apagada e a sessão recomeça do zero, só com o CLAUDE.md e as regras carregados</label>
+    <label class="opt"><input type="radio" name="q1" value="b">B. Nada muda no custo, porque os modelos da mesma geração dividem o cache</label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. A conversa continua inteira, mas a próxima resposta relê o histórico sem cache</label>
+    <label class="opt"><input type="radio" name="q1" value="d">D. O Sonnet só passa a valer nos subagents, e a conversa principal fica no Opus</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Trocar de modelo mantém a conversa; o que se perde é o cache, porque cada modelo tem o seu, então a próxima requisição relê tudo sem cache. Não há cache compartilhado entre modelos. E o <code>/model</code> muda a conversa principal (e os subagents que herdam o modelo), não só os subagents.<span class="ts">Fonte: docs: prompt-caching</span></div>
+</div>
+
+<div class="q" data-correct="b">
+  <div class="qnum">Questão 2 · múltipla escolha</div>
+  <div class="stem">Com assinatura e o Opus 5.5, você quer pensar mais numa tarefa difícil e depois voltar ao normal, na mesma conversa, gastando o mínimo. O que fazer?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q2" value="a">A. Trocar para <code>/model fable</code> na tarefa difícil e voltar para <code>opus</code> depois</label>
+    <label class="opt"><input type="radio" name="q2" value="b">B. Subir o esforço com <code>/effort high</code> na tarefa difícil e baixar depois</label>
+    <label class="opt"><input type="radio" name="q2" value="c">C. Ligar o <code>opusplan</code>, que ajusta o esforço sozinho a cada tarefa</label>
+    <label class="opt"><input type="radio" name="q2" value="d">D. Rodar <code>/compact</code> antes e depois da tarefa para zerar o custo do cache</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> No Opus 5.5 com assinatura, mudar o esforço mantém o cache: é o ajuste barato. Trocar para Fable e voltar são duas trocas de modelo, cada uma relendo o histórico sem cache. O <code>opusplan</code> troca de modelo, não de esforço. E o <code>/compact</code> substitui o histórico e também reconstrói o cache.<span class="ts">Fonte: docs: prompt-caching; model-config</span></div>
+</div>
+
+<div class="q" data-correct="a">
+  <div class="qnum">Questão 3 · múltipla escolha</div>
+  <div class="stem">O que o <code>opusplan</code> faz?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q3" value="a">A. Usa Opus enquanto está em plan mode e passa para Sonnet ao executar</label>
+    <label class="opt"><input type="radio" name="q3" value="b">B. Usa Opus para planejar e Fable como advisor durante toda a execução</label>
+    <label class="opt"><input type="radio" name="q3" value="c">C. Planeja com Sonnet e executa com Opus, para economizar no plano</label>
+    <label class="opt"><input type="radio" name="q3" value="d">D. Mantém o Opus o tempo todo, mas com esforço maior só durante o plan mode</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> <code>opusplan</code> é Opus no plan mode e Sonnet na execução. Ele não liga advisor, não inverte os papéis e não mexe no esforço. Lembre que cada entrada e saída do plan mode é uma troca de modelo, com cache novo.<span class="ts">Fonte: docs: model-config</span></div>
+</div>
+
+<div class="q" data-correct="b,d">
+  <div class="qnum">Questão 4 · múltipla resposta <span class="multi-hint">(marque DUAS)</span></div>
+  <div class="stem">Quais DUAS afirmações sobre o <code>/advisor</code> estão corretas?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q4" value="a">A. Ligar ou desligar o advisor no meio da sessão invalida todo o cache do modelo principal</label>
+    <label class="opt"><input type="checkbox" name="q4" value="b">B. O Claude decide quando consultar, em geral antes de escolher a abordagem ou de dar por pronto</label>
+    <label class="opt"><input type="checkbox" name="q4" value="c">C. Funciona em qualquer provedor, inclusive Amazon Bedrock, Microsoft Foundry e o Agent Platform do Google</label>
+    <label class="opt"><input type="checkbox" name="q4" value="d">D. É experimental, e cada consulta gasta tokens no preço do modelo advisor</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B e D.</strong> O Claude decide quando chamar o advisor (antes de se comprometer com uma abordagem, quando um erro se repete, antes de declarar pronto), e o recurso é experimental, com cada consulta cobrada no preço do advisor. Ligar ou desligar não invalida o cache do modelo principal. E ele não existe no Bedrock, no Agent Platform do Google Cloud nem no Foundry.<span class="ts">Fonte: docs: advisor</span></div>
+</div>
+
+<div class="q" data-correct="a">
+  <div class="qnum">Questão 5 · múltipla escolha</div>
+  <div class="stem">Sua sessão roda no Opus 5.5 e você tenta <code>/advisor sonnet</code>. O que esperar?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q5" value="a">A. Não é usado: o advisor precisa estar no nível do principal ou acima</label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. Funciona normalmente, e o Sonnet revisa cada turno do Opus antes da resposta</label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. O modelo principal passa automaticamente para o Sonnet e o Opus vira advisor</label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. O Claude Code troca o advisor sozinho para o Haiku 5.5, que é mais barato</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> O advisor precisa estar no mesmo nível do modelo principal ou acima; com o Opus 5.5 como principal, só Fable ou Opus servem. O Claude Code guarda a escolha, mas não a anexa às requisições do modelo principal. Ele não troca os papéis nem escolhe outro advisor por conta própria, e o advisor não revisa todo turno: só os pontos de decisão. (Um subagent cujo próprio modelo passa na regra, como um em Haiku, ainda pode usar esse advisor.)<span class="ts">Fonte: docs: advisor</span></div>
+</div>
+
+<div class="q" data-correct="b">
+  <div class="qnum">Questão 6 · múltipla escolha</div>
+  <div class="stem">Você quer que a sessão principal fique no Opus orquestrando e que um subagent de varredura de logs rode sempre num modelo barato. Como configurar?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q6" value="a">A. Rodar <code>/model haiku</code> antes de cada delegação e voltar ao Opus depois</label>
+    <label class="opt"><input type="radio" name="q6" value="b">B. Pôr <code>model: haiku</code> no frontmatter do arquivo do subagent</label>
+    <label class="opt"><input type="radio" name="q6" value="c">C. Ligar <code>/advisor haiku</code>, que faz o Haiku executar as subtarefas</label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. Usar <code>opusplan</code>, que manda os subagents para o Sonnet</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> O campo <code>model</code> no frontmatter fixa o modelo do subagent sem mexer na sessão principal. Trocar o <code>/model</code> a cada delegação são duas trocas de modelo por vez, cada uma sem cache. O advisor só aconselha, não executa, e precisa estar no nível do principal ou acima. O <code>opusplan</code> troca o modelo da conversa conforme o plan mode, não o dos subagents.<span class="ts">Fonte: docs: sub-agents</span></div>
+</div>
+
+<div class="q" data-correct="d">
+  <div class="qnum">Questão 7 · múltipla escolha</div>
+  <div class="stem">Segundo a live, qual combinação a Anthropic desaconselhou e por quê?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q7" value="a">A. Haiku no subagent e Opus na sessão principal, porque o Haiku não lê o CLAUDE.md</label>
+    <label class="opt"><input type="radio" name="q7" value="b">B. Sonnet na rotina e Opus no padrão, porque trocar de modelo apaga a conversa</label>
+    <label class="opt"><input type="radio" name="q7" value="c">C. Esforço <code>max</code> com o Opus, porque o Opus não aceita esse nível de esforço</label>
+    <label class="opt"><input type="radio" name="q7" value="d">D. Planejador Opus somado a advisor Fable na mesma sessão, porque o custo dobra</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> A recomendação foi não somar um planejador forte com um advisor forte: o custo dobra, e o melhor é um planejar e o outro auditar. Haiku em subagent é justamente o padrão recomendado para tarefa simples. Trocar de modelo não apaga a conversa. E o Opus 5.5 aceita <code>max</code>; o aviso é só que esse nível tende a pensar demais.<span class="ts">Fonte: live de 24/11; docs: model-config</span></div>
+</div>
+
+<div class="q" data-correct="c">
+  <div class="qnum">Questão 8 · múltipla escolha</div>
+  <div class="stem">Onde você vê o custo da sessão atual e a taxa de acerto do cache?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q8" value="a">A. No <code>/context</code>, que mostra o custo de cada item carregado no contexto</label>
+    <label class="opt"><input type="radio" name="q8" value="b">B. No <code>/insights</code>, que mostra o custo de cada sessão recente da máquina</label>
+    <label class="opt"><input type="radio" name="q8" value="c">C. No <code>/usage</code>, que mostra custo, limites do plano e a linha do cache</label>
+    <label class="opt"><input type="radio" name="q8" value="d">D. No <code>/model</code>, que mostra o preço do modelo ao lado do nome dele</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> <code>/usage</code> (também <code>/cost</code> ou <code>/stats</code>) mostra custo da sessão, limites do plano e estatísticas, e a linha <code>Prompt cache (main)</code> com a taxa de acerto. O <code>/context</code> mostra o que ocupa a janela de contexto. O <code>/insights</code> analisa como você trabalha, não o custo da sessão. E o <code>/model</code> serve para escolher o modelo.<span class="ts">Fonte: docs: commands; prompt-caching</span></div>
+</div>
+
+<h2 id="fontes">8. Fontes</h2>
+<ul class="fontes">
+  <li>Live <em>Claude Code: Advanced</em> (Anthropic, 24/11/2026): fique no padrão e troque com motivo; não somar planejador e advisor fortes.</li>
+  <li>Modelos, aliases e esforço: <a href="https://code.claude.com/docs/en/model-config">https://code.claude.com/docs/en/model-config</a></li>
+  <li>Advisor: <a href="https://code.claude.com/docs/en/advisor">https://code.claude.com/docs/en/advisor</a></li>
+  <li>Cache do prompt: <a href="https://code.claude.com/docs/en/prompt-caching">https://code.claude.com/docs/en/prompt-caching</a></li>
+  <li>Subagents (<code>model</code>): <a href="https://code.claude.com/docs/en/sub-agents">https://code.claude.com/docs/en/sub-agents</a></li>
+  <li>Comandos (<code>/usage</code>): <a href="https://code.claude.com/docs/en/commands">https://code.claude.com/docs/en/commands</a></li>
+</ul>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir extra 03</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="extra-02.html">← Extra 02</a></span>
+  <span><a href="index.html">Índice →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  var total = 0, score = 0;
+  document.querySelectorAll('.q').forEach(function (q) {
+    total++;
+    document.getElementById('total').textContent = total;
+    var btn = q.querySelector('button.answer');
+    var correct = q.dataset.correct.split(',').map(function (s) { return s.trim(); });
+    btn.addEventListener('click', function () {
+      var checked = Array.prototype.slice.call(q.querySelectorAll('input:checked')).map(function (i) { return i.value; });
+      if (checked.length === 0) return;
+      var ok = checked.length === correct.length && checked.every(function (v) { return correct.indexOf(v) !== -1; });
+      q.querySelectorAll('label.opt').forEach(function (l) {
+        var v = l.querySelector('input').value;
+        if (correct.indexOf(v) !== -1) l.classList.add('correct');
+        else if (l.querySelector('input').checked) l.classList.add('wrong');
+        l.querySelector('input').disabled = true;
+      });
+      var fb = q.querySelector('.feedback');
+      fb.classList.add(ok ? 'ok' : 'ko');
+      fb.innerHTML = (ok ? '✅ Correto. ' : '❌ Incorreto. ') + fb.innerHTML;
+      btn.disabled = true;
+      if (ok) score++;
+      document.getElementById('score').textContent = score;
+    });
+  });
+  var KEY = 'ccarf-extra-03';
+  var btn = document.getElementById('finish');
+  if (localStorage.getItem(KEY)) {
+    document.getElementById('donemsg').textContent = 'Extra já concluída — ' + localStorage.getItem(KEY);
+  }
+  btn.addEventListener('click', function () {
+    var rec = new Date().toLocaleDateString('pt-BR') + ' · ' + score + '/' + total + ' acertos';
+    localStorage.setItem(KEY, rec);
+    document.getElementById('donemsg').textContent = 'Concluída: ' + rec;
+  });
+})();
+</script>
+<script src="narracao/extra-03.js"></script>
+<script src="narracao/player.js"></script>
+</body>
+</html>
