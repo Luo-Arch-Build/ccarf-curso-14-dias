@@ -1,0 +1,175 @@
+{
+  "number": "05",
+  "title": "MCP de 24/11: skills, tasks, elicitation e arquivos",
+  "subtitle": "Skills over MCP · Tasks · Elicitation · File Uploads · tool search",
+  "checked": "24/11/2026",
+  "objetivo": "Entender as quatro novidades do MCP anunciadas em 24/11/2026 (o servidor <strong>ensina</strong> com skills, <strong>recebe tarefa longa</strong> com Tasks, <strong>pede confirmação</strong> com Elicitation e <strong>troca arquivos</strong> com File Uploads), o status de cada uma, e onde elas mudam o desenho de um servidor: em especial, a Elicitation como trava técnica para ação de decisão.",
+  "sections": [
+    {
+      "id": "visao",
+      "heading": "O servidor MCP quase como outro agente",
+      "html": "<p>A Aula 05 tratou o MCP como a forma de dar ao Claude acesso a sistemas externos: tools são ações, resources são conteúdo. O anúncio de 24/11 deixa o Claude trabalhar com um servidor MCP quase como trabalharia com outro agente: o servidor <strong>ensina</strong>, <strong>recebe tarefa longa</strong>, <strong>pede confirmação</strong> ao usuário e <strong>troca arquivos</strong>.</p>\n<table class=\"gloss\">\n  <tr><th>Novidade</th><th>O que faz</th><th>Status em 24/11/2026</th></tr>\n  <tr><td class=\"en\">Skills over MCP</td><td>O servidor publica skills junto com as tools; o Claude carrega só quando precisa.</td><td>Beta público. No anúncio: ligado no Pro, Max e Ultra; no Team, depende do admin; Enterprise em breve. No Claude Code: com login de Team ou Enterprise, fica desligado até a organização ligar.</td></tr>\n  <tr><td class=\"en\">Tasks</td><td>O servidor roda trabalho demorado em segundo plano, até loops de agente inteiros.</td><td>Liberado no Pro, Max e Ultra; chegando ao Team e Enterprise.</td></tr>\n  <tr><td class=\"en\">Elicitation</td><td>O servidor pausa e pede uma informação ou confirmação ao usuário, por formulário ou link.</td><td>Liberado, com a mesma disponibilidade das Tasks.</td></tr>\n  <tr><td class=\"en\">File Uploads</td><td>O Claude manda PDF, planilha ou imagem ao servidor sem passar pela janela de contexto.</td><td>Em breve.</td></tr>\n</table>\n<p>Tudo faz parte da especificação aberta do MCP e das suas extensões: um servidor que as implementa funciona em qualquer cliente compatível, não só no Claude.</p>"
+    },
+    {
+      "id": "skills",
+      "heading": "Skills over MCP: o playbook viaja com o servidor",
+      "html": "<p>Até aqui, skill (o procedimento que se repete) e MCP (o acesso a sistema externo) eram coisas separadas: a skill ficava no repositório ou em <code>~/.claude/skills/</code>, e o servidor só trazia tools. Com Skills over MCP, <strong>o servidor leva o próprio playbook</strong>.</p>\n<ul>\n  <li>A skill carrega sob demanda, então o contexto continua enxuto.</li>\n  <li>Atualiza junto com o servidor: quem usa não instala nada máquina por máquina.</li>\n  <li>No Claude Code, o nome é <code>&lt;servidor&gt;:&lt;skill&gt;</code> (por exemplo, <code>docs:pdf</code>); aparece ao digitar <code>/</code> ou em <code>/skills</code>. Exige a v2.1.331 ou mais recente.</li>\n  <li>Não funciona em <code>claude -p</code>, no Agent SDK nem em sessões na nuvem, e depende de modelos específicos e de conexão direta com a Anthropic.</li>\n  <li>No auto mode, o classificador decide se a skill carrega. Dá para bloquear com uma regra deny <code>Skill(mcp__docs__*)</code>, ou exigir confirmação com <code>ask</code>.</li>\n  <li>Aviso da documentação: skills podem mandar o Claude rodar código, e o servidor pode mudá-las a qualquer momento. <strong>Adicione só servidores em que você confia.</strong></li>\n</ul>\n<p>Exemplo hipotético: um servidor de assinatura de documentos pode levar as regras da casa (sempre usar o modelo aprovado, validar o telefone antes de enviar) junto com as tools, em vez de cada usuário copiar essas regras para o próprio CLAUDE.md.</p>"
+    },
+    {
+      "id": "tasks",
+      "heading": "Tasks: operação longa sem travar a sessão",
+      "html": "<p>Uma <strong>MCP task</strong> é um trabalho longo, como gerar um relatório ou rodar um build, que o próprio servidor executa usando a extensão de tasks.</p>\n<ul>\n  <li>A chamada volta assim que o servidor aceita o trabalho, e o Claude segue trabalhando. Quando a task termina, o transcript mostra uma linha dizendo que acabou e o Claude recebe o resultado; peça a ele.</li>\n  <li>Independentemente de tasks, na conversa principal de uma sessão interativa, uma chamada MCP que passa de dois minutos rodando vai para segundo plano (em modo não interativo, só com <code>CLAUDE_AUTO_BACKGROUND_TASKS=1</code>).</li>\n  <li>A task de um servidor remoto continua depois que você sai; a de um servidor local (stdio) para junto com o Claude Code.</li>\n  <li>Exige a v2.1.304 ou mais recente no terminal (a v2.1.331 no VS Code e no app desktop); um <code>claude -p \"...\"</code> de execução única não recebe MCP tasks. A especificação é uma extensão do MCP, e o suporte varia de cliente para cliente.</li>\n</ul>\n<p>Exemplo do anúncio: uma pesquisa mais profunda de contas e contatos, que antes levava vários prompts, roda como task enquanto o Claude segue com o resto.</p>"
+    },
+    {
+      "id": "elicitation",
+      "heading": "Elicitation: a trava técnica para ação de decisão",
+      "html": "<p>Com <strong>Elicitation</strong>, o servidor pausa no meio de uma chamada e pede algo ao usuário. O Claude Code mostra um diálogo e devolve a resposta ao servidor, sem configuração nenhuma do seu lado.</p>\n<ul>\n  <li><strong>Form mode</strong>: um formulário com os campos que o servidor definiu (por exemplo, o nome do projeto e uma data).</li>\n  <li><strong>URL mode</strong>: o Claude Code pergunta se abre um link no navegador, para um fluxo que termina fora do terminal, como um login.</li>\n  <li>Recusar também é uma resposta: o servidor decide se continua.</li>\n  <li>Numa sessão interativa, um hook <code>Elicitation</code> pode responder automaticamente, sem diálogo.</li>\n  <li>Já a elicitation de uma MCP task em <code>claude -p</code> ou no Agent SDK não chega a ninguém: o Claude Code pede ao servidor que cancele a task, <strong>sem rodar os hooks <code>Elicitation</code></strong> nem o callback <code>onElicitation</code> do SDK. O cancelamento é cooperativo: o servidor decide se para.</li>\n</ul>\n<p>Por que isso importa: até agora, \"confirme antes de cobrar\" ou \"confirme antes de apagar\" dependia só da instrução no prompt, ou seja, de orientação. Com Elicitation, <strong>o próprio servidor</strong> se recusa a seguir sem a resposta da pessoa. Exemplos do anúncio: confirmar o custo antes de criar um projeto pago, confirmar antes de rodar SQL destrutivo, digitar o nome do repositório antes de um agente apagá-lo.</p>\n<p>É a mesma lição da Aula 03 e da Aula 07: o que precisa ser garantido não fica só no prompt. A diferença é onde mora a trava: no hook e na regra deny ela está no seu Claude Code; na Elicitation, está no servidor, e vale para qualquer cliente que fale com ele.</p>"
+    },
+    {
+      "id": "uploads-toolsearch",
+      "heading": "File Uploads e tool search",
+      "html": "<p><strong>File Uploads</strong> (ainda chegando em 24/11) deixa o Claude mandar arquivos, e não só texto, ao servidor: PDF, planilha e imagem vão direto, <strong>sem passar pela janela de contexto</strong>. Um contrato vai inteiro para o servidor de assinatura sem ocupar o contexto da sessão.</p>\n<p><strong>Tool search</strong> já era da Aula 05: as definições das tools carregam só quando precisam. O anúncio trouxe o número: em configurações com vários servidores, pode cortar <strong>mais de 85%</strong> do contexto gasto com definições de tools (dado da Anthropic, sem as condições do teste). Ele vem ligado por padrão nos modelos suportados.</p>\n<p>Também no anúncio: com o <strong>Enterprise Managed Auth</strong>, o admin autoriza um servidor suportado uma vez e os usuários conectam automaticamente. Sem ele, cada pessoa entra no servidor remoto com a própria conta, pelo <code>/mcp</code> ou por <code>claude mcp login</code>.</p>"
+    }
+  ],
+  "pegadinha": {
+    "html": "<p><strong>Skills over MCP não é \"skill grátis e segura\".</strong> Ela carrega sob demanda e atualiza com o servidor, mas pode mandar o Claude rodar código, e o servidor pode mudá-la a qualquer hora. Confie no servidor antes, e use regra deny ou ask se precisar.</p>\n<p><strong>Elicitation não é instrução no prompt.</strong> \"Peça confirmação antes de cobrar\" escrito no prompt é orientação; o servidor que pausa e exige a resposta da pessoa é trava. No Agent SDK ou em <code>claude -p</code>, a elicitation de uma task faz o Claude Code pedir ao servidor que cancele a task (não a aprova), e nem o hook <code>Elicitation</code> roda.</p>"
+  },
+  "glossary": [
+    {
+      "term_en": "Skills over MCP",
+      "meaning_pt": "skills publicadas por um servidor MCP junto com as tools"
+    },
+    {
+      "term_en": "MCP task",
+      "meaning_pt": "trabalho longo que o servidor executa em segundo plano"
+    },
+    {
+      "term_en": "elicitation",
+      "meaning_pt": "pedido de informação ou confirmação do servidor ao usuário, no meio de uma chamada"
+    },
+    {
+      "term_en": "form mode / URL mode",
+      "meaning_pt": "elicitation por formulário / por link aberto no navegador"
+    },
+    {
+      "term_en": "File Uploads",
+      "meaning_pt": "envio de arquivos ao servidor sem passar pela janela de contexto"
+    },
+    {
+      "term_en": "tool search",
+      "meaning_pt": "carregamento sob demanda das definições de tools"
+    },
+    {
+      "term_en": "Enterprise Managed Auth",
+      "meaning_pt": "autorização do servidor feita uma vez pelo admin para toda a organização"
+    },
+    {
+      "term_en": "open spec",
+      "meaning_pt": "especificação aberta: funciona em qualquer cliente compatível"
+    }
+  ],
+  "questions": [
+    {
+      "stem": "Um servidor MCP de assinatura de documentos quer que todo cliente siga as regras da casa (sempre usar o modelo aprovado) sem que cada usuário edite o próprio CLAUDE.md. Qual novidade resolve?",
+      "options": [
+        "Elicitation, que pergunta as regras da casa ao usuário em cada chamada ao servidor",
+        "Skills over MCP, em que o servidor publica o próprio playbook com as tools",
+        "Tasks, que rodam as regras em segundo plano no servidor",
+        "File Uploads, que mandam o arquivo de regras junto com o contrato"
+      ],
+      "correct": "b",
+      "feedback": "Com Skills over MCP o servidor publica o procedimento junto com as tools; ele carrega sob demanda e atualiza com o servidor, sem instalar nada em cada máquina. Elicitation pede uma resposta pontual ao usuário, não ensina procedimento. Tasks são trabalho longo. File Uploads mandam arquivos ao servidor, não instruções ao Claude.",
+      "fonte": "anúncio de 24/11; docs: mcp"
+    },
+    {
+      "stem": "Um servidor vai rodar uma operação de cobrança. Hoje, a confirmação depende de uma instrução no prompt. Qual novidade transforma isso numa trava técnica?",
+      "options": [
+        "Tool search, que só carrega a tool de cobrança quando ela é confirmada",
+        "Uma skill do servidor dizendo ao Claude para confirmar antes de cobrar",
+        "Elicitation: o servidor pausa e só segue com a resposta da pessoa",
+        "Tasks, que fazem a cobrança em segundo plano até alguém revisar"
+      ],
+      "correct": "c",
+      "feedback": "Com Elicitation o próprio servidor pausa e exige a resposta do usuário por formulário ou link; sem ela, não segue. Uma skill dizendo \"confirme\" ainda é orientação ao Claude, como o prompt. Tool search trata de carregar definições, não de confirmar. Tasks rodam em segundo plano, não pedem aprovação.",
+      "fonte": "anúncio de 24/11; docs: mcp"
+    },
+    {
+      "stem": "Quais DUAS afirmações sobre Skills over MCP estão corretas no Claude Code em 24/11/2026?",
+      "options": [
+        "O nome da skill segue o formato <code>&lt;servidor&gt;:&lt;skill&gt;</code>",
+        "Toda skill de servidor é escaneada pela Anthropic antes de carregar",
+        "A regra deny <code>Skill(mcp__docs__*)</code> bloqueia as skills do docs",
+        "Está disponível para todos os planos Enterprise desde o anúncio"
+      ],
+      "correct": "a,c",
+      "feedback": "O nome é <code>&lt;servidor&gt;:&lt;skill&gt;</code>, e regras de permissão sobre <code>Skill(mcp__docs__*)</code> bloqueiam ou pedem confirmação. A Anthropic escaneia skills só de alguns conectores; servidores adicionados com <code>claude mcp add</code>, por exemplo, não passam por esse escaneamento. E não está liberado para todo Enterprise: no Claude Code, com login de Team ou Enterprise, as skills de MCP ficam desligadas até a organização ligar.",
+      "fonte": "docs: mcp"
+    },
+    {
+      "stem": "Um servidor MCP precisa provisionar uma máquina, o que leva dez minutos. O que as MCP Tasks mudam na sessão?",
+      "options": [
+        "Nada: a sessão continua bloqueada até a máquina ficar pronta",
+        "A chamada volta quando o servidor aceita o job, e o Claude segue",
+        "O Claude Code cancela a chamada depois de dois minutos e pede para tentar de novo",
+        "O provisionamento passa a rodar na sessão na nuvem, e não mais no servidor"
+      ],
+      "correct": "b",
+      "feedback": "Com Tasks, a chamada volta assim que o servidor aceita o job, e, quando a task termina, o Claude recebe o resultado. Sem tasks, numa sessão interativa, uma chamada que passa de dois minutos vai para segundo plano; não é cancelada. E quem executa a task é o servidor, não uma sessão na nuvem.",
+      "fonte": "docs: mcp"
+    },
+    {
+      "stem": "Um agente feito com o Agent SDK roda sem ninguém olhando e dispara uma MCP task. No meio, o servidor usa Elicitation para confirmar uma ação destrutiva. O que acontece?",
+      "options": [
+        "O Claude responde ao formulário sozinho, com base no prompt do agente",
+        "A ação segue, porque sem terminal a confirmação é pulada",
+        "O hook <code>Elicitation</code> do projeto responde no lugar da pessoa",
+        "O Claude Code pede ao servidor que cancele a task, sem rodar o hook"
+      ],
+      "correct": "d",
+      "feedback": "No Agent SDK e em <code>claude -p</code>, a elicitation de uma MCP task faz o Claude Code pedir ao servidor que cancele a task, sem rodar os hooks <code>Elicitation</code> nem o callback <code>onElicitation</code>. Ninguém aprova no lugar da pessoa e a ação não segue sozinha. O hook que responde automaticamente vale numa sessão interativa, não nesse caso.",
+      "fonte": "docs: mcp"
+    },
+    {
+      "stem": "Por que File Uploads importa para mandar um contrato em PDF a um servidor de assinatura?",
+      "options": [
+        "O arquivo vai direto ao servidor, sem ocupar o contexto da conversa",
+        "O PDF é convertido em texto e resumido antes de chegar ao servidor",
+        "O servidor passa a poder ler qualquer arquivo da sua máquina sem pedir",
+        "O contrato fica salvo no CLAUDE.md para as próximas sessões"
+      ],
+      "correct": "a",
+      "feedback": "File Uploads manda PDF, planilha ou imagem ao servidor sem passar pelo contexto. Não há conversão nem resumo, o servidor não ganha acesso livre à sua máquina, e nada vai para o CLAUDE.md. Em 24/11, File Uploads ainda estava chegando.",
+      "fonte": "anúncio de 24/11"
+    },
+    {
+      "stem": "Sua sessão tem muitos servidores MCP ligados. Segundo o anúncio, o que o tool search faz e quanto economiza?",
+      "options": [
+        "Desliga os servidores que não foram usados na sessão e economiza cerca de metade da cota",
+        "Carrega as definições sob demanda e pode cortar mais de 85% do contexto gasto com elas",
+        "Junta todas as tools num único servidor e economiza o tempo de conexão inicial",
+        "Resume as definições das tools com um modelo menor e economiza 85% do custo"
+      ],
+      "correct": "b",
+      "feedback": "Tool search carrega as definições das tools só quando preciso; o anúncio diz que pode cortar mais de 85% do contexto gasto com elas em configurações com vários servidores. Ele não desliga servidores, não junta tools nem resume definições com outro modelo. O número é da Anthropic, sem as condições do teste publicadas.",
+      "fonte": "anúncio de 24/11"
+    },
+    {
+      "stem": "Você escreve um servidor MCP com Tasks e Elicitation. Segundo o anúncio, onde ele funciona?",
+      "options": [
+        "Só no Claude Code, porque Tasks e Elicitation são recursos exclusivos dele",
+        "Só nos apps do Claude, porque o Claude Code não suporta Elicitation",
+        "Em qualquer cliente compatível, porque é especificação aberta do MCP",
+        "Só em organizações Enterprise com o Managed Auth ligado pelo admin"
+      ],
+      "correct": "c",
+      "feedback": "O anúncio diz que as novidades fazem parte da especificação aberta do MCP e das suas extensões, e que um servidor que as suporta funciona em qualquer cliente compatível. Como extensões são opcionais para o cliente, o suporte varia de cliente para cliente. O Claude Code suporta Elicitation, e o Managed Auth é outra coisa: autorização centralizada pelo admin.",
+      "fonte": "anúncio de 24/11; modelcontextprotocol.io"
+    }
+  ],
+  "fontes": [
+    "Anúncio <em>MCP servers can now ship skills, run tasks, and more with Claude</em> (Anthropic, 24/11/2026): <a href=\"https://claude.com/resources/articles/skills-over-mcp-tasks-and-more\">claude.com/resources/articles/skills-over-mcp-tasks-and-more</a>",
+    "MCP no Claude Code (tasks, elicitation, skills, OAuth): <a href=\"https://code.claude.com/docs/en/mcp\">https://code.claude.com/docs/en/mcp</a>",
+    "Extensão MCP Tasks: <a href=\"https://modelcontextprotocol.io/extensions/tasks/overview\">modelcontextprotocol.io/extensions/tasks/overview</a>",
+    "Live <em>Claude Code: Advanced</em> (Anthropic, 24/11/2026): skill × MCP no Q&amp;A."
+  ]
+}
