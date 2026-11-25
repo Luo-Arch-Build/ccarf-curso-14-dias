@@ -98,7 +98,7 @@
   <li><strong>Por padrão bloqueia</strong>, por exemplo: baixar e executar código (<code>curl | bash</code>), mandar dado sensível para fora, deploy e migração de produção, <code>git push --force</code>, <code>git reset --hard</code>, <code>terraform destroy</code> e fazer merge de PR que nenhum humano aprovou.</li>
   <li><strong>Por padrão deixa</strong>: mexer em arquivos da pasta de trabalho, instalar dependências pelo lockfile, requisição HTTP só de leitura e push para qualquer branch do repositório em que você está.</li>
   <li>Quando bloqueia, o Claude recebe o motivo e a ação vai para a aba <strong>Recently blocked</strong> do <code>/permissions</code>, onde você pode aprovar. Depois de 3 bloqueios seguidos ou 20 no total, o auto mode pausa e volta a perguntar.</li>
-  <li>Desde a v2.1.283, é o modo inicial no terminal e no VS Code; <code>claude -p</code> e o Agent SDK começam no modo default (Manual). <code>Shift+Tab</code> alterna os modos.</li>
+  <li>Desde a v2.1.283, é o modo inicial das sessões interativas no terminal e no VS Code em todos os planos (antes já era nos planos Pro, Max, Ultra e Team). <code>claude -p</code> e o Agent SDK começam no modo default (Manual) desde a v2.1.302. <code>Shift+Tab</code> alterna os modos.</li>
   <li>Subagents passam pelo classificador na tarefa, em cada ação e no relatório final; o <code>permissionMode</code> do frontmatter deles é ignorado.</li>
 </ul>
 <p>E as regras? <strong>Deny bloqueia em todos os modos</strong>, inclusive no <code>bypassPermissions</code>. Regra <code>ask</code> que casa com o conteúdo do comando (como <code>Bash(git push *)</code>) volta a perguntar. Ao entrar no auto mode, regras <code>allow</code> amplas que liberam qualquer código (como <code>Bash(*)</code>) são descartadas; as estreitas, como <code>Bash(npm test)</code>, continuam.</p>
@@ -108,7 +108,7 @@
 <p>Instrução vencida continua carregando e competindo com as novas. O <code>/doctor prompt-audit</code> procura linhas desatualizadas ou conflitantes nos seus arquivos de instrução e propõe edições, sem mudar nada até você pedir.</p>
 <ul>
   <li>Lê CLAUDE.md, CLAUDE.local.md e AGENTS.md, mais regras, skills, comandos, subagents e output styles em <code>.claude/</code> e <code>~/.claude/</code>.</li>
-  <li><strong>Não lê a auto memory</strong> (MEMORY.md): memória acumulada pede revisão à parte.</li>
+  <li>Por padrão, <strong>não cobre a auto memory</strong> (MEMORY.md): memória acumulada pede revisão à parte. Dá para apontar um arquivo ou pasta específica com <code>/doctor prompt-audit &lt;caminho&gt;</code>.</li>
   <li>Exige a v2.1.283 ou mais recente.</li>
 </ul>
 <p>Na live, foi o primeiro comando sugerido para quem tem decisões datadas empilhadas nas instruções.</p>
@@ -118,13 +118,13 @@
   <tr><th>Tamanho</th><th>O que faz</th><th>Disponível</th></tr>
   <tr><td class="en">/code-review</td><td>Revisa as mudanças da sua branch (ou um PR, uma branch, um caminho, um intervalo de commits) num subagent em segundo plano, com contexto próprio, e devolve os achados.</td><td>Qualquer plano, contando no seu uso</td></tr>
   <tr><td class="en">/code-review ultra</td><td>Revisão mais profunda, com vários agentes num sandbox na nuvem.</td><td>Conta claude.ai; 3 execuções gratuitas no Pro, Max e Ultra, depois créditos de uso</td></tr>
-  <tr><td class="en">Code Review automático</td><td>Serviço gerenciado: revisa todo PR no GitHub, com etapa de verificação e comentários no PR, ajustável por <code>REVIEW.md</code>.</td><td>Team e Enterprise</td></tr>
+  <tr><td class="en">Code Review automático</td><td>Serviço gerenciado: revisa os PRs do GitHub conforme o gatilho de cada repositório (ao abrir o PR, a cada push ou só quando pedido), com etapa de verificação e comentários no PR, ajustável por <code>REVIEW.md</code>.</td><td>Team e Enterprise</td></tr>
 </table>
 <ul>
   <li>O nível de esforço troca cobertura por confiança: em <code>low</code>, só os achados mais seguros (menos falso positivo); de <code>medium</code> a <code>max</code>, cobertura maior.</li>
   <li><code>--fix</code> aplica os achados na sua árvore de trabalho, passando pelo seu modo de permissão; <code>--comment</code> posta os achados no PR.</li>
   <li>O <code>/code-review</code> local segue o seu CLAUDE.md e <strong>não lê o REVIEW.md</strong>, que é só do serviço gerenciado.</li>
-  <li>Correções de um <code>--fix</code> em segundo plano ficam fora dos checkpoints da sessão: o <code>/rewind</code> não as desfaz; use o git.</li>
+  <li>Correções de um <code>--fix</code> em segundo plano ficam fora dos checkpoints da sessão: o <code>/rewind</code> só restaura os arquivos que a conversa já tinha editado; as edições da revisão em outros arquivos ficam, e aí é o git que desfaz.</li>
 </ul>
 <p>Regra sugerida na live: <code>/code-review</code> antes de abrir qualquer PR, <code>ultra</code> no que é de alto risco (cobrança, segredos, segurança), e o automático no PR.</p>
 
@@ -140,7 +140,7 @@
 <p>A documentação indica rodar quando o plugin muda e quando sai um modelo novo, para pegar regressão.</p>
 
 <h2 id="insights">5. /insights: como estou trabalhando?</h2>
-<p><code>/insights</code> gera um relatório em HTML sobre as suas sessões recentes nesta máquina: em que projetos você trabalha, como usa o Claude Code, onde as coisas dão errado (pedido mal entendido, código com bug) e que recursos combinam com o seu jeito de trabalhar. Não está disponível em sessões na nuvem.</p>
+<p><code>/insights</code> gera um relatório em HTML sobre as suas sessões recentes nesta máquina: em que projetos você trabalha, como usa o Claude Code, onde as coisas dão errado (pedido mal entendido, código com bug) e que recursos vale experimentar. Não está disponível em sessões na nuvem.</p>
 <p>Juntos, <code>plugin eval</code> e <code>/insights</code> fecham o ciclo de <strong>medir</strong>: um mede se o que você empacotou faz diferença; o outro, onde o seu uso do dia a dia tropeça.</p>
 
 <div class="card pegadinha">
@@ -195,26 +195,26 @@
   <div class="qnum">Questão 3 · múltipla escolha</div>
   <div class="stem">O CLAUDE.md, as regras e a pasta de memória do projeto acumularam decisões datadas. Você roda <code>/doctor prompt-audit</code>. O que ele faz?</div>
   <div class="opts">
-    <label class="opt"><input type="radio" name="q3" value="a">A. Reescreve sozinho as linhas vencidas no CLAUDE.md, nas regras, nas skills e na memória</label>
-    <label class="opt"><input type="radio" name="q3" value="b">B. Aponta linhas vencidas em CLAUDE.md, regras e skills, mas não lê a auto memory</label>
+    <label class="opt"><input type="radio" name="q3" value="a">A. Reescreve sozinho as linhas vencidas no CLAUDE.md, nas regras, nas skills, nos comandos e na memória</label>
+    <label class="opt"><input type="radio" name="q3" value="b">B. Aponta linhas vencidas em CLAUDE.md, regras e skills; por padrão, não cobre a auto memory</label>
     <label class="opt"><input type="radio" name="q3" value="c">C. Apaga as regras que não foram usadas nas últimas sessões do projeto</label>
     <label class="opt"><input type="radio" name="q3" value="d">D. Lista só os arquivos carregados no contexto, como o <code>/context</code></label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: B.</strong> O <code>/doctor prompt-audit</code> aponta linhas desatualizadas ou conflitantes e propõe edições, sem mudar nada até você pedir. Lê CLAUDE.md, regras, skills, comandos e subagents, mas não a auto memory, que pede revisão à parte. Ele não apaga regras por falta de uso e não é inventário de contexto.<span class="ts">Fonte: docs: memory; commands</span></div>
+  <div class="feedback"><strong>Gabarito: B.</strong> O <code>/doctor prompt-audit</code> aponta linhas desatualizadas ou conflitantes e propõe edições, sem mudar nada até você pedir. Por padrão lê CLAUDE.md, regras, skills, comandos e subagents, mas não a auto memory (dá para apontar um caminho específico). Ele não apaga regras por falta de uso e não é inventário de contexto.<span class="ts">Fonte: docs: memory; commands</span></div>
 </div>
 
 <div class="q" data-correct="a">
   <div class="qnum">Questão 4 · múltipla escolha</div>
-  <div class="stem">Antes de abrir um PR comum, você quer uma revisão independente do seu diff sem encher a conversa e com poucos falsos positivos. O que rodar?</div>
+  <div class="stem">Antes de abrir um PR comum, você quer uma revisão rápida e independente do seu diff, sem encher a conversa, sem gastar créditos extras e com poucos falsos positivos. O que rodar?</div>
   <div class="opts">
     <label class="opt"><input type="radio" name="q4" value="a">A. <code>/code-review low</code>: em segundo plano, só os achados mais seguros</label>
-    <label class="opt"><input type="radio" name="q4" value="b">B. <code>/code-review ultra</code>, que é a revisão com menos falsos positivos do produto</label>
+    <label class="opt"><input type="radio" name="q4" value="b">B. <code>/code-review ultra</code>, a revisão profunda com vários agentes na nuvem</label>
     <label class="opt"><input type="radio" name="q4" value="c">C. Pedir ao próprio Claude da sessão que releia o diff que ele mesmo escreveu</label>
     <label class="opt"><input type="radio" name="q4" value="d">D. Esperar o Code Review automático, que revisa o PR depois de aberto</label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: A.</strong> <code>/code-review</code> roda num subagent em segundo plano com contexto próprio, e o nível <code>low</code> reporta só os achados mais seguros. O <code>ultra</code> é a revisão profunda na nuvem, para alto risco. Reler o próprio diff na mesma sessão não é revisão independente. E o automático só entra depois do PR aberto, e só no Team e no Enterprise.<span class="ts">Fonte: docs: code-review-local</span></div>
+  <div class="feedback"><strong>Gabarito: A.</strong> <code>/code-review</code> roda num subagent em segundo plano com contexto próprio, e o nível <code>low</code> reporta só os achados mais seguros, dentro do uso normal da sessão. O <code>ultra</code> também tem achados verificados, mas é a revisão profunda e mais lenta na nuvem e, depois das execuções gratuitas, gasta créditos de uso: é para alto risco, não para PR comum. Reler o próprio diff na mesma sessão não é revisão independente. E o automático só entra conforme o gatilho do repositório, e só no Team e no Enterprise.<span class="ts">Fonte: docs: code-review-local</span></div>
 </div>
 
 <div class="q" data-correct="a,c">
@@ -266,7 +266,7 @@
     <label class="opt"><input type="radio" name="q8" value="d">D. <code>/insights</code>, que analisa as sessões recentes desta máquina</label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: D.</strong> <code>/insights</code> gera um relatório sobre as sessões recentes da máquina, incluindo onde as coisas dão errado e que recursos combinam com o seu jeito. O <code>/usage</code> mostra custo e limites. O <code>/context</code> mostra o que ocupa o contexto agora. O <code>prompt-audit</code> revisa arquivos de instrução, não sessões.<span class="ts">Fonte: docs: commands</span></div>
+  <div class="feedback"><strong>Gabarito: D.</strong> <code>/insights</code> gera um relatório sobre as sessões recentes da máquina, incluindo onde as coisas dão errado e que recursos vale experimentar. O <code>/usage</code> mostra custo e limites. O <code>/context</code> mostra o que ocupa o contexto agora. O <code>prompt-audit</code> revisa arquivos de instrução, não sessões.<span class="ts">Fonte: docs: commands</span></div>
 </div>
 
 <h2 id="fontes">8. Fontes</h2>
