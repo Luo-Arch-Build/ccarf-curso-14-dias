@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extra 05 — MCP de 24/11: skills, tasks, elicitation e arquivos · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q .feedback .ts { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+  .aviso { border-left: 3px solid var(--accent2); }
+  .fontes { font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Extra 05</div>
+  <h1>Extra 05 — MCP de 24/11: skills, tasks, elicitation e arquivos</h1>
+  <div class="meta">
+    <span class="tag">Skills over MCP · Tasks · Elicitation · File Uploads · tool search</span>
+    <span class="tag">Produto atual · fora da prova</span>
+  </div>
+</header>
+
+<div class="card aviso">
+  <strong>Na prova, vale o guia.</strong> Esta aula extra cobre novidades que a Anthropic apresentou em
+  24/11/2026 (live <em>Claude Code: Advanced</em> e anúncios do mesmo dia), conferidas na documentação
+  em 24/11/2026. Nada daqui cai na CCAR-F como está; as questões são de fixação e não
+  entram no simulado nem no progresso das 14 aulas.
+</div>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo.</strong> Entender as quatro novidades do MCP anunciadas em 24/11/2026 (o servidor <strong>ensina</strong> com skills, <strong>recebe tarefa longa</strong> com Tasks, <strong>pede confirmação</strong> com Elicitation e <strong>troca arquivos</strong> com File Uploads), o status de cada uma, e onde elas mudam o desenho de um servidor: em especial, a Elicitation como trava técnica para ação de decisão.
+</div>
+
+<h2 id="visao">1. O servidor MCP quase como outro agente</h2>
+<p>A Aula 05 tratou o MCP como a forma de dar ao Claude acesso a sistemas externos: tools são ações, resources são conteúdo. O anúncio de 24/11 deixa o Claude trabalhar com um servidor MCP quase como trabalharia com outro agente: o servidor <strong>ensina</strong>, <strong>recebe tarefa longa</strong>, <strong>pede confirmação</strong> ao usuário e <strong>troca arquivos</strong>.</p>
+<table class="gloss">
+  <tr><th>Novidade</th><th>O que faz</th><th>Status em 24/11/2026</th></tr>
+  <tr><td class="en">Skills over MCP</td><td>O servidor publica skills junto com as tools; o Claude carrega só quando precisa.</td><td>Beta público. Ligado no Pro, Max e Ultra; no Team, depende do admin; Enterprise em breve.</td></tr>
+  <tr><td class="en">Tasks</td><td>O servidor roda trabalho lento em segundo plano, até loops de agente inteiros.</td><td>Liberado no Pro, Max e Ultra; chegando ao Team e Enterprise.</td></tr>
+  <tr><td class="en">Elicitation</td><td>O servidor pausa e pede uma informação ou confirmação ao usuário, por formulário ou link.</td><td>Liberado, com a mesma disponibilidade das Tasks.</td></tr>
+  <tr><td class="en">File Uploads</td><td>O Claude manda PDF, planilha ou imagem ao servidor sem passar pela janela de contexto.</td><td>Em breve.</td></tr>
+</table>
+<p>Tudo faz parte da especificação aberta do MCP e das suas extensões: um servidor que implementa funciona em qualquer cliente compatível, não só no Claude.</p>
+
+<h2 id="skills">2. Skills over MCP: o playbook viaja com o servidor</h2>
+<p>Até aqui, skill (o procedimento que se repete) e MCP (o acesso a sistema externo) eram coisas separadas: a skill ficava no repositório ou em <code>~/.claude/skills/</code>, e o servidor só trazia tools. Com Skills over MCP, <strong>o servidor leva o próprio playbook</strong>.</p>
+<ul>
+  <li>A skill carrega sob demanda, então o contexto continua enxuto.</li>
+  <li>Atualiza junto com o servidor: quem usa não instala nada máquina por máquina.</li>
+  <li>No Claude Code, o nome é <code>&lt;servidor&gt;:&lt;skill&gt;</code> (por exemplo, <code>docs:pdf</code>); aparece ao digitar <code>/</code> ou em <code>/skills</code>. Exige a v2.1.331 ou mais recente.</li>
+  <li>No auto mode, o classificador decide se a skill carrega. Dá para bloquear com uma regra deny <code>Skill(mcp__docs__*)</code>, ou exigir confirmação com <code>ask</code>.</li>
+  <li>Aviso da documentação: skills podem mandar o Claude rodar código, e o servidor pode mudá-las a qualquer momento. <strong>Adicione só servidores em que você confia.</strong></li>
+</ul>
+<p>Exemplo de uso: um servidor de assinatura de documentos pode levar as regras da casa (sempre usar o modelo aprovado, validar o telefone antes de enviar) junto com as tools, em vez de cada usuário copiar essas regras para o próprio CLAUDE.md.</p>
+
+<h2 id="tasks">3. Tasks: operação longa sem travar a sessão</h2>
+<p>Uma <strong>MCP task</strong> é um trabalho longo, como gerar um relatório ou rodar um build, que o próprio servidor executa usando a extensão de tasks.</p>
+<ul>
+  <li>A chamada volta assim que o servidor aceita o trabalho, e o Claude segue trabalhando; quando a task termina, o resultado chega à conversa.</li>
+  <li>Independentemente de tasks, na conversa principal de uma sessão interativa, uma chamada MCP que passa de dois minutos rodando vai para segundo plano (em modo não interativo, só com <code>CLAUDE_AUTO_BACKGROUND_TASKS=1</code>).</li>
+  <li>A task de um servidor remoto continua depois que você sai; a de um servidor local (stdio) para junto com o Claude Code.</li>
+  <li>Exige a v2.1.304 ou mais recente; um <code>claude -p "..."</code> de execução única não recebe MCP tasks. A especificação é uma extensão do MCP, e o suporte varia de cliente para cliente.</li>
+</ul>
+<p>Uso típico: provisionar uma máquina, instalar um kit, fazer uma varredura grande, sem prender a sessão esperando.</p>
+
+<h2 id="elicitation">4. Elicitation: a trava técnica para ação de decisão</h2>
+<p>Com <strong>Elicitation</strong>, o servidor pausa no meio de uma chamada e pede algo ao usuário. O Claude Code mostra um diálogo e devolve a resposta ao servidor, sem configuração nenhuma do seu lado.</p>
+<ul>
+  <li><strong>Form mode</strong>: um formulário com os campos que o servidor definiu (por exemplo, o nome do projeto e uma data).</li>
+  <li><strong>URL mode</strong>: o Claude Code pergunta se abre um link no navegador, para um fluxo que termina fora do terminal, como um login.</li>
+  <li>Recusar também é uma resposta: o servidor decide se continua.</li>
+  <li>Numa sessão interativa, um hook <code>Elicitation</code> pode responder automaticamente, sem diálogo.</li>
+  <li>Já a elicitation de uma MCP task em <code>claude -p</code> ou no Agent SDK não chega a ninguém: o Claude Code pede ao servidor que cancele a task, <strong>sem rodar os hooks <code>Elicitation</code></strong> nem o callback <code>onElicitation</code> do SDK.</li>
+</ul>
+<p>Por que isso importa: até agora, "confirme antes de cobrar" ou "confirme antes de apagar" dependia só da instrução no prompt, ou seja, de orientação. Com Elicitation, <strong>o próprio servidor</strong> se recusa a seguir sem a resposta da pessoa. Exemplos do anúncio: confirmar o custo antes de criar um projeto pago, confirmar antes de rodar SQL destrutivo, digitar o nome do repositório antes de um agente apagá-lo.</p>
+<p>É a mesma lição da Aula 03 e da Aula 07: o que precisa ser garantido não fica só no prompt. A diferença é onde mora a trava: no hook e na regra deny ela está no seu Claude Code; na Elicitation, está no servidor, e vale para qualquer cliente que fale com ele.</p>
+
+<h2 id="uploads-toolsearch">5. File Uploads e tool search</h2>
+<p><strong>File Uploads</strong> (ainda chegando em 24/11) deixa o Claude mandar arquivos, e não só texto, ao servidor: PDF, planilha e imagem vão direto, <strong>sem passar pela janela de contexto</strong>. Um contrato vai inteiro para o servidor de assinatura sem ocupar o contexto da sessão.</p>
+<p><strong>Tool search</strong> já era da Aula 05: as definições das tools carregam só quando precisam. O anúncio trouxe o número: em configurações com vários servidores, corta <strong>mais de 85%</strong> do contexto gasto com definições de tools (dado da Anthropic, sem as condições do teste). Ele vem ligado por padrão nos modelos suportados.</p>
+<p>Também no anúncio: com o <strong>Enterprise Managed Auth</strong>, o admin autoriza um servidor suportado uma vez e os usuários conectam automaticamente. Sem ele, cada pessoa entra no servidor remoto com a própria conta, pelo <code>/mcp</code> ou por <code>claude mcp login</code>.</p>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha</h3>
+  <p><strong>Skill sobre MCP não é "skill grátis e segura".</strong> Ela carrega sob demanda e atualiza com o servidor, mas pode mandar o Claude rodar código, e o servidor pode mudá-la a qualquer hora. Confie no servidor antes, e use regra deny ou ask se precisar.</p>
+<p><strong>Elicitation não é instrução no prompt.</strong> "Peça confirmação antes de cobrar" escrito no prompt é orientação; o servidor que pausa e exige a resposta da pessoa é trava. No Agent SDK ou em <code>claude -p</code>, a elicitation de uma task cancela a task, não a aprova, e nem o hook <code>Elicitation</code> roda.</p>
+</div>
+
+<h2 id="glossario">6. Glossário</h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Significado</th></tr>
+  <tr><td class="en">Skills over MCP</td><td>skills publicadas por um servidor MCP junto com as tools</td></tr>
+  <tr><td class="en">MCP task</td><td>trabalho longo que o servidor executa em segundo plano</td></tr>
+  <tr><td class="en">elicitation</td><td>pedido de informação ou confirmação do servidor ao usuário, no meio de uma chamada</td></tr>
+  <tr><td class="en">form mode / URL mode</td><td>elicitation por formulário no terminal / por link aberto no navegador</td></tr>
+  <tr><td class="en">File Uploads</td><td>envio de arquivos ao servidor sem passar pela janela de contexto</td></tr>
+  <tr><td class="en">tool search</td><td>carregamento sob demanda das definições de tools</td></tr>
+  <tr><td class="en">Enterprise Managed Auth</td><td>autorização do servidor feita uma vez pelo admin para toda a organização</td></tr>
+  <tr><td class="en">open spec</td><td>especificação aberta: funciona em qualquer cliente compatível</td></tr>
+</table>
+
+<h2 id="questoes">7. Questões de fixação</h2>
+<div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
+
+<div class="q" data-correct="b">
+  <div class="qnum">Questão 1 · múltipla escolha</div>
+  <div class="stem">Um servidor MCP de assinatura de documentos quer que todo cliente siga as regras da casa (sempre usar o modelo aprovado) sem que cada usuário edite o próprio CLAUDE.md. Qual novidade resolve?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q1" value="a">A. Elicitation, que pergunta as regras da casa ao usuário em cada chamada ao servidor</label>
+    <label class="opt"><input type="radio" name="q1" value="b">B. Skills over MCP: o servidor leva o playbook junto</label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. Tasks, que rodam as regras em segundo plano no servidor</label>
+    <label class="opt"><input type="radio" name="q1" value="d">D. File Uploads, que mandam o arquivo de regras junto com o contrato</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Com Skills over MCP o servidor publica o procedimento junto com as tools; ele carrega sob demanda e atualiza com o servidor, sem instalar nada em cada máquina. Elicitation pede uma resposta pontual ao usuário, não ensina procedimento. Tasks são trabalho longo. File Uploads mandam arquivos ao servidor, não instruções ao Claude.<span class="ts">Fonte: anúncio de 24/11; docs: mcp</span></div>
+</div>
+
+<div class="q" data-correct="c">
+  <div class="qnum">Questão 2 · múltipla escolha</div>
+  <div class="stem">Um servidor vai rodar uma operação de cobrança. Hoje, a confirmação depende de uma instrução no prompt. Qual novidade transforma isso numa trava técnica?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q2" value="a">A. Tool search, que só carrega a tool de cobrança quando ela é confirmada</label>
+    <label class="opt"><input type="radio" name="q2" value="b">B. Uma skill do servidor dizendo ao Claude para confirmar antes de cobrar</label>
+    <label class="opt"><input type="radio" name="q2" value="c">C. Elicitation: o servidor pausa e só segue com a resposta da pessoa</label>
+    <label class="opt"><input type="radio" name="q2" value="d">D. Tasks, que fazem a cobrança em segundo plano até alguém revisar</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> Com Elicitation o próprio servidor pausa e exige a resposta do usuário por formulário ou link; sem ela, não segue. Uma skill dizendo "confirme" ainda é orientação ao Claude, como o prompt. Tool search trata de carregar definições, não de confirmar. Tasks rodam em segundo plano, não pedem aprovação.<span class="ts">Fonte: anúncio de 24/11; docs: mcp</span></div>
+</div>
+
+<div class="q" data-correct="a,c">
+  <div class="qnum">Questão 3 · múltipla resposta <span class="multi-hint">(marque DUAS)</span></div>
+  <div class="stem">Quais DUAS afirmações sobre Skills over MCP estão corretas no Claude Code em 24/11/2026?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q3" value="a">A. O nome da skill segue o formato <code>&lt;servidor&gt;:&lt;skill&gt;</code></label>
+    <label class="opt"><input type="checkbox" name="q3" value="b">B. Toda skill de servidor é escaneada pela Anthropic antes de carregar</label>
+    <label class="opt"><input type="checkbox" name="q3" value="c">C. A regra deny <code>Skill(mcp__docs__*)</code> bloqueia as skills do docs</label>
+    <label class="opt"><input type="checkbox" name="q3" value="d">D. Está disponível para todos os planos Enterprise desde o anúncio</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A e C.</strong> O nome é <code>&lt;servidor&gt;:&lt;skill&gt;</code>, e regras de permissão sobre <code>Skill(mcp__docs__*)</code> bloqueiam ou pedem confirmação. A Anthropic escaneia skills só de alguns conectores; servidores adicionados com <code>claude mcp add</code>, por exemplo, não passam por esse escaneamento. E o Enterprise ainda estava "em breve".<span class="ts">Fonte: docs: mcp</span></div>
+</div>
+
+<div class="q" data-correct="b">
+  <div class="qnum">Questão 4 · múltipla escolha</div>
+  <div class="stem">Um servidor MCP precisa provisionar uma máquina, o que leva dez minutos. O que as MCP Tasks mudam na sessão?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q4" value="a">A. Nada: a sessão continua bloqueada até a máquina ficar pronta</label>
+    <label class="opt"><input type="radio" name="q4" value="b">B. A chamada volta quando o servidor aceita o job, e o Claude segue</label>
+    <label class="opt"><input type="radio" name="q4" value="c">C. O Claude Code cancela a chamada depois de dois minutos e pede para tentar de novo</label>
+    <label class="opt"><input type="radio" name="q4" value="d">D. O provisionamento passa a rodar na sessão na nuvem, e não mais no servidor</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Com Tasks, a chamada volta assim que o servidor aceita o job, e o resultado chega à conversa quando termina. Sem tasks, numa sessão interativa, uma chamada que passa de dois minutos vai para segundo plano; não é cancelada. E quem executa a task é o servidor, não uma sessão na nuvem.<span class="ts">Fonte: docs: mcp</span></div>
+</div>
+
+<div class="q" data-correct="d">
+  <div class="qnum">Questão 5 · múltipla escolha</div>
+  <div class="stem">Um agente feito com o Agent SDK roda sem ninguém olhando e dispara uma MCP task. No meio, o servidor usa Elicitation para confirmar uma ação destrutiva. O que acontece?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q5" value="a">A. O Claude responde ao formulário sozinho, com base no prompt do agente</label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. A ação segue, porque sem terminal a confirmação é pulada</label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. O hook <code>Elicitation</code> do projeto responde no lugar da pessoa</label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. O Claude Code pede ao servidor que cancele a task</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> No Agent SDK e em <code>claude -p</code>, a elicitation de uma MCP task faz o Claude Code pedir ao servidor que cancele a task, sem rodar os hooks <code>Elicitation</code> nem o callback <code>onElicitation</code>. Ninguém aprova no lugar da pessoa e a ação não segue sozinha. O hook que responde automaticamente vale numa sessão interativa, não nesse caso.<span class="ts">Fonte: docs: mcp</span></div>
+</div>
+
+<div class="q" data-correct="a">
+  <div class="qnum">Questão 6 · múltipla escolha</div>
+  <div class="stem">Por que File Uploads importa para mandar um contrato em PDF a um servidor de assinatura?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q6" value="a">A. O arquivo vai direto ao servidor, sem ocupar o contexto</label>
+    <label class="opt"><input type="radio" name="q6" value="b">B. O PDF é convertido em texto e resumido antes de chegar ao servidor</label>
+    <label class="opt"><input type="radio" name="q6" value="c">C. O servidor passa a poder ler qualquer arquivo da sua máquina sem pedir</label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. O contrato fica salvo no CLAUDE.md para as próximas sessões</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> File Uploads manda PDF, planilha ou imagem ao servidor sem passar pelo contexto. Não há conversão nem resumo, o servidor não ganha acesso livre à sua máquina, e nada vai para o CLAUDE.md. Em 24/11, File Uploads ainda estava chegando.<span class="ts">Fonte: anúncio de 24/11</span></div>
+</div>
+
+<div class="q" data-correct="b">
+  <div class="qnum">Questão 7 · múltipla escolha</div>
+  <div class="stem">Sua sessão tem muitos servidores MCP ligados. Segundo o anúncio, o que o tool search faz e quanto economiza?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q7" value="a">A. Desliga os servidores que não foram usados na sessão e economiza cerca de metade da cota</label>
+    <label class="opt"><input type="radio" name="q7" value="b">B. Carrega as definições sob demanda e corta mais de 85% do contexto gasto com elas</label>
+    <label class="opt"><input type="radio" name="q7" value="c">C. Junta todas as tools num único servidor e economiza o tempo de conexão inicial</label>
+    <label class="opt"><input type="radio" name="q7" value="d">D. Resume as definições das tools com um modelo menor e economiza 85% do custo</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Tool search carrega as definições das tools só quando preciso; o anúncio fala em mais de 85% menos contexto em configurações com vários servidores. Ele não desliga servidores, não junta tools nem resume definições com outro modelo. O número é da Anthropic, sem as condições do teste publicadas.<span class="ts">Fonte: anúncio de 24/11</span></div>
+</div>
+
+<div class="q" data-correct="c">
+  <div class="qnum">Questão 8 · múltipla escolha</div>
+  <div class="stem">Você escreve um servidor MCP com Tasks e Elicitation. Segundo o anúncio, onde ele funciona?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q8" value="a">A. Só no Claude Code, porque Tasks e Elicitation são recursos exclusivos dele</label>
+    <label class="opt"><input type="radio" name="q8" value="b">B. Só nos apps do Claude, porque o Claude Code não suporta Elicitation</label>
+    <label class="opt"><input type="radio" name="q8" value="c">C. Em qualquer cliente compatível: é especificação aberta</label>
+    <label class="opt"><input type="radio" name="q8" value="d">D. Só em organizações Enterprise com o Managed Auth ligado pelo admin</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> O anúncio diz que as novidades fazem parte da especificação aberta do MCP e das suas extensões, e que um servidor que as suporta funciona em qualquer cliente compatível, mesmo que o suporte varie de cliente para cliente. O Claude Code suporta Elicitation, e o Managed Auth é outra coisa: autorização centralizada pelo admin.<span class="ts">Fonte: anúncio de 24/11; modelcontextprotocol.io</span></div>
+</div>
+
+<h2 id="fontes">8. Fontes</h2>
+<ul class="fontes">
+  <li>Anúncio <em>MCP servers can now ship skills, run tasks, and more with Claude</em> (Anthropic, 24/11/2026): <a href="https://claude.com/resources/articles/skills-over-mcp-tasks-and-more">claude.com/resources/articles/skills-over-mcp-tasks-and-more</a></li>
+  <li>MCP no Claude Code (tasks, elicitation, skills, OAuth): <a href="https://code.claude.com/docs/en/mcp">https://code.claude.com/docs/en/mcp</a></li>
+  <li>Extensão MCP Tasks: <a href="https://modelcontextprotocol.io/extensions/tasks/overview">modelcontextprotocol.io/extensions/tasks/overview</a></li>
+  <li>Live <em>Claude Code: Advanced</em> (Anthropic, 24/11/2026): skill × MCP no Q&amp;A.</li>
+</ul>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir extra 05</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="extra-04.html">← Extra 04</a></span>
+  <span><a href="index.html">Índice →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  var total = 0, score = 0;
+  document.querySelectorAll('.q').forEach(function (q) {
+    total++;
+    document.getElementById('total').textContent = total;
+    var btn = q.querySelector('button.answer');
+    var correct = q.dataset.correct.split(',').map(function (s) { return s.trim(); });
+    btn.addEventListener('click', function () {
+      var checked = Array.prototype.slice.call(q.querySelectorAll('input:checked')).map(function (i) { return i.value; });
+      if (checked.length === 0) return;
+      var ok = checked.length === correct.length && checked.every(function (v) { return correct.indexOf(v) !== -1; });
+      q.querySelectorAll('label.opt').forEach(function (l) {
+        var v = l.querySelector('input').value;
+        if (correct.indexOf(v) !== -1) l.classList.add('correct');
+        else if (l.querySelector('input').checked) l.classList.add('wrong');
+        l.querySelector('input').disabled = true;
+      });
+      var fb = q.querySelector('.feedback');
+      fb.classList.add(ok ? 'ok' : 'ko');
+      fb.innerHTML = (ok ? '✅ Correto. ' : '❌ Incorreto. ') + fb.innerHTML;
+      btn.disabled = true;
+      if (ok) score++;
+      document.getElementById('score').textContent = score;
+    });
+  });
+  var KEY = 'ccarf-extra-05';
+  var btn = document.getElementById('finish');
+  if (localStorage.getItem(KEY)) {
+    document.getElementById('donemsg').textContent = 'Extra já concluída — ' + localStorage.getItem(KEY);
+  }
+  btn.addEventListener('click', function () {
+    var rec = new Date().toLocaleDateString('pt-BR') + ' · ' + score + '/' + total + ' acertos';
+    localStorage.setItem(KEY, rec);
+    document.getElementById('donemsg').textContent = 'Concluída: ' + rec;
+  });
+})();
+</script>
+<script src="narracao/extra-05.js"></script>
+<script src="narracao/player.js"></script>
+</body>
+</html>
