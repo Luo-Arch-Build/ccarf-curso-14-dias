@@ -1,0 +1,177 @@
+{
+  "number": "03",
+  "title": "Modelos, esforço e cota",
+  "subtitle": "/model · opusplan · /effort · /advisor · cache · modelo por subagent · /usage",
+  "checked": "24/11/2026",
+  "objetivo": "Ficar no modelo padrão e trocar com motivo: saber o que cada alias de <code>/model</code> entrega, quando usar <code>opusplan</code> e o <code>/advisor</code>, a diferença entre trocar o <strong>esforço</strong> e trocar o <strong>modelo</strong> (o cache), e como medir o gasto com <code>/usage</code>.",
+  "sections": [
+    {
+      "id": "aliases",
+      "heading": "Os modelos e quando usar cada um",
+      "html": "<p>Na Anthropic API e nos planos Pro, Max, Ultra, Team e Enterprise, o padrão é o <strong>Opus 5.5</strong>. A live resumiu: fique no padrão e troque com motivo.</p>\n<table class=\"gloss\">\n  <tr><th>Comando</th><th>Quando usar</th></tr>\n  <tr><td class=\"en\">/model haiku</td><td>Tarefa simples, pequena e bem definida (Haiku 5.5).</td></tr>\n  <tr><td class=\"en\">/model sonnet</td><td>Rotina de código do dia a dia, gastando menos cota (Sonnet 5.5).</td></tr>\n  <tr><td class=\"en\">/model opus</td><td>O padrão: raciocínio complexo e a maior parte do trabalho de código. <code>best</code> é sinônimo.</td></tr>\n  <tr><td class=\"en\">/model fable</td><td>O mais difícil e mais longo: problemas ambíguos, investigação de causa raiz, decisões de arquitetura. Descreva o resultado, não os passos.</td></tr>\n  <tr><td class=\"en\">/model opusplan</td><td>Opus enquanto está em plan mode, Sonnet quando sai para executar.</td></tr>\n  <tr><td class=\"en\">/model default</td><td>Limpa a escolha e volta ao padrão da conta.</td></tr>\n</table>\n<p>O Fable nunca é o padrão de nenhum plano: precisa ser escolhido, exige acesso ao Fable e, em alguns planos, consome créditos de uso. Os aliases <code>sonnet[1m]</code> e <code>opus[1m]</code> pedem a janela de 1 milhão de tokens.</p>"
+    },
+    {
+      "id": "esforco",
+      "heading": "Esforço: quanto o modelo pensa",
+      "html": "<p>O <strong>esforço</strong> (effort) controla o raciocínio adaptativo: o modelo decide se e quanto pensar em cada passo. Os níveis são <code>low</code>, <code>medium</code>, <code>high</code>, <code>xhigh</code> e <code>max</code>; no Opus 5.5, Sonnet 5.5, Haiku 5.5 e Fable 5.2 o padrão é <code>medium</code>.</p>\n<ul>\n  <li><code>low</code> para trocas rápidas; <code>medium</code> para o dia a dia; <code>high</code> quando a verificação importa; <code>max</code> para problemas difíceis, com o aviso de que tende a pensar demais.</li>\n  <li>Muda com <code>/effort</code>, com o controle no seletor do <code>/model</code>, com <code>--effort</code> na abertura ou nas configurações.</li>\n  <li>Uma skill ou um subagent pode fixar o próprio esforço no frontmatter (<code>effort</code>), que vale enquanto ele roda.</li>\n</ul>"
+    },
+    {
+      "id": "cache",
+      "heading": "Trocar esforço × trocar modelo: o que acontece com o cache",
+      "html": "<p>Trocar de modelo <strong>não apaga o contexto</strong>: a conversa continua inteira. O que muda é o <strong>cache do prompt</strong>, e isso pesa no tempo e no custo.</p>\n<ul>\n  <li><strong>Cada modelo tem o próprio cache.</strong> Depois de um <code>/model</code>, a próxima requisição relê todo o histórico sem cache: uma resposta mais lenta e mais cara. Com o cache ainda quente, o Claude Code pede confirmação antes de trocar.</li>\n  <li><strong>Esforço</strong>: na maioria dos modelos também tem cache próprio, mas com assinatura ou chave de API o cache se mantém no Opus 5.5, Sonnet 5.5, Haiku 5.5 e Fable 5.1 em diante. Nesses, mudar o esforço entre tarefas sai barato.</li>\n  <li><strong><code>opusplan</code></strong> troca de modelo a cada entrada e saída do plan mode, e cada troca começa um cache novo.</li>\n  <li>Uma skill ou um comando com <code>model</code> próprio vira uma troca de modelo naquele turno, a menos que rode num subagent (<code>context: fork</code>), que tem cache próprio.</li>\n</ul>\n<p>Dica da documentação: escolha modelo e esforço no começo da sessão e deixe o <code>/compact</code> para as pausas naturais entre tarefas.</p>"
+    },
+    {
+      "id": "advisor",
+      "heading": "O advisor: um modelo mais forte nos momentos-chave",
+      "html": "<p>Com <code>/advisor fable</code> (ou <code>opus</code>, <code>sonnet</code>), o Claude passa a consultar um segundo modelo, em geral mais forte, nos pontos de decisão: antes de escolher uma abordagem, quando um erro se repete e antes de declarar a tarefa pronta. O advisor recebe a conversa inteira e devolve orientação; quem decide quando chamar é o Claude.</p>\n<ul>\n  <li>É <strong>experimental</strong> e precisa da Anthropic API (ou da Claude Platform on AWS / Claude Models on Google Cloud); não existe no Bedrock, no Agent Platform do Google Cloud nem no Foundry.</li>\n  <li>O advisor precisa estar no mesmo nível ou acima do modelo principal. Com o Opus 5.5 como principal, só Fable ou Opus servem.</li>\n  <li>Cada consulta gasta tokens no preço do advisor, além do modelo principal; o Fable como advisor vai para créditos de uso nos planos em que o Fable vai.</li>\n  <li>Ligar ou desligar o advisor no meio da sessão não invalida o cache do modelo principal.</li>\n  <li><code>/advisor off</code> desliga.</li>\n</ul>\n<p>Comparação: o <code>opusplan</code> usa o modelo forte durante o plan mode inteiro; o advisor só nos pontos de decisão; um subagent com <code>model</code> próprio, durante toda a subtarefa delegada. Na live, a Anthropic desaconselhou somar um planejador forte e um advisor forte na mesma sessão, porque o custo dobra: melhor um planejar e o outro auditar.</p>"
+    },
+    {
+      "id": "subagent-usage",
+      "heading": "Modelo por subagent e /usage",
+      "html": "<p>Um subagent definido em arquivo escolhe o modelo no campo <code>model</code> do frontmatter (<code>haiku</code>, <code>sonnet</code>, <code>opus</code>, <code>fable</code>, um ID ou <code>inherit</code>). Sem o campo, ele usa o modelo da conversa. Padrão da live: a sessão principal fica no Opus orquestrando, e cada subagent usa o modelo que a tarefa dele pede.</p>\n<p><code>/usage</code> (também <code>/cost</code> ou <code>/stats</code>) mostra o custo da sessão, os limites do plano e estatísticas de uso. Desde a v2.1.251 traz a linha <code>Prompt cache (main)</code>, com a taxa de acerto do cache e, quando dá, a causa provável da última perda. O uso do advisor entra nesse total.</p>"
+    }
+  ],
+  "pegadinha": {
+    "html": "<p>A frase \"trocar de modelo reinicia o contexto\" é <strong>falsa</strong>: a conversa continua inteira. O que se perde é o <em>cache</em>, e a próxima resposta sai mais lenta e mais cara.</p>\n<p>E o <code>opusplan</code> não é de graça para o cache: cada entrada ou saída do plan mode é uma troca de modelo. Trocar o esforço, nos modelos 5.5 com assinatura ou chave de API, é o ajuste barato.</p>"
+  },
+  "glossary": [
+    {
+      "term_en": "model alias",
+      "meaning_pt": "nome curto (opus, sonnet, haiku, fable) que aponta para a versão atual do modelo"
+    },
+    {
+      "term_en": "opusplan",
+      "meaning_pt": "modo que usa Opus no plan mode e Sonnet na execução"
+    },
+    {
+      "term_en": "effort level",
+      "meaning_pt": "quanto o modelo pensa em cada passo (low a max)"
+    },
+    {
+      "term_en": "prompt cache",
+      "meaning_pt": "reaproveitamento do início já processado da requisição; cada modelo tem o seu"
+    },
+    {
+      "term_en": "advisor tool",
+      "meaning_pt": "segundo modelo que o Claude consulta nos pontos de decisão"
+    },
+    {
+      "term_en": "usage credits",
+      "meaning_pt": "créditos de uso cobrados além do plano"
+    },
+    {
+      "term_en": "inherit",
+      "meaning_pt": "valor do campo model do subagent que usa o modelo da conversa"
+    },
+    {
+      "term_en": "/usage",
+      "meaning_pt": "comando que mostra custo da sessão, limites do plano e estatísticas"
+    }
+  ],
+  "questions": [
+    {
+      "stem": "No meio de uma sessão longa com o Opus 5.5, você roda <code>/model sonnet</code>. O que acontece?",
+      "options": [
+        "A conversa é apagada e a sessão recomeça do zero, só com o CLAUDE.md e as regras carregados",
+        "Nada muda no custo, porque os modelos da mesma geração dividem o cache",
+        "A conversa continua inteira, mas a próxima resposta relê o histórico sem cache",
+        "O Sonnet só passa a valer nos subagents, e a conversa principal fica no Opus"
+      ],
+      "correct": "c",
+      "feedback": "Trocar de modelo mantém a conversa; o que se perde é o cache, porque cada modelo tem o seu, então a próxima requisição relê tudo sem cache. Não há cache compartilhado entre modelos. E o <code>/model</code> muda a conversa principal (e os subagents que herdam o modelo), não só os subagents.",
+      "fonte": "docs: prompt-caching"
+    },
+    {
+      "stem": "Com assinatura e o Opus 5.5, você quer pensar mais numa tarefa difícil e depois voltar ao normal, na mesma conversa, gastando o mínimo. O que fazer?",
+      "options": [
+        "Trocar para <code>/model fable</code> na tarefa difícil e voltar para <code>opus</code> depois",
+        "Subir o esforço com <code>/effort high</code> na tarefa difícil e baixar depois",
+        "Ligar o <code>opusplan</code>, que ajusta o esforço sozinho a cada tarefa",
+        "Rodar <code>/compact</code> antes e depois da tarefa para zerar o custo do cache"
+      ],
+      "correct": "b",
+      "feedback": "No Opus 5.5 com assinatura, mudar o esforço mantém o cache: é o ajuste barato. Trocar para Fable e voltar são duas trocas de modelo, cada uma relendo o histórico sem cache. O <code>opusplan</code> troca de modelo, não de esforço. E o <code>/compact</code> substitui o histórico e também reconstrói o cache.",
+      "fonte": "docs: prompt-caching; model-config"
+    },
+    {
+      "stem": "O que o <code>opusplan</code> faz?",
+      "options": [
+        "Usa Opus enquanto está em plan mode e passa para Sonnet ao executar",
+        "Usa Opus para planejar e Fable como advisor durante toda a execução",
+        "Planeja com Sonnet e executa com Opus, para economizar no plano",
+        "Mantém o Opus o tempo todo, mas com esforço maior só durante o plan mode"
+      ],
+      "correct": "a",
+      "feedback": "<code>opusplan</code> é Opus no plan mode e Sonnet na execução. Ele não liga advisor, não inverte os papéis e não mexe no esforço. Lembre que cada entrada e saída do plan mode é uma troca de modelo, com cache novo.",
+      "fonte": "docs: model-config"
+    },
+    {
+      "stem": "Quais DUAS afirmações sobre o <code>/advisor</code> estão corretas?",
+      "options": [
+        "Ligar ou desligar o advisor no meio da sessão invalida todo o cache do modelo principal",
+        "O Claude decide quando consultar, em geral antes de escolher a abordagem ou de dar por pronto",
+        "Funciona em qualquer provedor, inclusive Amazon Bedrock, Microsoft Foundry e o Agent Platform do Google",
+        "É experimental, e cada consulta gasta tokens no preço do modelo advisor"
+      ],
+      "correct": "b,d",
+      "feedback": "O Claude decide quando chamar o advisor (antes de se comprometer com uma abordagem, quando um erro se repete, antes de declarar pronto), e o recurso é experimental, com cada consulta cobrada no preço do advisor. Ligar ou desligar não invalida o cache do modelo principal. E ele não existe no Bedrock, no Agent Platform do Google Cloud nem no Foundry.",
+      "fonte": "docs: advisor"
+    },
+    {
+      "stem": "Sua sessão roda no Opus 5.5 e você tenta <code>/advisor sonnet</code>. O que esperar?",
+      "options": [
+        "Não é usado: o advisor precisa estar no nível do principal ou acima",
+        "Funciona normalmente, e o Sonnet revisa cada turno do Opus antes da resposta",
+        "O modelo principal passa automaticamente para o Sonnet e o Opus vira advisor",
+        "O Claude Code troca o advisor sozinho para o Haiku 5.5, que é mais barato"
+      ],
+      "correct": "a",
+      "feedback": "O advisor precisa estar no mesmo nível do modelo principal ou acima; com o Opus 5.5 como principal, só Fable ou Opus servem. O Claude Code guarda a escolha, mas não a anexa às requisições do modelo principal. Ele não troca os papéis nem escolhe outro advisor por conta própria, e o advisor não revisa todo turno: só os pontos de decisão.",
+      "fonte": "docs: advisor"
+    },
+    {
+      "stem": "Você quer que a sessão principal fique no Opus orquestrando e que um subagent de varredura de logs rode sempre num modelo barato. Como configurar?",
+      "options": [
+        "Rodar <code>/model haiku</code> antes de cada delegação e voltar ao Opus depois",
+        "Pôr <code>model: haiku</code> no frontmatter do arquivo do subagent",
+        "Ligar <code>/advisor haiku</code>, que faz o Haiku executar as subtarefas",
+        "Usar <code>opusplan</code>, que manda os subagents para o Sonnet"
+      ],
+      "correct": "b",
+      "feedback": "O campo <code>model</code> no frontmatter fixa o modelo do subagent sem mexer na sessão principal. Trocar o <code>/model</code> a cada delegação são duas trocas de modelo por vez, cada uma sem cache. O advisor só aconselha, não executa, e precisa estar no nível do principal ou acima. O <code>opusplan</code> troca o modelo da conversa conforme o plan mode, não o dos subagents.",
+      "fonte": "docs: sub-agents"
+    },
+    {
+      "stem": "Segundo a live, qual combinação a Anthropic desaconselhou e por quê?",
+      "options": [
+        "Haiku no subagent e Opus na sessão principal, porque o Haiku não lê o CLAUDE.md",
+        "Sonnet na rotina e Opus no padrão, porque trocar de modelo apaga a conversa",
+        "Esforço <code>max</code> com o Opus, porque o Opus não aceita esse nível de esforço",
+        "Planejador Opus somado a advisor Fable na mesma sessão, porque o custo dobra"
+      ],
+      "correct": "d",
+      "feedback": "A recomendação foi não somar um planejador forte com um advisor forte: o custo dobra, e o melhor é um planejar e o outro auditar. Haiku em subagent é justamente o padrão recomendado para tarefa simples. Trocar de modelo não apaga a conversa. E o Opus 5.5 aceita <code>max</code>; o aviso é só que esse nível tende a pensar demais.",
+      "fonte": "live de 24/11; docs: model-config"
+    },
+    {
+      "stem": "Onde você vê o custo da sessão atual e a taxa de acerto do cache?",
+      "options": [
+        "No <code>/context</code>, que mostra o custo de cada item carregado no contexto",
+        "No <code>/insights</code>, que mostra o custo de cada sessão recente da máquina",
+        "No <code>/usage</code>, que mostra custo, limites do plano e a linha do cache",
+        "No <code>/model</code>, que mostra o preço do modelo ao lado do nome dele"
+      ],
+      "correct": "c",
+      "feedback": "<code>/usage</code> (também <code>/cost</code> ou <code>/stats</code>) mostra custo da sessão, limites do plano e estatísticas, e a linha <code>Prompt cache (main)</code> com a taxa de acerto. O <code>/context</code> mostra o que ocupa a janela de contexto. O <code>/insights</code> analisa como você trabalha, não o custo da sessão. E o <code>/model</code> serve para escolher o modelo.",
+      "fonte": "docs: commands; prompt-caching"
+    }
+  ],
+  "fontes": [
+    "Live <em>Claude Code: Advanced</em> (Anthropic, 24/11/2026): fique no padrão e troque com motivo; não somar planejador e advisor fortes.",
+    "Modelos, aliases e esforço: <a href=\"https://code.claude.com/docs/en/model-config\">https://code.claude.com/docs/en/model-config</a>",
+    "Advisor: <a href=\"https://code.claude.com/docs/en/advisor\">https://code.claude.com/docs/en/advisor</a>",
+    "Cache do prompt: <a href=\"https://code.claude.com/docs/en/prompt-caching\">https://code.claude.com/docs/en/prompt-caching</a>",
+    "Subagents (<code>model</code>): <a href=\"https://code.claude.com/docs/en/sub-agents\">https://code.claude.com/docs/en/sub-agents</a>",
+    "Comandos (<code>/usage</code>): <a href=\"https://code.claude.com/docs/en/commands\">https://code.claude.com/docs/en/commands</a>"
+  ]
+}
