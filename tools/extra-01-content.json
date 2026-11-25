@@ -1,0 +1,182 @@
+{
+  "number": "01",
+  "title": "Paralelo e sessões",
+  "subtitle": "Desviar sem sujar o contexto · worktrees · /batch · sessões que conversam",
+  "checked": "24/11/2026",
+  "objetivo": "Saber escolher, para cada situação, entre as quatro formas de <strong>desviar</strong> sem perder o fio da sessão (<code>/btw</code>, <code>/subtask</code>, <code>/branch</code>, <code>/fork</code>) e as duas de <strong>multiplicar</strong> o trabalho (worktree com <code>claude -w</code> e <code>/batch</code>), e coordenar sessões independentes por mensagem e por arquivo.",
+  "sections": [
+    {
+      "id": "mapa",
+      "heading": "O mapa: quatro formas de desviar e duas de multiplicar",
+      "html": "<p>A live de 24/11 organizou o trabalho em paralelo em dois grupos. <strong>Desviar</strong> é fazer outra coisa sem sujar a conversa principal. <strong>Multiplicar</strong> é pôr várias cópias isoladas do trabalho para andar ao mesmo tempo.</p>\n<table class=\"gloss\">\n  <tr><th>Comando</th><th>O que faz</th><th>O que volta para a conversa</th></tr>\n  <tr><td class=\"en\">/btw</td><td>Pergunta lateral sobre a sessão atual, sem acesso a tools</td><td>Nada: a resposta não entra no histórico</td></tr>\n  <tr><td class=\"en\">/subtask</td><td>Subagent bifurcado, que herda a conversa inteira e roda em segundo plano</td><td>Só o resultado, quando termina</td></tr>\n  <tr><td class=\"en\">/branch</td><td>Você passa a trabalhar numa cópia da conversa</td><td>A original fica intacta e volta com <code>/resume</code></td></tr>\n  <tr><td class=\"en\">/fork</td><td>Uma cópia da conversa vira sessão própria em segundo plano</td><td>Nada: você continua na original</td></tr>\n  <tr><td class=\"en\">claude -w nome</td><td>Sessão numa worktree, com arquivos e branch próprios</td><td>É outra sessão; o código volta por merge</td></tr>\n  <tr><td class=\"en\">/batch</td><td>Divide uma mudança grande em 5 a 30 partes, cada uma com subagent e worktree</td><td>Um PR (ou um relatório) por parte</td></tr>\n</table>\n<p>A pergunta que decide é: <em>o que precisa voltar para a conversa em que estou, e o que não pode tocar nos meus arquivos?</em></p>"
+    },
+    {
+      "id": "desviar",
+      "heading": "Desviar: /btw, /subtask, /branch e /fork",
+      "html": "<p><strong><code>/btw</code></strong> é para a dúvida rápida no meio de uma tarefa longa: \"qual era mesmo o nome daquela função?\". Ele não tem acesso a tools e a resposta não entra no histórico, então não gasta contexto da sessão principal.</p>\n<p><strong><code>/subtask</code></strong> delega trabalho pesado, como varrer logs ou ler um repositório inteiro. Ele é <em>bifurcado</em> (forked): começa com uma cópia da conversa até ali, ao contrário do subagent da Task tool que a Aula 02 ensina, que começa limpo e depende do handoff (no produto atual, a mesma tool também pode bifurcar, mas o subagent definido por você começa do zero). Roda em segundo plano e só o resultado volta. Depende da agent view; sem ela, quem cria o subagent bifurcado é o <code>/fork</code>.</p>\n<p><strong><code>/branch</code></strong> serve para testar uma abordagem arriscada sem perder o fio: você entra numa cópia da conversa e a original espera no <code>/resume</code>. É o mesmo que <code>claude --continue --fork-session</code> na linha de comando. Subagents em segundo plano que já estavam rodando continuam, e o resultado deles aparece no ramo novo.</p>\n<p><strong><code>/fork</code></strong> é o inverso do <code>/branch</code>: a cópia vai para o segundo plano como sessão própria e você fica na original. A cópia é orientada a criar a própria worktree antes de mexer em código, para não colidir com a sessão de origem.</p>\n<p>Ganho comum dos quatro: a sessão principal cresce mais devagar e chega mais tarde à compactação (Aula 12).</p>"
+    },
+    {
+      "id": "worktree",
+      "heading": "Multiplicar com worktree: claude -w",
+      "html": "<p>Uma <strong>worktree</strong> do git é outra pasta de trabalho, com arquivos e branch próprios, que divide o mesmo histórico e o mesmo remoto com o checkout principal. Duas sessões em worktrees diferentes não pisam nos arquivos uma da outra.</p>\n<ul>\n  <li><code>claude -w nome</code> (ou <code>--worktree nome</code>) cria a worktree em <code>.claude/worktrees/nome/</code>, numa branch nova chamada <code>worktree-nome</code>, e abre a sessão ali. Sem nome, o Claude inventa um.</li>\n  <li>Por padrão (<code>worktree.baseRef: \"fresh\"</code>), a worktree parte da branch padrão do remoto, normalmente a <code>main</code>. Com <code>\"head\"</code>, parte do seu <code>HEAD</code> local e leva os commits ainda não enviados.</li>\n  <li>É um checkout novo: arquivos ignorados pelo git, como <code>.env</code>, não vêm junto. Um arquivo <code>.worktreeinclude</code> (sintaxe de <code>.gitignore</code>) lista o que copiar.</li>\n  <li>Enquanto a sessão está isolada na worktree, o Claude Code bloqueia edições e comandos git que apontem para o checkout principal, inclusive dos subagents dela.</li>\n  <li>Ao sair: worktree limpa de sessão sem nome é removida com a branch; se houver trabalho, ele pergunta se mantém ou remove.</li>\n  <li>Um subagent pode rodar sempre na própria worktree com <code>isolation: worktree</code> no frontmatter.</li>\n</ul>\n<p>O código volta como qualquer branch: commit, push, PR, merge. A dica da documentação é pôr <code>.claude/worktrees/</code> no <code>.gitignore</code>.</p>"
+    },
+    {
+      "id": "batch",
+      "heading": "Multiplicar com /batch",
+      "html": "<p><code>/batch</code> é para a mesma mudança espalhada por muitos arquivos, como trocar a versão de uma API em todos os serviços. O fluxo:</p>\n<ul>\n  <li>Planeja e divide o trabalho em <strong>5 a 30 unidades independentes</strong>, e apresenta o plano para você aprovar.</li>\n  <li>Depois da aprovação, põe um subagent em segundo plano em cada unidade, cada um na sua worktree.</li>\n  <li>Cada subagent implementa, roda os testes e abre um PR (ou relata o que publicou, se não puder abrir PR).</li>\n  <li>Precisa de um repositório git, ou de um hook <code>WorktreeCreate</code> para outro controle de versão.</li>\n</ul>\n<p>Na demo da live: 12 arquivos, 11 subagents, 88 segundos, e um arquivo protegido por regra foi pulado. O próprio slide avisava que resultado em paralelo ainda precisa de alguém que leia: trinta PRs abertos de uma vez pedem revisão (Extensão 08).</p>\n<p>Não confunda com a Message Batches API da Aula 11: lá é desconto de 50% e janela de 24h para requests da API; aqui é paralelização de código no Claude Code.</p>"
+    },
+    {
+      "id": "mensagens",
+      "heading": "Sessões que conversam",
+      "html": "<p>Sessões independentes do Claude Code podem mandar mensagens umas às outras. O Claude acha o destino com <code>ListAgents</code> e envia com <code>SendMessage</code>; você só pede (\"avise a sessão da API que a migração terminou\") ou menciona a sessão com <code>@nome</code>. <code>/list-agents</code> mostra quem dá para alcançar.</p>\n<ul>\n  <li><strong>Só texto viaja</strong>: nunca o histórico nem os arquivos de quem envia. Para levar a conversa inteira, retome a sessão.</li>\n  <li>A mensagem <strong>não aprova nada</strong>: não responde a pedido de permissão, não muda configuração nem CLAUDE.md, e um comando escrito nela (como <code>/compact</code>) chega como texto, sem rodar.</li>\n  <li>Na mesma máquina, a mensagem vai por um socket local, sem passar pelos servidores da Anthropic; para outra máquina ou a nuvem, precisa do Remote Control.</li>\n</ul>\n<p>Padrão recomendado na live: <strong>mensagem curta, arquivo para o resto</strong>. A especificação, a lista de tarefas e as decisões ficam num arquivo, e a mensagem leva o caminho. Várias sessões sobre a mesma especificação leem o mesmo arquivo. Mudança grande e repetitiva não é conversa entre sessões: para isso existe o <code>/batch</code>.</p>"
+    },
+    {
+      "id": "time",
+      "heading": "Vários engenheiros no mesmo projeto",
+      "html": "<p>Resposta do Q&amp;A da live: dividir por funcionalidade, em branches independentes, com merges pequenos e frequentes. Segundo a Anthropic, o Claude resolve bem conflito de merge, mas conflito pequeno continua sendo mais barato que conflito grande.</p>\n<p>Cada pessoa (e cada sessão) na sua worktree ou na sua branch; o que é comum a todos (CLAUDE.md, regras, skills, hooks) mora no repositório.</p>"
+    }
+  ],
+  "pegadinha": {
+    "html": "<p>Três pares que se confundem:</p>\n<ul>\n  <li><strong><code>/branch</code> × <code>/fork</code></strong>: no <code>/branch</code> <em>você</em> vai para a cópia e a original espera; no <code>/fork</code> <em>a cópia</em> vai para o segundo plano e você fica.</li>\n  <li><strong><code>/btw</code> × <code>/subtask</code></strong>: o <code>/btw</code> só responde, sem tools e sem deixar rastro; o <code>/subtask</code> trabalha (com tools) e devolve o resultado.</li>\n  <li><strong><code>/batch</code> × Message Batches API</strong>: mesmo nome, coisas diferentes. Desconto e janela de 24h são da API; worktree e PR por parte são do <code>/batch</code>.</li>\n</ul>\n<p>E mensagem entre sessões leva só texto: se a outra sessão precisa do estado, escreva num arquivo e mande o caminho.</p>"
+  },
+  "glossary": [
+    {
+      "term_en": "side question",
+      "meaning_pt": "pergunta lateral (/btw), que não entra no histórico"
+    },
+    {
+      "term_en": "forked subagent",
+      "meaning_pt": "subagent que começa com uma cópia da conversa atual (/subtask)"
+    },
+    {
+      "term_en": "branch (conversation)",
+      "meaning_pt": "cópia da conversa em que você continua; a original fica no /resume"
+    },
+    {
+      "term_en": "background session",
+      "meaning_pt": "sessão que roda em segundo plano, como a criada pelo /fork"
+    },
+    {
+      "term_en": "worktree",
+      "meaning_pt": "pasta de trabalho com arquivos e branch próprios, no mesmo repositório git"
+    },
+    {
+      "term_en": ".worktreeinclude",
+      "meaning_pt": "lista de arquivos ignorados pelo git a copiar para cada worktree nova"
+    },
+    {
+      "term_en": "baseRef",
+      "meaning_pt": "de onde a worktree parte: fresh (branch padrão do remoto) ou head (seu HEAD local)"
+    },
+    {
+      "term_en": "cross-session messaging",
+      "meaning_pt": "troca de mensagens de texto entre sessões independentes"
+    }
+  ],
+  "questions": [
+    {
+      "stem": "No meio de uma refatoração longa, você quer saber qual era o nome de uma variável de ambiente citada mais cedo na conversa, sem gastar contexto da sessão. O que usar?",
+      "options": [
+        "<code>/subtask</code>, para que um subagent procure e devolva só a resposta",
+        "<code>/btw</code>, porque a resposta não entra no histórico da sessão",
+        "<code>/branch</code>, para perguntar numa cópia e voltar com <code>/resume</code>",
+        "<code>/compact</code> antes de perguntar, para abrir espaço no contexto"
+      ],
+      "correct": "b",
+      "feedback": "<code>/btw</code> é a pergunta lateral: não tem acesso a tools e a resposta não entra no histórico. A pergunta é sobre a própria conversa, então não precisa de tools. <code>/subtask</code> devolve o resultado para a conversa e é pesado demais para isso. <code>/branch</code> troca você de conversa à toa. <code>/compact</code> perde detalhe sem necessidade.",
+      "fonte": "docs: commands"
+    },
+    {
+      "stem": "Você precisa que um ajudante leia 400 arquivos de log e devolva só um resumo dos erros, e ele precisa saber o que já foi discutido na sessão. Qual opção atende às duas exigências?",
+      "options": [
+        "Um subagent pela Task tool com um prompt curto de handoff",
+        "<code>/btw</code> com a lista de arquivos de log na pergunta",
+        "<code>/fork</code>, continuando a análise na sessão original",
+        "<code>/subtask</code>, que herda a conversa e devolve só o resultado"
+      ],
+      "correct": "d",
+      "feedback": "O <code>/subtask</code> é bifurcado: começa com a conversa inteira e devolve só o resultado. O subagent da Task tool começa limpo e só sabe o que vier no handoff. O <code>/btw</code> não tem tools para ler arquivos. O <code>/fork</code> cria uma sessão separada cujo resultado não volta sozinho para a original.",
+      "fonte": "docs: commands"
+    },
+    {
+      "stem": "Você quer testar uma abordagem arriscada e, se der errado, voltar exatamente para onde estava. Qual comando, e como você volta?",
+      "options": [
+        "<code>/branch</code>; a conversa original fica preservada e volta com <code>/resume</code>",
+        "<code>/fork</code>; a cópia roda em segundo plano e você descarta se der errado",
+        "<code>/subtask</code>; o subagent testa e você ignora o resultado se der errado",
+        "<code>claude -w</code>; a worktree some sozinha quando você sai dela"
+      ],
+      "correct": "a",
+      "feedback": "No <code>/branch</code> você passa a trabalhar na cópia e a original espera no <code>/resume</code>. No <code>/fork</code> é a cópia que vai para o segundo plano, e você fica na original, o contrário do que se quer. O <code>/subtask</code> devolve o resultado para a conversa. A worktree separa arquivos, não conversa, e só é removida sozinha se estiver limpa.",
+      "fonte": "docs: commands"
+    },
+    {
+      "stem": "Duas sessões vão abrir dois PRs no mesmo repositório ao mesmo tempo. O que evita que uma pise nos arquivos da outra?",
+      "options": [
+        "Rodar as duas sessões em auto mode, para que o classificador detecte conflitos",
+        "Abrir a segunda sessão com <code>/branch</code> a partir da primeira",
+        "Rodar cada sessão na própria worktree, com <code>claude -w nome</code>",
+        "Mandar uma mensagem entre as sessões a cada arquivo editado"
+      ],
+      "correct": "c",
+      "feedback": "A worktree dá a cada sessão uma pasta e uma branch próprias, e o Claude Code bloqueia edições no checkout principal enquanto a sessão está isolada. O auto mode trata de permissões, não de arquivos. O <code>/branch</code> copia a conversa, não os arquivos. Mensagem não isola nada e só cobriria o caso de alguém lembrar de mandar.",
+      "fonte": "docs: worktrees"
+    },
+    {
+      "stem": "Você criou uma worktree com <code>claude -w api</code> e o teste falha porque o <code>.env</code> não está lá. Qual é a explicação e a correção?",
+      "options": [
+        "A worktree parte do <code>HEAD</code> local; basta configurar <code>baseRef: \"fresh\"</code>",
+        "A worktree é um checkout novo; liste o <code>.env</code> num arquivo <code>.worktreeinclude</code>",
+        "O <code>.env</code> foi bloqueado por uma regra deny do projeto; libere a leitura no <code>settings.json</code>",
+        "A sessão não herdou o CLAUDE.md; importe o <code>.env</code> com <code>@.env</code>"
+      ],
+      "correct": "b",
+      "feedback": "Worktree é um checkout novo, então arquivos ignorados pelo git não vêm junto. O <code>.worktreeinclude</code>, em sintaxe de <code>.gitignore</code>, lista quais copiar. O <code>baseRef</code> escolhe de qual commit partir, não copia arquivos ignorados. Nada no enunciado indica regra deny. E <code>@import</code> carrega instrução no contexto, não cria arquivo.",
+      "fonte": "docs: worktrees"
+    },
+    {
+      "stem": "Você precisa trocar a versão de um SDK em 20 serviços de um monorepo, com testes e um PR por serviço. Qual é o caminho mais direto?",
+      "options": [
+        "Message Batches API, mandando um request por serviço, cada um identificado pelo seu <code>custom_id</code>",
+        "Vinte sessões abertas à mão, coordenadas por mensagens entre elas",
+        "Um único <code>/subtask</code> que edita os 20 serviços e devolve o resumo",
+        "<code>/batch</code>, que divide em partes, com subagent, worktree e PR em cada uma"
+      ],
+      "correct": "d",
+      "feedback": "<code>/batch</code> foi feito para isso: divide em 5 a 30 unidades, põe um subagent com worktree em cada uma, e cada um roda os testes e abre o PR. A Message Batches API processa requests da API em lote e não mexe no repositório. Vinte sessões à mão é o trabalho que o <code>/batch</code> automatiza. Um único <code>/subtask</code> faz tudo em série e num único lugar.",
+      "fonte": "docs: commands"
+    },
+    {
+      "stem": "Quais DUAS afirmações sobre mensagens entre sessões do Claude Code estão corretas?",
+      "options": [
+        "Só texto viaja; histórico e arquivos de quem envia não vão junto",
+        "Uma mensagem recebida de outra sessão pode aprovar um pedido de permissão que esteja pendente",
+        "Para várias sessões na mesma especificação, ela vai num arquivo e a mensagem leva o caminho",
+        "Um <code>/compact</code> escrito na mensagem roda na sessão que a recebe"
+      ],
+      "correct": "a,c",
+      "feedback": "A mensagem é só texto, e o padrão recomendado é estado em arquivo, com o caminho na mensagem. Mensagem de outra sessão nunca conta como consentimento seu, então não aprova permissão. E comando escrito na mensagem chega como texto, sem rodar.",
+      "fonte": "docs: cross-session-messaging; Q&amp;A da live de 24/11"
+    },
+    {
+      "stem": "O time vai pôr três engenheiros, cada um com várias sessões, no mesmo projeto. O que a Anthropic recomendou no Q&amp;A da live?",
+      "options": [
+        "Dividir por funcionalidade, em branches independentes, com merges pequenos e frequentes",
+        "Uma branch longa por engenheiro, integrada só num merge grande no fim de cada sprint, para evitar interrupções",
+        "Uma única sessão compartilhada, para que todos vejam o mesmo contexto",
+        "Um <code>/batch</code> por engenheiro, rodando sempre no mesmo checkout principal"
+      ],
+      "correct": "a",
+      "feedback": "A resposta foi dividir por funcionalidade, em branches independentes, com merges pequenos e frequentes. Branch longa com merge grande acumula conflito. Sessões não compartilham contexto: cada uma tem o seu. E o <code>/batch</code> justamente não trabalha no checkout principal, e sim em worktrees.",
+      "fonte": "Q&amp;A da live de 24/11"
+    }
+  ],
+  "fontes": [
+    "Live <em>Claude Code: Advanced</em> (Anthropic, 24/11/2026): mapa desviar × multiplicar, demo do <code>/batch</code> e Q&amp;A.",
+    "Comandos: <a href=\"https://code.claude.com/docs/en/commands\">https://code.claude.com/docs/en/commands</a>",
+    "Worktrees: <a href=\"https://code.claude.com/docs/en/worktrees\">https://code.claude.com/docs/en/worktrees</a>",
+    "Mensagens entre sessões: <a href=\"https://code.claude.com/docs/en/cross-session-messaging\">https://code.claude.com/docs/en/cross-session-messaging</a>",
+    "Sessões (<code>--fork-session</code>): <a href=\"https://code.claude.com/docs/en/sessions\">https://code.claude.com/docs/en/sessions</a>",
+    "Subagents: <a href=\"https://code.claude.com/docs/en/sub-agents\">https://code.claude.com/docs/en/sub-agents</a>"
+  ]
+}

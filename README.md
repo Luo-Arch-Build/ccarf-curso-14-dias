@@ -107,6 +107,18 @@ gh release upload narracao audio/extensao-NN.mp3 --clobber
 # registrar o link: adicionar 'NN': 1 ao mapa `extensoes` no index.html
 ```
 
+A aula extra também sai de um JSON, com conceito, pegadinha, glossário e questões de fixação em pt-BR:
+
+```bash
+python3 tools/extra.py NN                                                     # tools/extra-NN-content.json -> extra-NN.html
+uv run --with edge-tts --with html5lib python tools/narrar.py extra-NN.html    # narração pt-BR
+gh release upload narracao audio/extra-NN.mp3 --clobber
+# registrar no índice: adicionar a entrada ao array `extras` no index.html
+```
+
+Os links de anterior/próxima da extra dependem das extras que já existem: ao publicar a `extra-NN.html`,
+rode `python3 tools/extra.py` de novo na extra anterior (NN-1) para ela ganhar o link "próxima".
+
 O link para uma aula extra só aparece na extensão quando o `extra-NN.html` existe; ao publicar uma extra,
 rode o builder de novo nas extensões que apontam para ela.
 Os links de anterior/próxima também dependem das extensões que já existem: ao criar uma extensão nova,
