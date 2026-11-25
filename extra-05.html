@@ -97,11 +97,11 @@
 <table class="gloss">
   <tr><th>Novidade</th><th>O que faz</th><th>Status em 24/11/2026</th></tr>
   <tr><td class="en">Skills over MCP</td><td>O servidor publica skills junto com as tools; o Claude carrega só quando precisa.</td><td>Beta público. No anúncio: ligado no Pro, Max e Ultra; no Team, depende do admin; Enterprise em breve. No Claude Code: com login de Team ou Enterprise, fica desligado até a organização ligar.</td></tr>
-  <tr><td class="en">Tasks</td><td>O servidor roda trabalho lento em segundo plano, até loops de agente inteiros.</td><td>Liberado no Pro, Max e Ultra; chegando ao Team e Enterprise.</td></tr>
+  <tr><td class="en">Tasks</td><td>O servidor roda trabalho demorado em segundo plano, até loops de agente inteiros.</td><td>Liberado no Pro, Max e Ultra; chegando ao Team e Enterprise.</td></tr>
   <tr><td class="en">Elicitation</td><td>O servidor pausa e pede uma informação ou confirmação ao usuário, por formulário ou link.</td><td>Liberado, com a mesma disponibilidade das Tasks.</td></tr>
   <tr><td class="en">File Uploads</td><td>O Claude manda PDF, planilha ou imagem ao servidor sem passar pela janela de contexto.</td><td>Em breve.</td></tr>
 </table>
-<p>Tudo faz parte da especificação aberta do MCP e das suas extensões: um servidor que implementa funciona em qualquer cliente compatível, não só no Claude.</p>
+<p>Tudo faz parte da especificação aberta do MCP e das suas extensões: um servidor que as implementa funciona em qualquer cliente compatível, não só no Claude.</p>
 
 <h2 id="skills">2. Skills over MCP: o playbook viaja com o servidor</h2>
 <p>Até aqui, skill (o procedimento que se repete) e MCP (o acesso a sistema externo) eram coisas separadas: a skill ficava no repositório ou em <code>~/.claude/skills/</code>, e o servidor só trazia tools. Com Skills over MCP, <strong>o servidor leva o próprio playbook</strong>.</p>
@@ -113,7 +113,7 @@
   <li>No auto mode, o classificador decide se a skill carrega. Dá para bloquear com uma regra deny <code>Skill(mcp__docs__*)</code>, ou exigir confirmação com <code>ask</code>.</li>
   <li>Aviso da documentação: skills podem mandar o Claude rodar código, e o servidor pode mudá-las a qualquer momento. <strong>Adicione só servidores em que você confia.</strong></li>
 </ul>
-<p>Exemplo de uso: um servidor de assinatura de documentos pode levar as regras da casa (sempre usar o modelo aprovado, validar o telefone antes de enviar) junto com as tools, em vez de cada usuário copiar essas regras para o próprio CLAUDE.md.</p>
+<p>Exemplo hipotético: um servidor de assinatura de documentos pode levar as regras da casa (sempre usar o modelo aprovado, validar o telefone antes de enviar) junto com as tools, em vez de cada usuário copiar essas regras para o próprio CLAUDE.md.</p>
 
 <h2 id="tasks">3. Tasks: operação longa sem travar a sessão</h2>
 <p>Uma <strong>MCP task</strong> é um trabalho longo, como gerar um relatório ou rodar um build, que o próprio servidor executa usando a extensão de tasks.</p>
@@ -144,7 +144,7 @@
 
 <div class="card pegadinha">
   <h3>⚠️ Pegadinha</h3>
-  <p><strong>Skill sobre MCP não é "skill grátis e segura".</strong> Ela carrega sob demanda e atualiza com o servidor, mas pode mandar o Claude rodar código, e o servidor pode mudá-la a qualquer hora. Confie no servidor antes, e use regra deny ou ask se precisar.</p>
+  <p><strong>Skills over MCP não é "skill grátis e segura".</strong> Ela carrega sob demanda e atualiza com o servidor, mas pode mandar o Claude rodar código, e o servidor pode mudá-la a qualquer hora. Confie no servidor antes, e use regra deny ou ask se precisar.</p>
 <p><strong>Elicitation não é instrução no prompt.</strong> "Peça confirmação antes de cobrar" escrito no prompt é orientação; o servidor que pausa e exige a resposta da pessoa é trava. No Agent SDK ou em <code>claude -p</code>, a elicitation de uma task faz o Claude Code pedir ao servidor que cancele a task (não a aprova), e nem o hook <code>Elicitation</code> roda.</p>
 </div>
 
@@ -213,7 +213,7 @@
     <label class="opt"><input type="radio" name="q4" value="d">D. O provisionamento passa a rodar na sessão na nuvem, e não mais no servidor</label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: B.</strong> Com Tasks, a chamada volta assim que o servidor aceita o job, e, quando ela termina, o Claude recebe o resultado. Sem tasks, numa sessão interativa, uma chamada que passa de dois minutos vai para segundo plano; não é cancelada. E quem executa a task é o servidor, não uma sessão na nuvem.<span class="ts">Fonte: docs: mcp</span></div>
+  <div class="feedback"><strong>Gabarito: B.</strong> Com Tasks, a chamada volta assim que o servidor aceita o job, e, quando a task termina, o Claude recebe o resultado. Sem tasks, numa sessão interativa, uma chamada que passa de dois minutos vai para segundo plano; não é cancelada. E quem executa a task é o servidor, não uma sessão na nuvem.<span class="ts">Fonte: docs: mcp</span></div>
 </div>
 
 <div class="q" data-correct="d">
@@ -265,7 +265,7 @@
     <label class="opt"><input type="radio" name="q8" value="d">D. Só em organizações Enterprise com o Managed Auth ligado pelo admin</label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: C.</strong> O anúncio diz que as novidades fazem parte da especificação aberta do MCP e das suas extensões, e que um servidor que as suporta funciona em qualquer cliente compatível, mesmo que o suporte varie de cliente para cliente. O Claude Code suporta Elicitation, e o Managed Auth é outra coisa: autorização centralizada pelo admin.<span class="ts">Fonte: anúncio de 24/11; modelcontextprotocol.io</span></div>
+  <div class="feedback"><strong>Gabarito: C.</strong> O anúncio diz que as novidades fazem parte da especificação aberta do MCP e das suas extensões, e que um servidor que as suporta funciona em qualquer cliente compatível. Como extensões são opcionais para o cliente, o suporte varia de cliente para cliente. O Claude Code suporta Elicitation, e o Managed Auth é outra coisa: autorização centralizada pelo admin.<span class="ts">Fonte: anúncio de 24/11; modelcontextprotocol.io</span></div>
 </div>
 
 <h2 id="fontes">8. Fontes</h2>
