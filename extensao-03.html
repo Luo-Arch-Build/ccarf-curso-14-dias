@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extensão 03 — Bifurcar e conversar entre sessões · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  .lead { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  section.ficha { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px 20px; margin: 18px 0; border-left: 3px solid var(--accent); }
+  section.ficha > h2 { font-size: 18px; margin: 0 0 4px; border: none; padding: 0; }
+  .ficha-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  ul.assert { margin: 10px 0 0; padding-left: 20px; }
+  ul.assert li { margin: 8px 0; }
+  .ver-traducao { flex: none; background: var(--card2); border: 1px solid var(--border);
+    color: var(--muted); border-radius: 999px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+    white-space: nowrap; transition: border-color .15s, color .15s; }
+  .ver-traducao:hover { color: var(--text); border-color: var(--accent); }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 12px 0 0;
+    display: none; }
+  .pt-block.pt { color: var(--pt); font-size: 13.5px; }
+  section.ficha.show-pt .pt-block { display: block; }
+  ul.assert.pt-block li { margin: 7px 0; }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px;
+    text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.ptm { color: var(--pt); font-size: 13px; }
+  section.ficha.gloss-sec table.gloss td.ptm { display: none; }
+  section.ficha.gloss-sec.show-pt table.gloss td.ptm { display: table-cell; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px;
+    border-top: 1px solid var(--border); font-size: 14px; gap: 12px; }
+  section.ficha { border-left-color: var(--accent2); }
+  .aviso { background: var(--card2); border: 1px solid var(--border); border-left: 3px solid var(--accent2);
+    border-radius: 8px; padding: 12px 16px; font-size: 14px; margin: 16px 0 0; }
+  .na-aula { background: var(--card2); border-radius: 8px; padding: 10px 14px; margin: 10px 0 0;
+    font-size: 14px; color: var(--muted); }
+  .na-aula strong { color: var(--text); }
+  .ts { display: block; font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .extras { font-size: 14px; margin: 10px 0 0; }
+  table.gloss td.ptm { color: var(--text); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / <a href="aula-03.html">Aula 03</a> / Extensão 24/11</div>
+  <h1>Extensão 03 — Bifurcar e conversar entre sessões</h1>
+  <div class="meta">
+    <span class="tag">Aula 03 · Enforcement, hooks e sessões</span>
+    <span class="tag">Produto atual · fora da prova</span>
+  </div>
+  <p class="lead">O que o Claude Code ganhou depois do guia da prova, ligado ao que a aula 03 já ensinou.
+  Base: a live <em>Claude Code: Advanced</em> e o anúncio de novidades do MCP, ambos de 24/11/2026,
+  conferidos na documentação em 24/11/2026.</p>
+  <div class="aviso"><strong>Na prova, vale o guia.</strong> Nada desta página cai na CCAR-F como está aqui.
+  Se o guia e o produto divergirem numa questão, responda como o guia.</div>
+</header>
+
+<section class="ficha" id="branch-fork">
+  <h2><code>/branch</code>, <code>/fork</code> e o <code>fork_session</code> da aula</h2>
+  <div class="na-aula"><strong>Na aula:</strong> <code>--resume</code> retoma uma sessão nomeada; <code>fork_session</code> cria ramos a partir da mesma baseline para explorar caminhos divergentes.</div>
+  <ul class="assert">
+    <li><code>/branch</code>: você passa a trabalhar numa cópia da conversa; a original fica preservada e volta com <code>/resume</code>. Equivale, na linha de comando, a <code>claude --continue --fork-session</code>.</li>
+    <li><code>/fork</code>: a cópia vai rodar em segundo plano como sessão própria, e você continua na original.</li>
+    <li>A cópia do <code>/fork</code> é orientada a criar a própria worktree antes de mexer em código, para não colidir com a sessão de origem.</li>
+    <li>Mapa rápido: quer testar uma abordagem arriscada sem perder o fio → <code>/branch</code>; quer abrir uma frente paralela aproveitando o contexto carregado → <code>/fork</code>.</li>
+    <li>Na prova continua valendo o par da aula: <code>--resume</code> para contexto ainda válido, <code>fork_session</code> para explorar a partir da mesma baseline.</li>
+  </ul>
+  <span class="ts">Fonte: code.claude.com/docs/en/commands e code.claude.com/docs/en/sessions (conferido em 24/11/2026)</span>
+</section>
+
+<section class="ficha" id="mensagens">
+  <h2>Sessões independentes trocam mensagens</h2>
+  <div class="na-aula"><strong>Na aula:</strong> cada sessão tem o próprio contexto; o handoff entre etapas é um resumo estruturado.</div>
+  <ul class="assert">
+    <li>Sessões do Claude Code podem mandar mensagens umas às outras, mas só texto: nunca o histórico nem os arquivos de quem envia.</li>
+    <li>Uma mensagem recebida não aprova pedido de permissão na sessão de destino.</li>
+    <li>Padrão recomendado na live: o estado da tarefa (especificação, lista, decisão) vai num arquivo e a mensagem leva o caminho. Várias sessões sobre a mesma especificação leem o mesmo arquivo.</li>
+    <li>É o mesmo princípio do handoff estruturado da aula: o que precisa sobreviver é escrito, não lembrado.</li>
+  </ul>
+  <span class="ts">Fonte: code.claude.com/docs/en/cross-session-messaging (conferido em 24/11/2026); Q&amp;A da live de 24/11</span>
+</section>
+
+<section class="ficha" id="glossario">
+  <h2>Glossário da extensão</h2>
+  <table class="gloss">
+    <tr><th>Termo (EN)</th><th>Significado</th></tr>
+    <tr><td class="en">branch (conversation)</td><td class="ptm">cópia da conversa em que você continua; a original fica para o /resume</td></tr>
+    <tr><td class="en">fork (session)</td><td class="ptm">cópia da conversa que roda em segundo plano como outra sessão</td></tr>
+    <tr><td class="en">cross-session messaging</td><td class="ptm">troca de mensagens de texto entre sessões independentes</td></tr>
+  </table>
+</section>
+
+<nav class="prevnext">
+  <span><a href="extensao-02.html">← Extensão 02</a></span>
+  <span><a href="aula-03.html">Aula 03 — versão completa</a></span>
+  <span><a href="extensao-05.html">Extensão 05 →</a></span>
+</nav>
+
+</div>
+
+<script src="narracao/extensao-03.js"></script>
+<script src="narracao/player.js"></script>
+</body>
+</html>

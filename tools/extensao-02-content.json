@@ -1,0 +1,69 @@
+{
+  "lesson": "02",
+  "title": "Subagents no produto atual",
+  "aula_title": "Orquestração multi-agent",
+  "checked": "24/11/2026",
+  "sections": [
+    {
+      "id": "subtask",
+      "heading": "<code>/subtask</code>: um subagent que herda a conversa",
+      "na_aula": "o coordinator dispara subagents pela Task tool, cada um com contexto isolado; o subagent só sabe o que vier no prompt de handoff.",
+      "assertions": [
+        "<code>/subtask</code> abre um subagent <strong>bifurcado</strong> (forked): ele herda a conversa inteira até ali, em vez de começar do zero.",
+        "Ele roda em segundo plano, e só o resultado volta para a conversa principal quando termina.",
+        "Contraste com a aula: o subagent da Task tool começa limpo e depende do handoff; o <code>/subtask</code> já começa com todo o contexto. Os dois devolvem resultado, não a transcrição.",
+        "Sem a agent view ligada, <code>/subtask</code> não aparece; nesse caso o <code>/fork</code> cria o subagent bifurcado."
+      ],
+      "fonte": "code.claude.com/docs/en/commands (conferido em 24/11/2026)",
+      "extras": [
+        {
+          "href": "extra-01.html",
+          "label": "Extra 01 · Paralelo e sessões"
+        }
+      ]
+    },
+    {
+      "id": "model-por-subagent",
+      "heading": "Modelo por subagent: o campo <code>model</code>",
+      "na_aula": "a AgentDefinition tem descrição, prompt e tools; a prova cobra esses três elementos.",
+      "assertions": [
+        "No Claude Code, um subagent definido em arquivo aceita o campo <code>model</code> no frontmatter: <code>sonnet</code>, <code>opus</code>, <code>haiku</code>, <code>fable</code>, um ID completo ou <code>inherit</code>.",
+        "Sem o campo, o subagent roda no mesmo modelo da conversa que o chamou.",
+        "Ordem de precedência: parâmetro passado na chamada, depois o frontmatter, depois a variável <code>CLAUDE_CODE_SUBAGENT_MODEL</code>, depois o modelo principal.",
+        "Padrão sugerido na live: a sessão principal orquestra num modelo forte e cada subagent escolhe o seu conforme a tarefa."
+      ],
+      "fonte": "code.claude.com/docs/en/sub-agents (conferido em 24/11/2026); live de 24/11",
+      "extras": [
+        {
+          "href": "extra-03.html",
+          "label": "Extra 03 · Modelos, esforço e cota"
+        }
+      ]
+    },
+    {
+      "id": "criar-subagent",
+      "heading": "Criar subagent: o assistente do <code>/agents</code> saiu",
+      "na_aula": "subagents são declarados (AgentDefinition no SDK; arquivos em <code>.claude/agents/</code> no Claude Code).",
+      "assertions": [
+        "O assistente interativo de criação do <code>/agents</code> foi removido; hoje o comando só lembra o caminho.",
+        "Para criar um subagent: pedir ao Claude em linguagem natural, ou editar um arquivo em <code>.claude/agents/</code> (projeto, versionado) ou <code>~/.claude/agents/</code> (pessoal).",
+        "A regra de escopo é a mesma dos comandos e skills: na pasta do repositório, o time recebe; em <code>~/</code>, só a sua máquina."
+      ],
+      "fonte": "code.claude.com/docs/en/sub-agents (conferido em 24/11/2026); Q&amp;A da live de 24/11"
+    }
+  ],
+  "glossary": [
+    {
+      "term_en": "forked subagent",
+      "meaning_pt": "subagent que começa com uma cópia da conversa atual"
+    },
+    {
+      "term_en": "inherit",
+      "meaning_pt": "valor do campo model que usa o mesmo modelo da conversa que chamou"
+    },
+    {
+      "term_en": "agent view",
+      "meaning_pt": "visão de agentes do Claude Code; o /subtask depende dela"
+    }
+  ]
+}

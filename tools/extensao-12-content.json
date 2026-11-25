@@ -1,0 +1,52 @@
+{
+  "lesson": "12",
+  "title": "Contexto longo: desviar sem sujar",
+  "aula_title": "Gestão de contexto e escalonamento",
+  "checked": "24/11/2026",
+  "sections": [
+    {
+      "id": "btw-subtask",
+      "heading": "<code>/btw</code> e <code>/subtask</code> adiam a compactação",
+      "na_aula": "compactação perde detalhe por definição; retenção seletiva de case facts; delegar exploração pesada a subagents.",
+      "assertions": [
+        "<code>/btw</code> faz uma pergunta lateral sobre a sessão atual: não tem acesso a tools e a resposta não entra no histórico.",
+        "<code>/subtask</code> delega o trabalho pesado (varrer logs, ler um repositório inteiro) a um subagent bifurcado; só o resultado volta.",
+        "Os dois mantêm a sessão principal mais enxuta, então ela chega mais tarde à compactação: menos detalhe perdido numa sessão longa.",
+        "<code>/code-review</code> no terminal segue a mesma ideia: roda em segundo plano para não encher a conversa."
+      ],
+      "fonte": "code.claude.com/docs/en/commands e code.claude.com/docs/en/sub-agents (conferido em 24/11/2026)",
+      "extras": [
+        {
+          "href": "extra-01.html",
+          "label": "Extra 01 · Paralelo e sessões"
+        }
+      ]
+    },
+    {
+      "id": "arquivo",
+      "heading": "Especificação em arquivo",
+      "na_aula": "scratchpad files e manifestos: o arquivo sobrevive fora do contexto, mas precisa ser relido.",
+      "assertions": [
+        "A recomendação da live para várias sessões na mesma tarefa é a mesma: especificação e estado num arquivo, cada sessão lê.",
+        "Mensagens entre sessões só levam texto; o caminho do arquivo é o que viaja."
+      ],
+      "fonte": "Q&amp;A da live de 24/11; code.claude.com/docs/en/cross-session-messaging",
+      "extras": [
+        {
+          "href": "extra-01.html",
+          "label": "Extra 01 · Paralelo e sessões"
+        }
+      ]
+    }
+  ],
+  "glossary": [
+    {
+      "term_en": "/btw",
+      "meaning_pt": "pergunta lateral que não entra no histórico da sessão"
+    },
+    {
+      "term_en": "side question",
+      "meaning_pt": "pergunta paralela ao trabalho principal"
+    }
+  ]
+}

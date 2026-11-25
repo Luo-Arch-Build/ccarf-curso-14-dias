@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extensão 11 — /batch não é a Message Batches API · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  .lead { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  section.ficha { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px 20px; margin: 18px 0; border-left: 3px solid var(--accent); }
+  section.ficha > h2 { font-size: 18px; margin: 0 0 4px; border: none; padding: 0; }
+  .ficha-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  ul.assert { margin: 10px 0 0; padding-left: 20px; }
+  ul.assert li { margin: 8px 0; }
+  .ver-traducao { flex: none; background: var(--card2); border: 1px solid var(--border);
+    color: var(--muted); border-radius: 999px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+    white-space: nowrap; transition: border-color .15s, color .15s; }
+  .ver-traducao:hover { color: var(--text); border-color: var(--accent); }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 12px 0 0;
+    display: none; }
+  .pt-block.pt { color: var(--pt); font-size: 13.5px; }
+  section.ficha.show-pt .pt-block { display: block; }
+  ul.assert.pt-block li { margin: 7px 0; }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px;
+    text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.ptm { color: var(--pt); font-size: 13px; }
+  section.ficha.gloss-sec table.gloss td.ptm { display: none; }
+  section.ficha.gloss-sec.show-pt table.gloss td.ptm { display: table-cell; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px;
+    border-top: 1px solid var(--border); font-size: 14px; gap: 12px; }
+  section.ficha { border-left-color: var(--accent2); }
+  .aviso { background: var(--card2); border: 1px solid var(--border); border-left: 3px solid var(--accent2);
+    border-radius: 8px; padding: 12px 16px; font-size: 14px; margin: 16px 0 0; }
+  .na-aula { background: var(--card2); border-radius: 8px; padding: 10px 14px; margin: 10px 0 0;
+    font-size: 14px; color: var(--muted); }
+  .na-aula strong { color: var(--text); }
+  .ts { display: block; font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .extras { font-size: 14px; margin: 10px 0 0; }
+  table.gloss td.ptm { color: var(--text); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / <a href="aula-11.html">Aula 11</a> / Extensão 24/11</div>
+  <h1>Extensão 11 — /batch não é a Message Batches API</h1>
+  <div class="meta">
+    <span class="tag">Aula 11 · Message Batches API e review multi-pass</span>
+    <span class="tag">Produto atual · fora da prova</span>
+  </div>
+  <p class="lead">O que o Claude Code ganhou depois do guia da prova, ligado ao que a aula 11 já ensinou.
+  Base: a live <em>Claude Code: Advanced</em> e o anúncio de novidades do MCP, ambos de 24/11/2026,
+  conferidos na documentação em 24/11/2026.</p>
+  <div class="aviso"><strong>Na prova, vale o guia.</strong> Nada desta página cai na CCAR-F como está aqui.
+  Se o guia e o produto divergirem numa questão, responda como o guia.</div>
+</header>
+
+<section class="ficha" id="nomes">
+  <h2>Mesmo nome, coisas diferentes</h2>
+  <div class="na-aula"><strong>Na aula:</strong> Message Batches API: requests assíncronos, 50% mais barata, janela de até 24h, sem SLA, <code>custom_id</code> para casar respostas.</div>
+  <ul class="assert">
+    <li><code>/batch</code> é um comando do Claude Code para <strong>paralelizar uma mudança de código</strong>: ele planeja, divide o trabalho em 5 a 30 unidades independentes e põe um subagent em segundo plano em cada uma, cada um na sua worktree.</li>
+    <li>Cada subagent implementa, roda os testes e abre um PR (ou relata o resultado).</li>
+    <li>Precisa de um repositório git (ou de um hook <code>WorktreeCreate</code>).</li>
+    <li>Não tem nada a ver com desconto de 50% nem com janela de 24h: isso é da Message Batches API, que é da API, não do Claude Code.</li>
+    <li>Na demo da live: 12 arquivos, 11 subagents, 88 segundos. O próprio slide lembrava que resultado em paralelo ainda precisa de alguém que leia.</li>
+  </ul>
+  <span class="ts">Fonte: code.claude.com/docs/en/commands (conferido em 24/11/2026); demo da live de 24/11</span>
+</section>
+
+<section class="ficha" id="review">
+  <h2>E o multi-pass?</h2>
+  <div class="na-aula"><strong>Na aula:</strong> review multi-pass: passes separados por tipo de problema; review independente.</div>
+  <ul class="assert">
+    <li>Vários PRs abertos de uma vez pelo <code>/batch</code> pedem revisão: <code>/code-review</code> por parte, e leitura humana antes do merge.</li>
+    <li>Ver a Extensão 08 para os três tamanhos de revisão.</li>
+  </ul>
+  <span class="ts">Fonte: live de 24/11</span>
+</section>
+
+<section class="ficha" id="glossario">
+  <h2>Glossário da extensão</h2>
+  <table class="gloss">
+    <tr><th>Termo (EN)</th><th>Significado</th></tr>
+    <tr><td class="en">/batch</td><td class="ptm">comando que divide uma mudança grande em partes paralelas, cada uma com subagent, worktree e PR</td></tr>
+    <tr><td class="en">worktree</td><td class="ptm">cópia de trabalho com branch própria do mesmo repositório git</td></tr>
+  </table>
+</section>
+
+<nav class="prevnext">
+  <span><a href="extensao-08.html">← Extensão 08</a></span>
+  <span><a href="aula-11.html">Aula 11 — versão completa</a></span>
+  <span><a href="extensao-12.html">Extensão 12 →</a></span>
+</nav>
+
+</div>
+
+<script src="narracao/extensao-11.js"></script>
+<script src="narracao/player.js"></script>
+</body>
+</html>

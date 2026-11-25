@@ -1,0 +1,58 @@
+{
+  "lesson": "08",
+  "title": "Revisão de código em três tamanhos",
+  "aula_title": "Refinamento iterativo e CI/CD",
+  "checked": "24/11/2026",
+  "sections": [
+    {
+      "id": "code-review-local",
+      "heading": "<code>/code-review</code>: revisar antes de abrir o PR",
+      "na_aula": "revisão independente (outra instância, sem o contexto de quem escreveu) pega o que a autorrevisão deixa passar; no CI, a GitHub Action ou o Code Review gerenciado.",
+      "assertions": [
+        "<code>/code-review</code> revisa o seu diff num contexto novo, como subagent em segundo plano, para não encher a sua conversa.",
+        "Você escolhe o nível de esforço (de low a max); <code>--fix</code> aplica as correções, passando pelo seu modo de permissão.",
+        "Funciona em qualquer plano.",
+        "É a revisão independente da aula trazida para antes do PR."
+      ],
+      "fonte": "code.claude.com/docs/en/code-review-local (conferido em 24/11/2026)",
+      "extras": [
+        {
+          "href": "extra-04.html",
+          "label": "Extra 04 · Limites, verificação e medição"
+        }
+      ]
+    },
+    {
+      "id": "ultra",
+      "heading": "<code>/code-review ultra</code>: para quando o risco é alto",
+      "na_aula": "multi-pass: passes separados por tipo de problema dão atenção a cada um.",
+      "assertions": [
+        "<code>ultra</code> faz uma revisão mais profunda, com vários agentes num sandbox na nuvem.",
+        "As primeiras execuções são gratuitas; depois, consome créditos de uso.",
+        "Reserve para mudanças de alto risco: cobrança, segredos, segurança."
+      ],
+      "fonte": "code.claude.com/docs/en/code-review-local (conferido em 24/11/2026)"
+    },
+    {
+      "id": "automatico",
+      "heading": "Code Review automático no PR",
+      "na_aula": "Code Review gerenciado, ajustado por CLAUDE.md e REVIEW.md (lido da branch base, nunca do próprio PR).",
+      "assertions": [
+        "Continua sendo o terceiro tamanho: agentes procuram, uma etapa de verificação filtra e os comentários caem no PR.",
+        "Disponível nos planos Team e Enterprise, com níveis Quick, Standard e Deep.",
+        "Os três se somam: <code>/code-review</code> antes do PR, <code>ultra</code> no que é crítico, e o automático no PR."
+      ],
+      "fonte": "code.claude.com/docs/en/code-review (conferido em 24/11/2026)"
+    }
+  ],
+  "glossary": [
+    {
+      "term_en": "--fix",
+      "meaning_pt": "opção do /code-review que aplica as correções encontradas"
+    },
+    {
+      "term_en": "usage credits",
+      "meaning_pt": "créditos de uso cobrados além do plano"
+    }
+  ]
+}

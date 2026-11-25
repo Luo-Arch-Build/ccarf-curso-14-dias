@@ -84,6 +84,32 @@ Notas de operação:
   as partes já salvas e retoma daquela linha. Pode ajudar subir `NARRAR_TENTATIVAS` e `PAUSA` na retomada.
 - `&` cru trava o edge-tts (SSML); o `normalizar` já troca por "and"/"e".
 
+## Extensão 24/11 (produto atual, fora da prova)
+
+Em 24/11/2026 a Anthropic fez a live *Claude Code: Advanced* e anunciou novidades do MCP. A extensão traz
+esse conteúdo **sem editar as 14 aulas**, em páginas separadas e em pt-BR:
+
+- **Extensão por aula** (`extensao-NN.html`): o que mudou ou foi acrescentado ao tema de uma aula que já
+  existe (aulas 02, 03, 05, 06, 07, 08, 11 e 12). Cada seção mostra o que a aula já dizia, o que há de novo
+  e a fonte.
+- **Aulas extras** (`extra-NN.html`): os temas que o curso não cobria, com questões de fixação. Elas não
+  entram no simulado nem no progresso das 14 aulas.
+
+Nada disso é conteúdo de prova: na CCAR-F vale o guia. Cada fato foi conferido na documentação em
+24/11/2026; o que só apareceu na live vem atribuído à live.
+
+A extensão por aula é gerada como o fichamento, a partir de um JSON:
+
+```bash
+python3 tools/extensao.py NN                                                  # tools/extensao-NN-content.json -> extensao-NN.html
+uv run --with edge-tts --with html5lib python tools/narrar.py extensao-NN.html # narração pt-BR
+gh release upload narracao audio/extensao-NN.mp3 --clobber
+# registrar o link: adicionar 'NN': 1 ao mapa `extensoes` no index.html
+```
+
+O link para uma aula extra só aparece na extensão quando o `extra-NN.html` existe; ao publicar uma extra,
+rode o builder de novo nas extensões que apontam para ela.
+
 ## Fonte e limites
 
 - Baseado no **Exam Guide v1.0** (julho de 2026): os 30 objetivos, os 6 cenários e as 12 questões

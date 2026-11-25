@@ -1,0 +1,64 @@
+{
+  "lesson": "07",
+  "title": "Auto mode, deny e plan mode hoje",
+  "aula_title": "Slash commands, skills e plan mode",
+  "checked": "24/11/2026",
+  "sections": [
+    {
+      "id": "auto-mode",
+      "heading": "Auto mode: o classificador tira as confirmações de rotina",
+      "na_aula": "<code>settings.permissions</code> com allow/ask/deny; deny bloqueia sempre; hook PreToolUse para proibir sob condição.",
+      "assertions": [
+        "Desde a v2.1.283, o auto mode é o modo inicial das sessões interativas no terminal e no VS Code; <code>claude -p</code> e o Agent SDK continuam começando no modo default.",
+        "No auto mode, um classificador revisa cada ação para você não precisar aprovar uma a uma.",
+        "As regras deny bloqueiam em todos os modos, inclusive no <code>bypassPermissions</code>: o classificador decide o que é rotina, a regra deny é o limite rígido.",
+        "Na demo do <code>/batch</code> da live, um arquivo protegido por regra foi pulado pelos subagents. A documentação não afirma isso para o <code>/batch</code> especificamente; o que ela diz é que subagents herdam o modo da conversa principal.",
+        "Consequência prática: o que não pode acontecer nunca (deploy de produção, apagar dados, disparo em massa) vai em regra deny, não só em texto no CLAUDE.md."
+      ],
+      "fonte": "code.claude.com/docs/en/permission-modes e code.claude.com/docs/en/permissions (conferido em 24/11/2026); demo da live de 24/11",
+      "extras": [
+        {
+          "href": "extra-04.html",
+          "label": "Extra 04 · Limites, verificação e medição"
+        }
+      ]
+    },
+    {
+      "id": "plan-mode",
+      "heading": "Plan mode ainda vale?",
+      "na_aula": "execução direta para mudança pequena e clara; plan mode para mudança grande, ambígua ou com várias abordagens.",
+      "assertions": [
+        "No Q&amp;A, um engenheiro respondeu que o plan mode basta para alinhar a implementação.",
+        "Outro prefere pedir que o Claude o entreviste antes de planejar, porque o plano sai longo demais.",
+        "As duas práticas convivem: a entrevista reduz a ambiguidade antes do plano; o plan mode continua sendo o lugar de revisar a abordagem antes de editar."
+      ],
+      "fonte": "Q&amp;A da live de 24/11"
+    },
+    {
+      "id": "skill-mcp",
+      "heading": "Skill ou MCP?",
+      "na_aula": "skill (SKILL.md) é um procedimento carregado sob demanda; MCP é configurado em <code>.mcp.json</code>.",
+      "assertions": [
+        "Regra do Q&amp;A: skill é um procedimento que se repete; MCP é a forma de acessar contexto externo.",
+        "Desde 24/11, um servidor MCP também pode levar skills (Skills over MCP), em beta: o procedimento viaja junto com o acesso."
+      ],
+      "fonte": "Q&amp;A da live de 24/11; claude.com/resources/articles/skills-over-mcp-tasks-and-more",
+      "extras": [
+        {
+          "href": "extra-05.html",
+          "label": "Extra 05 · MCP de 24/11"
+        }
+      ]
+    }
+  ],
+  "glossary": [
+    {
+      "term_en": "auto mode",
+      "meaning_pt": "modo de permissão em que um classificador aprova as ações de rotina"
+    },
+    {
+      "term_en": "classifier",
+      "meaning_pt": "modelo que decide se uma ação pode seguir sem perguntar"
+    }
+  ]
+}

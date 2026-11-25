@@ -58,7 +58,7 @@
   canto e, depois de respondida, o Task Statement do guia que ela cobra. Nas aulas 1–10, use a tradução embaixo
   de cada questão à vontade; das aulas 11 em diante as traduções já abrem <strong>ocultas</strong> — reative só
   para revisar os erros, porque você fará a prova em inglês (as versões oficiais são inglês e japonês; não há português). Os cards <strong>🧭 Prova × produto atual</strong>
-  mostram onde o produto mudou desde o guia: na prova, responda como o guia. A aula 14 é o simulado em
+  mostram onde o produto mudou desde o guia: na prova, responda como o guia. Os links <strong>➕ Extensão 24/11</strong> trazem, em página separada, o que o Claude Code ganhou na live e no anúncio de MCP de 24/11/2026: produto atual, fora da prova. A aula 14 é o simulado em
   <strong>modo prova</strong>: questões inéditas, 4 cenários sorteados, cronômetro e resultado por domínio.
 </div>
 
@@ -89,6 +89,7 @@
   var lista = document.getElementById('lista');
   var doneCount = 0;
   var fichamentos = { '03': 1, '04': 1, '06': 1, '07': 1, '08': 1, '11': 1, '12': 1, '13': 1 };  // aulas com fichamento em inglês (Study Notes)
+  var extensoes = { '02': 1, '03': 1, '05': 1, '06': 1, '07': 1, '08': 1, '11': 1, '12': 1 };  // aulas com extensão de produto atual (24/11/2026, fora da prova)
   aulas.forEach(function (a, i) {
     var n = ('0' + (i + 1)).slice(-2);
     var rec = localStorage.getItem('ccarf-aula-' + n);
@@ -101,6 +102,9 @@
       '</a>';
     if (fichamentos[n]) {
       li.innerHTML += '<a class="ficha-link" href="fichamento-' + n + '.html">📄 Study Notes (EN) · narrado</a>';
+    }
+    if (extensoes[n]) {
+      li.innerHTML += '<a class="ficha-link" href="extensao-' + n + '.html">➕ Extensão 24/11 · produto atual</a>';
     }
     lista.appendChild(li);
   });
