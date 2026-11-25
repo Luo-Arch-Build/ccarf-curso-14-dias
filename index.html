@@ -119,8 +119,9 @@ não cobria. Têm questões de fixação, mas não contam no progresso das 14 au
     ['extra-01.html', 'Paralelo e sessões', '/btw, /subtask, /branch, /fork, worktrees com claude -w, /batch, mensagens entre sessões e vários engenheiros']
   ];
   var listaExtras = document.getElementById('extras');
-  extras.forEach(function (a, i) {
-    var n = ('0' + (i + 1)).slice(-2);
+  function numExtra(href) { return href.match(/extra-(\d+)\.html/)[1]; }  // a chave vem do arquivo, não da ordem do array
+  extras.forEach(function (a) {
+    var n = numExtra(a[0]);
     var rec = localStorage.getItem('ccarf-extra-' + n);
     var li = document.createElement('li');
     li.innerHTML = '<a href="' + a[0] + '">' +
@@ -136,7 +137,7 @@ não cobria. Têm questões de fixação, mas não contam no progresso das 14 au
   document.getElementById('reset').addEventListener('click', function () {
     if (!confirm('Zerar o progresso de todas as aulas, incluindo as extras?')) return;
     aulas.forEach(function (_, i) { localStorage.removeItem('ccarf-aula-' + ('0' + (i + 1)).slice(-2)); });
-    extras.forEach(function (_, i) { localStorage.removeItem('ccarf-extra-' + ('0' + (i + 1)).slice(-2)); });
+    extras.forEach(function (a) { localStorage.removeItem('ccarf-extra-' + numExtra(a[0])); });
     location.reload();
   });
 })();

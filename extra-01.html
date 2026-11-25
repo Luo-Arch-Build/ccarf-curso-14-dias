@@ -82,9 +82,9 @@
 </header>
 
 <div class="card aviso">
-  <strong>Na prova, vale o guia.</strong> Esta aula extra cobre o que a Anthropic mostrou na live
-  <em>Claude Code: Advanced</em> e no anúncio de novidades do MCP, ambos de 24/11/2026, conferido na
-  documentação em 24/11/2026. Nada daqui cai na CCAR-F como está; as questões são de fixação e não
+  <strong>Na prova, vale o guia.</strong> Esta aula extra cobre novidades que a Anthropic apresentou em
+  24/11/2026 (live <em>Claude Code: Advanced</em> e anúncios do mesmo dia), conferidas na documentação
+  em 24/11/2026. Nada daqui cai na CCAR-F como está; as questões são de fixação e não
   entram no simulado nem no progresso das 14 aulas.
 </div>
 
@@ -107,7 +107,7 @@
 
 <h2 id="desviar">2. Desviar: /btw, /subtask, /branch e /fork</h2>
 <p><strong><code>/btw</code></strong> é para a dúvida rápida no meio de uma tarefa longa: "qual era mesmo o nome daquela função?". Ele não tem acesso a tools e a resposta não entra no histórico, então não gasta contexto da sessão principal.</p>
-<p><strong><code>/subtask</code></strong> delega trabalho pesado, como varrer logs ou ler um repositório inteiro. Ele é <em>bifurcado</em> (forked): começa com uma cópia da conversa até ali, ao contrário do subagent da Task tool, que começa limpo e depende do handoff. Roda em segundo plano e só o resultado volta. Depende da agent view; sem ela, quem cria o subagent bifurcado é o <code>/fork</code>.</p>
+<p><strong><code>/subtask</code></strong> delega trabalho pesado, como varrer logs ou ler um repositório inteiro. Ele é <em>bifurcado</em> (forked): começa com uma cópia da conversa até ali, ao contrário do subagent da Task tool que a Aula 02 ensina, que começa limpo e depende do handoff (no produto atual, a mesma tool também pode bifurcar, mas o subagent definido por você começa do zero). Roda em segundo plano e só o resultado volta. Depende da agent view; sem ela, quem cria o subagent bifurcado é o <code>/fork</code>.</p>
 <p><strong><code>/branch</code></strong> serve para testar uma abordagem arriscada sem perder o fio: você entra numa cópia da conversa e a original espera no <code>/resume</code>. É o mesmo que <code>claude --continue --fork-session</code> na linha de comando. Subagents em segundo plano que já estavam rodando continuam, e o resultado deles aparece no ramo novo.</p>
 <p><strong><code>/fork</code></strong> é o inverso do <code>/branch</code>: a cópia vai para o segundo plano como sessão própria e você fica na original. A cópia é orientada a criar a própria worktree antes de mexer em código, para não colidir com a sessão de origem.</p>
 <p>Ganho comum dos quatro: a sessão principal cresce mais devagar e chega mais tarde à compactação (Aula 12).</p>
@@ -271,7 +271,7 @@
   <div class="stem">O time vai pôr três engenheiros, cada um com várias sessões, no mesmo projeto. O que a Anthropic recomendou no Q&amp;A da live?</div>
   <div class="opts">
     <label class="opt"><input type="radio" name="q8" value="a">A. Dividir por funcionalidade, em branches independentes, com merges pequenos e frequentes</label>
-    <label class="opt"><input type="radio" name="q8" value="b">B. Uma branch longa por engenheiro, integrada num merge grande e único ao fim de cada sprint de trabalho</label>
+    <label class="opt"><input type="radio" name="q8" value="b">B. Uma branch longa por engenheiro, integrada só num merge grande no fim de cada sprint, para evitar interrupções</label>
     <label class="opt"><input type="radio" name="q8" value="c">C. Uma única sessão compartilhada, para que todos vejam o mesmo contexto</label>
     <label class="opt"><input type="radio" name="q8" value="d">D. Um <code>/batch</code> por engenheiro, rodando sempre no mesmo checkout principal</label>
   </div>

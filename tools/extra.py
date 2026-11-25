@@ -202,9 +202,9 @@ def construir(numero):
 </header>
 
 <div class="card aviso">
-  <strong>Na prova, vale o guia.</strong> Esta aula extra cobre o que a Anthropic mostrou na live
-  <em>Claude Code: Advanced</em> e no anúncio de novidades do MCP, ambos de 24/11/2026, conferido na
-  documentação em {d['checked']}. Nada daqui cai na CCAR-F como está; as questões são de fixação e não
+  <strong>Na prova, vale o guia.</strong> Esta aula extra cobre novidades que a Anthropic apresentou em
+  24/11/2026 (live <em>Claude Code: Advanced</em> e anúncios do mesmo dia), conferidas na documentação
+  em {d['checked']}. Nada daqui cai na CCAR-F como está; as questões são de fixação e não
   entram no simulado nem no progresso das 14 aulas.
 </div>
 
