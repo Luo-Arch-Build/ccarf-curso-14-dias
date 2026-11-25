@@ -1,0 +1,53 @@
+{
+  "lesson": "11",
+  "title": "/batch não é a Message Batches API",
+  "aula_title": "Message Batches API e review multi-pass",
+  "checked": "24/11/2026",
+  "sections": [
+    {
+      "id": "nomes",
+      "heading": "Mesmo nome, coisas diferentes",
+      "na_aula": "Message Batches API: requests assíncronos, 50% mais barata, janela de até 24h, sem SLA, <code>custom_id</code> para casar respostas.",
+      "assertions": [
+        "<code>/batch</code> é um comando do Claude Code para <strong>paralelizar uma mudança de código</strong>: ele planeja, divide o trabalho em 5 a 30 unidades independentes e põe um subagent em segundo plano em cada uma, cada um na sua worktree.",
+        "Cada subagent implementa, roda os testes e abre um PR (ou relata o resultado).",
+        "Precisa de um repositório git (ou de um hook <code>WorktreeCreate</code>).",
+        "Não tem nada a ver com desconto de 50% nem com janela de 24h: isso é da Message Batches API, que é da API, não do Claude Code.",
+        "Na demo da live: 12 arquivos, 11 subagents, 88 segundos. O próprio slide lembrava que resultado em paralelo ainda precisa de alguém que leia."
+      ],
+      "fonte": "code.claude.com/docs/en/commands (conferido em 24/11/2026); demo da live de 24/11",
+      "extras": [
+        {
+          "href": "extra-01.html",
+          "label": "Extra 01 · Paralelo e sessões"
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "heading": "E o multi-pass?",
+      "na_aula": "review multi-pass: passes separados por tipo de problema; review independente.",
+      "assertions": [
+        "Vários PRs abertos de uma vez pelo <code>/batch</code> pedem revisão: <code>/code-review</code> por parte, e leitura humana antes do merge.",
+        "Ver a Extensão 08 para os três tamanhos de revisão."
+      ],
+      "fonte": "live de 24/11",
+      "extras": [
+        {
+          "href": "extra-04.html",
+          "label": "Extra 04 · Limites, verificação e medição"
+        }
+      ]
+    }
+  ],
+  "glossary": [
+    {
+      "term_en": "/batch",
+      "meaning_pt": "comando que divide uma mudança grande em partes paralelas, cada uma com subagent, worktree e PR"
+    },
+    {
+      "term_en": "worktree",
+      "meaning_pt": "cópia de trabalho com branch própria do mesmo repositório git"
+    }
+  ]
+}

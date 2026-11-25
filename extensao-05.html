@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extensão 05 — MCP: tool search medido e autenticação · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  .lead { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  section.ficha { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px 20px; margin: 18px 0; border-left: 3px solid var(--accent); }
+  section.ficha > h2 { font-size: 18px; margin: 0 0 4px; border: none; padding: 0; }
+  .ficha-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  ul.assert { margin: 10px 0 0; padding-left: 20px; }
+  ul.assert li { margin: 8px 0; }
+  .ver-traducao { flex: none; background: var(--card2); border: 1px solid var(--border);
+    color: var(--muted); border-radius: 999px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+    white-space: nowrap; transition: border-color .15s, color .15s; }
+  .ver-traducao:hover { color: var(--text); border-color: var(--accent); }
+  .pt-block { border-left: 2px solid var(--border); padding-left: 12px; margin: 12px 0 0;
+    display: none; }
+  .pt-block.pt { color: var(--pt); font-size: 13.5px; }
+  section.ficha.show-pt .pt-block { display: block; }
+  ul.assert.pt-block li { margin: 7px 0; }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px;
+    text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  table.gloss td.ptm { color: var(--pt); font-size: 13px; }
+  section.ficha.gloss-sec table.gloss td.ptm { display: none; }
+  section.ficha.gloss-sec.show-pt table.gloss td.ptm { display: table-cell; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px;
+    border-top: 1px solid var(--border); font-size: 14px; gap: 12px; }
+  section.ficha { border-left-color: var(--accent2); }
+  .aviso { background: var(--card2); border: 1px solid var(--border); border-left: 3px solid var(--accent2);
+    border-radius: 8px; padding: 12px 16px; font-size: 14px; margin: 16px 0 0; }
+  .na-aula { background: var(--card2); border-radius: 8px; padding: 10px 14px; margin: 10px 0 0;
+    font-size: 14px; color: var(--muted); }
+  .na-aula strong { color: var(--text); }
+  .ts { display: block; font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .extras { font-size: 14px; margin: 10px 0 0; }
+  table.gloss td.ptm { color: var(--text); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / <a href="aula-05.html">Aula 05</a> / Extensão 24/11</div>
+  <h1>Extensão 05 — MCP: tool search medido e autenticação</h1>
+  <div class="meta">
+    <span class="tag">Aula 05 · Erros estruturados, MCP e tools nativas</span>
+    <span class="tag">Produto atual · fora da prova</span>
+  </div>
+  <p class="lead">O que o Claude Code ganhou depois do guia da prova, ligado ao que a aula 05 já ensinou.
+  Base: a live <em>Claude Code: Advanced</em> e o anúncio de novidades do MCP, ambos de 24/11/2026,
+  conferidos na documentação em 24/11/2026.</p>
+  <div class="aviso"><strong>Na prova, vale o guia.</strong> Nada desta página cai na CCAR-F como está aqui.
+  Se o guia e o produto divergirem numa questão, responda como o guia.</div>
+</header>
+
+<section class="ficha" id="tool-search">
+  <h2>Tool search: o número que faltava</h2>
+  <div class="na-aula"><strong>Na aula:</strong> com o tool search, ligado por padrão, as definições das MCP tools entram sob demanda; todas continuam utilizáveis.</div>
+  <ul class="assert">
+    <li>Segundo o anúncio de 24/11, carregar as definições só quando preciso corta <strong>mais de 85%</strong> do contexto gasto com ferramentas em configurações com vários servidores MCP.</li>
+    <li>O ganho cresce com o número de servidores ligados: é justamente o cenário em que a lista completa de tools mais pesaria no contexto.</li>
+  </ul>
+  <span class="ts">Fonte: claude.com/resources/articles/skills-over-mcp-tasks-and-more (conferido em 24/11/2026)</span>
+</section>
+
+<section class="ficha" id="auth">
+  <h2>Servidor MCP compartilhado e autenticação</h2>
+  <div class="na-aula"><strong>Na aula:</strong> credenciais de MCP ficam fora do arquivo versionado (variáveis de ambiente), e o <code>.mcp.json</code> do projeto é compartilhado pelo time.</div>
+  <ul class="assert">
+    <li>No Q&amp;A da live, a Anthropic respondeu que um servidor MCP compartilhado autentica cada pessoa com a própria conta, e que esse é o padrão.</li>
+    <li>A documentação não traz essa frase; o anúncio cita o Enterprise Managed Auth, em que o admin autoriza uma vez e os usuários conectam automaticamente. Confira o caso do seu plano antes de contar com um ou outro.</li>
+  </ul>
+  <span class="ts">Fonte: Q&amp;A da live de 24/11; claude.com/resources/articles/skills-over-mcp-tasks-and-more</span>
+</section>
+
+<section class="ficha" id="novidades">
+  <h2>O que o MCP ganhou no mesmo dia</h2>
+  <div class="na-aula"><strong>Na aula:</strong> MCP é a forma de dar ao Claude acesso a sistemas externos: tools são ações, resources são conteúdo.</div>
+  <ul class="assert">
+    <li>Quatro novidades: Skills over MCP (o servidor leva o próprio playbook), Tasks (operação longa em segundo plano), Elicitation (o servidor pausa e pede confirmação ao usuário) e File Uploads (arquivo direto ao servidor, ainda chegando).</li>
+    <li>Skill × MCP, como resumido no Q&amp;A: skill é um procedimento que se repete; MCP é o acesso a contexto externo (sistema, banco de dados).</li>
+  </ul>
+  <span class="ts">Fonte: claude.com/resources/articles/skills-over-mcp-tasks-and-more; Q&amp;A da live de 24/11</span>
+</section>
+
+<section class="ficha" id="glossario">
+  <h2>Glossário da extensão</h2>
+  <table class="gloss">
+    <tr><th>Termo (EN)</th><th>Significado</th></tr>
+    <tr><td class="en">tool search</td><td class="ptm">carregamento sob demanda das definições de tools</td></tr>
+    <tr><td class="en">Enterprise Managed Auth</td><td class="ptm">autorização de MCP feita uma vez pelo admin para toda a organização</td></tr>
+  </table>
+</section>
+
+<nav class="prevnext">
+  <span><a href="extensao-03.html">← Extensão 03</a></span>
+  <span><a href="aula-05.html">Aula 05 — versão completa</a></span>
+  <span><a href="extensao-06.html">Extensão 06 →</a></span>
+</nav>
+
+</div>
+
+<script src="narracao/extensao-05.js"></script>
+<script src="narracao/player.js"></script>
+</body>
+</html>

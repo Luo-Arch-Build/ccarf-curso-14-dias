@@ -1,0 +1,48 @@
+{
+  "lesson": "06",
+  "title": "Instruções, skills, memória e o prompt-audit",
+  "aula_title": "CLAUDE.md: hierarquia, @import e rules",
+  "checked": "24/11/2026",
+  "sections": [
+    {
+      "id": "onde-vai",
+      "heading": "<code>.claude</code>, skills ou memória?",
+      "na_aula": "CLAUDE.md por nível (usuário, projeto, diretório), rules com <code>paths</code>, skills sob demanda, <code>/memory</code> para localizar e editar memórias.",
+      "assertions": [
+        "Resposta do Q&amp;A da live: <code>.claude</code> (CLAUDE.md, regras) é o contexto de toda requisição, compartilhável no repositório.",
+        "Skills são fluxos recorrentes, carregados quando precisam.",
+        "Memória são padrões do seu trabalho que o próprio Claude administra.",
+        "É o mesmo mapa da aula, dito em uma linha por mecanismo."
+      ],
+      "fonte": "Q&amp;A da live de 24/11"
+    },
+    {
+      "id": "prompt-audit",
+      "heading": "<code>/doctor prompt-audit</code>: achar instrução vencida",
+      "na_aula": "instrução que não é mais verdade continua carregando e competindo com as novas; a aula trata de onde cada instrução mora.",
+      "assertions": [
+        "<code>/doctor prompt-audit</code> aponta linhas desatualizadas ou conflitantes nos seus arquivos de instrução e propõe edições; não muda nada até você pedir.",
+        "Escopo: CLAUDE.md, CLAUDE.local.md e AGENTS.md, mais regras, skills, comandos, subagents e output styles em <code>.claude/</code> e <code>~/.claude/</code>.",
+        "A auto memory (MEMORY.md) não está na lista: memória acumulada precisa de revisão à parte.",
+        "Exige Claude Code v2.1.283 ou mais recente."
+      ],
+      "fonte": "code.claude.com/docs/en/memory e code.claude.com/docs/en/commands (conferido em 24/11/2026)",
+      "extras": [
+        {
+          "href": "extra-04.html",
+          "label": "Extra 04 · Limites, verificação e medição"
+        }
+      ]
+    }
+  ],
+  "glossary": [
+    {
+      "term_en": "prompt audit",
+      "meaning_pt": "revisão das instruções em busca de linhas vencidas ou conflitantes"
+    },
+    {
+      "term_en": "auto memory",
+      "meaning_pt": "memória que o próprio Claude grava e administra entre sessões"
+    }
+  ]
+}

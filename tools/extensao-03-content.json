@@ -1,0 +1,59 @@
+{
+  "lesson": "03",
+  "title": "Bifurcar e conversar entre sessões",
+  "aula_title": "Enforcement, hooks e sessões",
+  "checked": "24/11/2026",
+  "sections": [
+    {
+      "id": "branch-fork",
+      "heading": "<code>/branch</code>, <code>/fork</code> e o <code>fork_session</code> da aula",
+      "na_aula": "<code>--resume</code> retoma uma sessão nomeada; <code>fork_session</code> cria ramos a partir da mesma baseline para explorar caminhos divergentes.",
+      "assertions": [
+        "<code>/branch</code>: você passa a trabalhar numa cópia da conversa; a original fica preservada e volta com <code>/resume</code>. Equivale, na linha de comando, a <code>claude --continue --fork-session</code>.",
+        "<code>/fork</code>: a cópia vai rodar em segundo plano como sessão própria, e você continua na original.",
+        "A cópia do <code>/fork</code> é orientada a criar a própria worktree antes de mexer em código, para não colidir com a sessão de origem.",
+        "Mapa rápido: quer testar uma abordagem arriscada sem perder o fio → <code>/branch</code>; quer abrir uma frente paralela aproveitando o contexto carregado → <code>/fork</code>.",
+        "Na prova continua valendo o par da aula: <code>--resume</code> para contexto ainda válido, <code>fork_session</code> para explorar a partir da mesma baseline."
+      ],
+      "fonte": "code.claude.com/docs/en/commands e code.claude.com/docs/en/sessions (conferido em 24/11/2026)",
+      "extras": [
+        {
+          "href": "extra-01.html",
+          "label": "Extra 01 · Paralelo e sessões"
+        }
+      ]
+    },
+    {
+      "id": "mensagens",
+      "heading": "Sessões independentes trocam mensagens",
+      "na_aula": "cada sessão tem o próprio contexto; o handoff entre etapas é um resumo estruturado.",
+      "assertions": [
+        "Sessões do Claude Code podem mandar mensagens umas às outras, mas só texto: nunca o histórico nem os arquivos de quem envia.",
+        "Uma mensagem recebida não aprova pedido de permissão na sessão de destino.",
+        "Padrão recomendado na live: o estado da tarefa (especificação, lista, decisão) vai num arquivo e a mensagem leva o caminho. Várias sessões sobre a mesma especificação leem o mesmo arquivo.",
+        "É o mesmo princípio do handoff estruturado da aula: o que precisa sobreviver é escrito, não lembrado."
+      ],
+      "fonte": "code.claude.com/docs/en/cross-session-messaging (conferido em 24/11/2026); Q&amp;A da live de 24/11",
+      "extras": [
+        {
+          "href": "extra-01.html",
+          "label": "Extra 01 · Paralelo e sessões"
+        }
+      ]
+    }
+  ],
+  "glossary": [
+    {
+      "term_en": "branch (conversation)",
+      "meaning_pt": "cópia da conversa em que você continua; a original fica para o /resume"
+    },
+    {
+      "term_en": "fork (session)",
+      "meaning_pt": "cópia da conversa que roda em segundo plano como outra sessão"
+    },
+    {
+      "term_en": "cross-session messaging",
+      "meaning_pt": "troca de mensagens de texto entre sessões independentes"
+    }
+  ]
+}
