@@ -33,7 +33,7 @@
     {
       "id": "novidades",
       "heading": "O que o MCP ganhou no mesmo dia",
-      "na_aula": "MCP é a forma de dar ao Claude acesso a sistemas externos por tools, resources e prompts.",
+      "na_aula": "MCP é a forma de dar ao Claude acesso a sistemas externos: tools são ações, resources são conteúdo.",
       "assertions": [
         "Quatro novidades: Skills over MCP (o servidor leva o próprio playbook), Tasks (operação longa em segundo plano), Elicitation (o servidor pausa e pede confirmação ao usuário) e File Uploads (arquivo direto ao servidor, ainda chegando).",
         "Skill × MCP, como resumido no Q&amp;A: skill é um procedimento que se repete; MCP é o acesso a contexto externo (sistema, banco de dados)."

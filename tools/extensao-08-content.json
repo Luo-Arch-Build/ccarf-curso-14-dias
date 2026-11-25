@@ -25,13 +25,13 @@
     {
       "id": "ultra",
       "heading": "<code>/code-review ultra</code>: para quando o risco é alto",
-      "na_aula": "multi-pass: passes separados por tipo de problema dão atenção a cada um.",
+      "na_aula": "a revisão numa instância independente, que vê só o diff e os critérios, pega o que a autorrevisão deixa passar (o multi-pass por tipo de problema é da Aula 11).",
       "assertions": [
         "<code>ultra</code> faz uma revisão mais profunda, com vários agentes num sandbox na nuvem.",
-        "As primeiras execuções são gratuitas; depois, consome créditos de uso.",
+        "Nos planos Pro, Max e Ultra há 3 execuções gratuitas, uma única vez; depois, consome créditos de uso.",
         "Reserve para mudanças de alto risco: cobrança, segredos, segurança."
       ],
-      "fonte": "code.claude.com/docs/en/code-review-local (conferido em 24/11/2026)"
+      "fonte": "code.claude.com/docs/en/code-review-local e code.claude.com/docs/en/ultrareview (conferido em 24/11/2026)"
     },
     {
       "id": "automatico",

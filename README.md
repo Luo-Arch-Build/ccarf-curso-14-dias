@@ -109,6 +109,8 @@ gh release upload narracao audio/extensao-NN.mp3 --clobber
 
 O link para uma aula extra só aparece na extensão quando o `extra-NN.html` existe; ao publicar uma extra,
 rode o builder de novo nas extensões que apontam para ela.
+Os links de anterior/próxima também dependem das extensões que já existem: ao criar uma extensão nova,
+regenere as vizinhas dela.
 
 ## Fonte e limites
 
