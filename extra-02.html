@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extra 02 — Nuvem e app desktop · CCAR-F</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #8b5cf6;
+    --ok: #34d399; --err: #f87171; --pt: #8fa0b8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  h2 { font-size: 20px; margin-top: 36px; border-left: 3px solid var(--accent); padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  a { color: var(--accent); }
+  code { background: var(--card2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; color: #f0b49e; }
+  pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+  .objetivo { border-left: 3px solid var(--accent2); }
+  .pegadinha { border-left: 3px solid var(--err); }
+  .pegadinha h3 { margin-top: 0; color: var(--err); }
+  table.gloss { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  table.gloss th, table.gloss td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.gloss th { background: var(--card2); font-size: 13px; color: var(--muted); }
+  table.gloss td.en { font-weight: 600; white-space: nowrap; }
+  .q { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+  .q .qnum { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .q .stem { font-weight: 600; margin: 6px 0 2px; }
+  .q .opts { margin: 10px 0 4px; }
+  .q label.opt { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    margin: 6px 0; cursor: pointer; transition: border-color .15s; }
+  .q label.opt:hover { border-color: var(--accent); }
+  .q label.opt input { margin-right: 8px; }
+  .q label.opt.correct { border-color: var(--ok); background: rgba(52,211,153,.08); }
+  .q label.opt.wrong { border-color: var(--err); background: rgba(248,113,113,.08); }
+  .q .multi-hint { font-size: 12px; color: var(--accent2); font-weight: 600; }
+  .q .feedback .ts { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .q button.answer { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+  .q button.answer:disabled { opacity: .45; cursor: default; }
+  .q .feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .q .feedback.ok { display: block; background: rgba(52,211,153,.1); border: 1px solid var(--ok); }
+  .q .feedback.ko { display: block; background: rgba(248,113,113,.1); border: 1px solid var(--err); }
+  #scorebar { position: sticky; top: 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; color: var(--muted);
+    display: inline-block; z-index: 5; }
+  nav.prevnext { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 14px; }
+  .concluir { margin-top: 32px; text-align: center; }
+  .concluir button { background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+  .concluir button:hover { border-color: var(--ok); }
+  .concluir .done { color: var(--ok); font-size: 13px; margin-top: 8px; }
+  .aviso { border-left: 3px solid var(--accent2); }
+  .fontes { font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · Curso 14 dias</a> / Extra 02</div>
+  <h1>Extra 02 — Nuvem e app desktop</h1>
+  <div class="meta">
+    <span class="tag">claude --cloud · --teleport · Projects · o que vai e o que fica · app desktop</span>
+    <span class="tag">Produto atual · fora da prova</span>
+  </div>
+</header>
+
+<div class="card aviso">
+  <strong>Na prova, vale o guia.</strong> Esta aula extra cobre novidades que a Anthropic apresentou em
+  24/11/2026 (live <em>Claude Code: Advanced</em> e anúncios do mesmo dia), conferidas na documentação
+  em 24/11/2026. Nada daqui cai na CCAR-F como está; as questões são de fixação e não
+  entram no simulado nem no progresso das 14 aulas.
+</div>
+
+<div class="card objetivo">
+  <strong>🎯 Objetivo.</strong> Decidir o que roda numa <strong>sessão na nuvem</strong> e o que fica na sua máquina, mover trabalho entre terminal e nuvem com <code>--cloud</code> e <code>--teleport</code>, saber o que o <strong>Projects</strong> coordena, e avaliar o <strong>app desktop</strong> sem confiar no que ele não faz por padrão.
+</div>
+
+<h2 id="cloud">1. Sessão na nuvem: o que é</h2>
+<p>Uma <strong>sessão na nuvem</strong> é o Claude Code rodando numa VM isolada gerenciada pela Anthropic (ou no ambiente próprio da sua organização), em vez de no seu computador.</p>
+<ul>
+  <li>Continua rodando com o notebook fechado; você acompanha e dirige de qualquer aparelho, inclusive pelo celular.</li>
+  <li>Conta no limite de uso do seu plano, junto com o resto do uso do Claude; não há cobrança separada pela VM.</li>
+  <li>Disponível nos planos Pro, Max, Ultra e Team, e no Enterprise para quem tem os assentos com Claude Code.</li>
+  <li>Começa pelo navegador (claude.ai/code), pelo app do celular, pelo app desktop ou pelo terminal com <code>claude --cloud</code>.</li>
+  <li>Exige conta claude.ai: não funciona com chave de API nem por Bedrock, Vertex ou outro provedor de terceiros.</li>
+</ul>
+
+<h2 id="ida-volta">2. Ida e volta: --cloud e --teleport</h2>
+<p><code>claude --cloud "corrija o bug de login em src/auth"</code> cria uma sessão nova na nuvem para o repositório atual, e você continua trabalhando no terminal.</p>
+<ul>
+  <li>A VM clona o <strong>remoto do GitHub na sua branch atual</strong>, não a sua cópia local: <strong>dê push antes</strong> se tiver commits locais. Se a branch não estiver no GitHub, a sessão começa de outro ponto e avisa.</li>
+  <li>Sem remoto no GitHub, ou sem o GitHub App instalado no repositório, o Claude Code empacota o repositório local e sobe. No macOS e no Linux, mudanças não commitadas em arquivos com cara de segredo (<code>.env</code>, chaves) ficam de fora; arquivos não rastreados nunca vão.</li>
+  <li>Cada <code>claude --cloud</code> é uma sessão independente: três comandos, três tarefas em paralelo.</li>
+  <li>Dica da documentação: <em>planeje local, execute na nuvem</em>. Planeje em plan mode, salve o plano num arquivo, faça commit e push, e mande a nuvem executar o plano.</li>
+</ul>
+<p><code>claude --teleport</code> faz o caminho de volta: traz uma sessão da nuvem para o terminal, por seletor ou com o ID da sessão (dentro de uma sessão, <code>/teleport</code> ou <code>/tp</code>). Para trazer também a branch, precisa de:</p>
+<ul>
+  <li>git limpo (commit ou stash antes);</li>
+  <li>estar num checkout do mesmo repositório (não de um fork);</li>
+  <li>a branch da sessão já enviada ao remoto;</li>
+  <li>a mesma conta claude.ai.</li>
+</ul>
+<p>O terminal recebe uma <strong>cópia</strong> da sessão: o que você fizer ali não aparece na nuvem. E pela CLI a passagem é só de ida para a nuvem com sessão nova: não dá para empurrar uma sessão de terminal que já existe (o app desktop faz isso pelo menu <strong>Open in</strong>).</p>
+
+<h2 id="vai-fica">3. O que vai para a nuvem e o que fica na sua máquina</h2>
+<table class="gloss">
+  <tr><th>Vai bem para a nuvem</th><th>Fica na sua máquina</th></tr>
+  <tr><td>Código puro no repositório: refatoração, testes, PR.</td><td>Sessões que dependem de credenciais que só a sua máquina tem (CLI de nuvem logado, tokens locais, chaves de serviços).</td></tr>
+  <tr><td>Tarefa longa que deve continuar com o notebook fechado.</td><td>Sessões presas a algo local: um channel rodando por plugin no seu computador, um app ou banco que só existe ali.</td></tr>
+  <tr><td>O que está versionado vai junto, porque a VM clona o repositório: CLAUDE.md, <code>.claude/settings.json</code>, regras, skills, subagents em <code>.claude/agents/</code>.</td><td>Configuração pessoal: plugins instalados no escopo de usuário não chegam às sessões na nuvem.</td></tr>
+</table>
+<p>A segurança é por desenho: nos ambientes da Anthropic, as credenciais do GitHub ficam criptografadas nos servidores e <strong>nunca entram na VM</strong>. O git sai por um proxy que anexa a credencial do lado de fora, e a rede vem limitada por padrão.</p>
+<p>Sessão parada por muito tempo expira e a VM é recolhida. Ao reabrir, o histórico volta, mas comandos e subagents que estavam rodando param e precisam ser retomados.</p>
+
+<h2 id="projects">4. Projects: uma conversa que coordena várias sessões</h2>
+<p>Um <strong>project</strong> é uma conversa contínua em que o Claude coordena um fluxo de tarefas relacionadas. Você diz o que precisa ser feito e ele abre uma <em>thread</em> por tarefa.</p>
+<ul>
+  <li>Cada thread normalmente é uma sessão na nuvem, e as threads rodam em paralelo; você acompanha e dirige pelo celular.</li>
+  <li>Quando a tarefa precisa de algo que só o seu computador tem, dá para pedir que aquela thread rode na sua máquina, via Remote Control, mas aí ela só anda enquanto o computador está ligado.</li>
+  <li>As threads precisam do GitHub App instalado em cada repositório que clonam.</li>
+  <li>Status em 24/11/2026: <strong>beta público nos planos Pro, Max e Ultra</strong>, liberado aos poucos. Ainda não existe para Team e Enterprise.</li>
+</ul>
+
+<h2 id="desktop">5. App desktop: o que ele dá e o que não faz sozinho</h2>
+<p>No Q&amp;A da live, os engenheiros da Anthropic recomendaram o app desktop. O que a documentação confirma:</p>
+<ul>
+  <li><strong>Prévia do app</strong>: o Claude sobe o servidor de desenvolvimento e abre no painel Browser para conferir as próprias mudanças; a verificação automática vem ligada. A configuração do servidor fica em <code>.claude/launch.json</code>.</li>
+  <li><strong>Arquivos</strong>: imagens, PDFs e outros arquivos entram pelo botão <strong>+</strong> ou arrastando para o prompt.</li>
+  <li><strong>Sessões em paralelo</strong>: <strong>+ New</strong> (Cmd+N) e visão dividida.</li>
+  <li><strong>Local ou nuvem</strong> na mesma tela, e uma sessão local pode ser mandada para a nuvem.</li>
+</ul>
+<p>Mas a worktree <strong>não é automática</strong>: por padrão, a opção <strong>Worktree</strong> vem desligada e o Claude trabalha na própria pasta do projeto. Ligue-a antes de iniciar a sessão se for rodar sessões em paralelo no mesmo repositório.</p>
+<p>Há diferenças em relação à CLI: o modo de permissão <code>dontAsk</code> só existe na CLI, e sessões iniciadas no terminal ou no VS Code não aparecem para as ferramentas de listagem de sessões do desktop. Regra prudente: antes de mudar uma sessão que fica aberta por dias, ou que depende de channel, teste o mesmo fluxo no desktop numa sessão de desenvolvimento.</p>
+
+<div class="card pegadinha">
+  <h3>⚠️ Pegadinha</h3>
+  <p>Duas suposições que quebram na primeira tentativa:</p>
+<ul>
+  <li><strong>"A nuvem vê o que está no meu notebook."</strong> Não: o <code>--cloud</code> clona o GitHub na sua branch atual. Commit local sem push não existe para a VM, e arquivo não rastreado nunca vai.</li>
+  <li><strong>"O app desktop já isola cada sessão numa worktree."</strong> Não por padrão: a opção Worktree vem desligada.</li>
+</ul>
+<p>E o <code>--teleport</code> traz uma <em>cópia</em>: continuar no terminal não atualiza a sessão da nuvem.</p>
+</div>
+
+<h2 id="glossario">6. Glossário</h2>
+<table class="gloss">
+  <tr><th>Termo (EN)</th><th>Significado</th></tr>
+  <tr><td class="en">cloud session</td><td>sessão do Claude Code que roda numa VM gerenciada, fora do seu computador</td></tr>
+  <tr><td class="en">--cloud</td><td>flag que cria uma sessão nova na nuvem para o repositório atual</td></tr>
+  <tr><td class="en">--teleport</td><td>flag que traz uma sessão da nuvem para o terminal</td></tr>
+  <tr><td class="en">GitHub proxy</td><td>proxy que anexa a credencial do GitHub fora da VM</td></tr>
+  <tr><td class="en">bundle</td><td>pacote do repositório local enviado à nuvem quando não há como clonar do GitHub</td></tr>
+  <tr><td class="en">project / thread</td><td>conversa que coordena várias tarefas; cada tarefa é uma thread, em geral uma sessão na nuvem</td></tr>
+  <tr><td class="en">Browser pane</td><td>painel do app desktop em que o Claude abre a prévia do app</td></tr>
+  <tr><td class="en">environment expiry</td><td>expiração da VM de uma sessão parada; o histórico volta ao reabrir</td></tr>
+</table>
+
+<h2 id="questoes">7. Questões de fixação</h2>
+<div id="scorebar">Pontuação: <span id="score">0</span>/<span id="total">0</span></div>
+
+<div class="q" data-correct="b">
+  <div class="qnum">Questão 1 · múltipla escolha</div>
+  <div class="stem">Você fez dois commits locais, não deu push, e rodou <code>claude --cloud "rode os testes e corrija as falhas"</code> num repositório do GitHub com o GitHub App instalado. O que a sessão na nuvem vê?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q1" value="a">A. Os dois commits, porque o <code>--cloud</code> sempre envia a cópia local inteira do seu notebook</label>
+    <label class="opt"><input type="radio" name="q1" value="b">B. A branch como está no GitHub, sem os dois commits locais ainda não enviados</label>
+    <label class="opt"><input type="radio" name="q1" value="c">C. Os dois commits e também os arquivos não rastreados da pasta do projeto</label>
+    <label class="opt"><input type="radio" name="q1" value="d">D. Nada: a sessão se recusa a começar enquanto houver commit sem push</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Com remoto no GitHub e o App instalado, a VM clona o remoto na sua branch atual, não a sua cópia local. Por isso a regra é dar push antes. O empacotamento da cópia local só acontece sem remoto ou sem o App, e mesmo assim não leva arquivos não rastreados. A sessão não se recusa a começar: ela parte do que está no remoto.<span class="ts">Fonte: docs: claude-code-on-the-web</span></div>
+</div>
+
+<div class="q" data-correct="c">
+  <div class="qnum">Questão 2 · múltipla escolha</div>
+  <div class="stem">Uma sessão depende do CLI de um provedor de nuvem logado na sua máquina e de um token pessoal guardado localmente. Onde ela deve rodar, e por quê?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q2" value="a">A. Na nuvem, porque a VM copia as credenciais e os logins da sua máquina no início da sessão</label>
+    <label class="opt"><input type="radio" name="q2" value="b">B. Na nuvem, desde que você cole o token no prompt da sessão</label>
+    <label class="opt"><input type="radio" name="q2" value="c">C. Na sua máquina, porque a VM da nuvem é isolada das suas credenciais</label>
+    <label class="opt"><input type="radio" name="q2" value="d">D. Tanto faz, porque a nuvem e o terminal leem as mesmas variáveis</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> A VM da nuvem é isolada por desenho e não recebe o que está logado na sua máquina; nem a credencial do GitHub entra nela, que sai por um proxy. Colar token no prompt põe o segredo na conversa, o que é pior. Nenhuma das duas lê as variáveis da outra.<span class="ts">Fonte: docs: claude-code-on-the-web</span></div>
+</div>
+
+<div class="q" data-correct="a,c">
+  <div class="qnum">Questão 3 · múltipla resposta <span class="multi-hint">(marque DUAS)</span></div>
+  <div class="stem">Quais DUAS condições são necessárias para trazer a branch de uma sessão da nuvem com <code>claude --teleport</code>?</div>
+  <div class="opts">
+    <label class="opt"><input type="checkbox" name="q3" value="a">A. Git limpo no checkout local, com as mudanças em commit ou stash</label>
+    <label class="opt"><input type="checkbox" name="q3" value="b">B. Estar logado com chave de API do Console, e não com conta claude.ai</label>
+    <label class="opt"><input type="checkbox" name="q3" value="c">C. A branch da sessão já enviada ao remoto do repositório</label>
+    <label class="opt"><input type="checkbox" name="q3" value="d">D. Estar num fork do repositório, para não mexer no original</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A e C.</strong> O teleport pede git limpo e a branch da sessão no remoto, além do mesmo repositório (não um fork) e da mesma conta claude.ai. Chave de API do Console é justamente o caso em que o teleport não funciona.<span class="ts">Fonte: docs: claude-code-on-the-web</span></div>
+</div>
+
+<div class="q" data-correct="d">
+  <div class="qnum">Questão 4 · múltipla escolha</div>
+  <div class="stem">Depois de <code>claude --teleport</code>, você continua o trabalho no terminal por uma hora. O que acontece com a sessão na nuvem?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q4" value="a">A. Ela recebe as mudanças do terminal em tempo real</label>
+    <label class="opt"><input type="radio" name="q4" value="b">B. Ela é apagada assim que o teleport termina</label>
+    <label class="opt"><input type="radio" name="q4" value="c">C. Ela é pausada até você mandar a sessão de volta pela CLI</label>
+    <label class="opt"><input type="radio" name="q4" value="d">D. Ela fica como estava: o terminal trabalha numa cópia</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: D.</strong> O terminal recebe a própria cópia da sessão, e o trabalho ali fica local. Nada sincroniza com a nuvem, nada é apagado, e a CLI não manda uma sessão existente de volta para a nuvem. Para continuar dirigindo pelo celular, use o Remote Control na sessão local.<span class="ts">Fonte: docs: claude-code-on-the-web</span></div>
+</div>
+
+<div class="q" data-correct="a">
+  <div class="qnum">Questão 5 · múltipla escolha</div>
+  <div class="stem">Você quer planejar uma migração com cuidado e deixar a execução longa rodando enquanto o notebook está fechado. Qual fluxo a documentação sugere?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q5" value="a">A. Planejar local em plan mode, pôr o plano no repo (commit e push) e mandar a nuvem executar</label>
+    <label class="opt"><input type="radio" name="q5" value="b">B. Rodar tudo em <code>--cloud</code> e planejar pelo celular enquanto a VM executa</label>
+    <label class="opt"><input type="radio" name="q5" value="c">C. Planejar na nuvem e trazer a execução com <code>--teleport</code> para o terminal</label>
+    <label class="opt"><input type="radio" name="q5" value="d">D. Planejar no app desktop e depois copiar a conversa inteira para a sessão na nuvem por mensagem</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: A.</strong> "Planeje local, execute na nuvem": o plano vira arquivo versionado, que a VM clona, e a execução continua com o notebook fechado. Planejar pelo celular com a VM executando inverte a ordem. Trazer a execução para o terminal anula o objetivo. E mensagem entre sessões leva só texto, não a conversa.<span class="ts">Fonte: docs: claude-code-on-the-web</span></div>
+</div>
+
+<div class="q" data-correct="b">
+  <div class="qnum">Questão 6 · múltipla escolha</div>
+  <div class="stem">Sobre o Projects, qual afirmação está correta em 24/11/2026?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q6" value="a">A. Está disponível em todos os planos, inclusive Team e Enterprise</label>
+    <label class="opt"><input type="radio" name="q6" value="b">B. É uma conversa que abre uma thread por tarefa, em geral uma sessão na nuvem</label>
+    <label class="opt"><input type="radio" name="q6" value="c">C. Roda todas as threads em sequência, uma de cada vez, para economizar a cota semanal do plano</label>
+    <label class="opt"><input type="radio" name="q6" value="d">D. Só funciona com threads rodando no seu computador, via Remote Control</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Um project é uma conversa que coordena um fluxo de tarefas, com uma thread por tarefa, normalmente uma sessão na nuvem. Está em beta público só no Pro, Max e Ultra. As threads rodam em paralelo, e rodar uma thread no seu computador é uma opção, não a regra.<span class="ts">Fonte: docs: claude-projects</span></div>
+</div>
+
+<div class="q" data-correct="c">
+  <div class="qnum">Questão 7 · múltipla escolha</div>
+  <div class="stem">Você abriu duas sessões no app desktop no mesmo repositório para trabalhar em duas funcionalidades e elas começaram a pisar nos arquivos uma da outra. O que faltou?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q7" value="a">A. Usar o modo <code>dontAsk</code>, que isola as sessões do desktop</label>
+    <label class="opt"><input type="radio" name="q7" value="b">B. Abrir as duas sessões em visão dividida, com Option e clique</label>
+    <label class="opt"><input type="radio" name="q7" value="c">C. Ligar a opção Worktree antes de iniciar cada sessão</label>
+    <label class="opt"><input type="radio" name="q7" value="d">D. Configurar o servidor de desenvolvimento em <code>.claude/launch.json</code></label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: C.</strong> No desktop a opção Worktree vem desligada e o Claude trabalha na pasta do projeto; é preciso ligá-la antes de iniciar a sessão. O <code>dontAsk</code> é modo de permissão e só existe na CLI. A visão dividida só mostra as duas sessões lado a lado. O <code>launch.json</code> configura a prévia do app.<span class="ts">Fonte: docs: desktop</span></div>
+</div>
+
+<div class="q" data-correct="b">
+  <div class="qnum">Questão 8 · múltipla escolha</div>
+  <div class="stem">Os engenheiros da Anthropic recomendaram o app desktop. Antes de migrar sessões que ficam abertas por dias e dependem de um channel local, qual é a atitude mais prudente?</div>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="q8" value="a">A. Migrar todas de uma vez, porque o app desktop tem tudo o que a CLI tem, sem exceção</label>
+    <label class="opt"><input type="radio" name="q8" value="b">B. Testar o mesmo fluxo numa sessão de desenvolvimento no desktop antes</label>
+    <label class="opt"><input type="radio" name="q8" value="c">C. Mandar essas sessões para a nuvem, onde channels locais rodam igual</label>
+    <label class="opt"><input type="radio" name="q8" value="d">D. Desligar o channel, já que o desktop recebe arquivos por arrastar</label>
+  </div>
+  <button class="answer">Responder</button>
+  <div class="feedback"><strong>Gabarito: B.</strong> Há diferenças documentadas entre desktop e CLI (o <code>dontAsk</code> só existe na CLI, e sessões do terminal não aparecem nas ferramentas de listagem do desktop), e o comportamento de sessões longas com channel não está confirmado. Então se testa antes. A nuvem não roda o que depende da sua máquina. E arrastar arquivo não substitui um channel.<span class="ts">Fonte: docs: desktop; Q&amp;A da live de 24/11</span></div>
+</div>
+
+<h2 id="fontes">8. Fontes</h2>
+<ul class="fontes">
+  <li>Live <em>Claude Code: Advanced</em> (Anthropic, 24/11/2026): recomendação do app desktop no Q&amp;A.</li>
+  <li>Sessões na nuvem, <code>--cloud</code> e <code>--teleport</code>: <a href="https://code.claude.com/docs/en/claude-code-on-the-web">https://code.claude.com/docs/en/claude-code-on-the-web</a></li>
+  <li>Projects: <a href="https://code.claude.com/docs/en/claude-projects">https://code.claude.com/docs/en/claude-projects</a></li>
+  <li>App desktop: <a href="https://code.claude.com/docs/en/desktop">https://code.claude.com/docs/en/desktop</a></li>
+</ul>
+
+<div class="concluir">
+  <button id="finish">✅ Concluir extra 02</button>
+  <div class="done" id="donemsg"></div>
+</div>
+
+<nav class="prevnext">
+  <span><a href="extra-01.html">← Extra 01</a></span>
+  <span><a href="index.html">Índice →</a></span>
+</nav>
+
+</div>
+
+<script>
+(function () {
+  var total = 0, score = 0;
+  document.querySelectorAll('.q').forEach(function (q) {
+    total++;
+    document.getElementById('total').textContent = total;
+    var btn = q.querySelector('button.answer');
+    var correct = q.dataset.correct.split(',').map(function (s) { return s.trim(); });
+    btn.addEventListener('click', function () {
+      var checked = Array.prototype.slice.call(q.querySelectorAll('input:checked')).map(function (i) { return i.value; });
+      if (checked.length === 0) return;
+      var ok = checked.length === correct.length && checked.every(function (v) { return correct.indexOf(v) !== -1; });
+      q.querySelectorAll('label.opt').forEach(function (l) {
+        var v = l.querySelector('input').value;
+        if (correct.indexOf(v) !== -1) l.classList.add('correct');
+        else if (l.querySelector('input').checked) l.classList.add('wrong');
+        l.querySelector('input').disabled = true;
+      });
+      var fb = q.querySelector('.feedback');
+      fb.classList.add(ok ? 'ok' : 'ko');
+      fb.innerHTML = (ok ? '✅ Correto. ' : '❌ Incorreto. ') + fb.innerHTML;
+      btn.disabled = true;
+      if (ok) score++;
+      document.getElementById('score').textContent = score;
+    });
+  });
+  var KEY = 'ccarf-extra-02';
+  var btn = document.getElementById('finish');
+  if (localStorage.getItem(KEY)) {
+    document.getElementById('donemsg').textContent = 'Extra já concluída — ' + localStorage.getItem(KEY);
+  }
+  btn.addEventListener('click', function () {
+    var rec = new Date().toLocaleDateString('pt-BR') + ' · ' + score + '/' + total + ' acertos';
+    localStorage.setItem(KEY, rec);
+    document.getElementById('donemsg').textContent = 'Concluída: ' + rec;
+  });
+})();
+</script>
+<script src="narracao/extra-02.js"></script>
+<script src="narracao/player.js"></script>
+</body>
+</html>
