@@ -132,7 +132,7 @@
   <li><strong>URL mode</strong>: o Claude Code pergunta se abre um link no navegador, para um fluxo que termina fora do terminal, como um login.</li>
   <li>Recusar também é uma resposta: o servidor decide se continua.</li>
   <li>Numa sessão interativa, um hook <code>Elicitation</code> pode responder automaticamente, sem diálogo.</li>
-  <li>Já a elicitation de uma MCP task em <code>claude -p</code> ou no Agent SDK não chega a ninguém: o Claude Code pede ao servidor que cancele a task, <strong>sem rodar os hooks <code>Elicitation</code></strong> nem o callback <code>onElicitation</code> do SDK. O cancelamento é cooperativo: quem para o trabalho é o servidor.</li>
+  <li>Já a elicitation de uma MCP task em <code>claude -p</code> ou no Agent SDK não chega a ninguém: o Claude Code pede ao servidor que cancele a task, <strong>sem rodar os hooks <code>Elicitation</code></strong> nem o callback <code>onElicitation</code> do SDK. O cancelamento é cooperativo: o servidor decide se para.</li>
 </ul>
 <p>Por que isso importa: até agora, "confirme antes de cobrar" ou "confirme antes de apagar" dependia só da instrução no prompt, ou seja, de orientação. Com Elicitation, <strong>o próprio servidor</strong> se recusa a seguir sem a resposta da pessoa. Exemplos do anúncio: confirmar o custo antes de criar um projeto pago, confirmar antes de rodar SQL destrutivo, digitar o nome do repositório antes de um agente apagá-lo.</p>
 <p>É a mesma lição da Aula 03 e da Aula 07: o que precisa ser garantido não fica só no prompt. A diferença é onde mora a trava: no hook e na regra deny ela está no seu Claude Code; na Elicitation, está no servidor, e vale para qualquer cliente que fale com ele.</p>
@@ -252,7 +252,7 @@
     <label class="opt"><input type="radio" name="q7" value="d">D. Resume as definições das tools com um modelo menor e economiza 85% do custo</label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: B.</strong> Tool search carrega as definições das tools só quando preciso; o anúncio diz que pode cortar mais de 85% menos contexto em configurações com vários servidores. Ele não desliga servidores, não junta tools nem resume definições com outro modelo. O número é da Anthropic, sem as condições do teste publicadas.<span class="ts">Fonte: anúncio de 24/11</span></div>
+  <div class="feedback"><strong>Gabarito: B.</strong> Tool search carrega as definições das tools só quando preciso; o anúncio diz que pode cortar mais de 85% do contexto gasto com elas em configurações com vários servidores. Ele não desliga servidores, não junta tools nem resume definições com outro modelo. O número é da Anthropic, sem as condições do teste publicadas.<span class="ts">Fonte: anúncio de 24/11</span></div>
 </div>
 
 <div class="q" data-correct="c">
