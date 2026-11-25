@@ -97,7 +97,7 @@
 <ul>
   <li>Continua rodando com o notebook fechado; você acompanha e dirige de qualquer aparelho, inclusive pelo celular.</li>
   <li>Conta no limite de uso do seu plano, junto com o resto do uso do Claude; não há cobrança separada pela VM.</li>
-  <li>Disponível nos planos Pro, Max, Ultra e Team, e no Enterprise para quem tem os assentos com Claude Code.</li>
+  <li>Disponível nos planos Pro, Max, Ultra e Team, e no Enterprise para quem tem assento premium ou Chat + Claude Code. Numa organização, o admin pode desligar as sessões na nuvem (política <code>allow_remote_sessions</code>), e aí o <code>--cloud</code> não funciona.</li>
   <li>Começa pelo navegador (claude.ai/code), pelo app do celular, pelo app desktop ou pelo terminal com <code>claude --cloud</code>.</li>
   <li>Exige conta claude.ai: não funciona com chave de API nem por Bedrock, Vertex ou outro provedor de terceiros.</li>
 </ul>
@@ -122,9 +122,9 @@
 <h2 id="vai-fica">3. O que vai para a nuvem e o que fica na sua máquina</h2>
 <table class="gloss">
   <tr><th>Vai bem para a nuvem</th><th>Fica na sua máquina</th></tr>
-  <tr><td>Código puro no repositório: refatoração, testes, PR.</td><td>Sessões que dependem de credenciais que só a sua máquina tem (CLI de nuvem logado, tokens locais, chaves de serviços).</td></tr>
-  <tr><td>Tarefa longa que deve continuar com o notebook fechado.</td><td>Sessões presas a algo local: um channel rodando por plugin no seu computador, um app ou banco que só existe ali.</td></tr>
-  <tr><td>O que está versionado vai junto, porque a VM clona o repositório: CLAUDE.md, <code>.claude/settings.json</code>, regras, skills, subagents em <code>.claude/agents/</code>.</td><td>Configuração pessoal: plugins instalados no escopo de usuário não chegam às sessões na nuvem.</td></tr>
+  <tr><td>Código puro no repositório: refatoração, testes, PR.</td><td>Sessões que dependem de login interativo que só a sua máquina tem, como um CLI de nuvem logado por SSO. (Tokens de API de serviço podem ir para a nuvem como <em>network secrets</em> do ambiente, que ficam fora da VM.)</td></tr>
+  <tr><td>Tarefa longa que deve continuar com o notebook fechado.</td><td>Sessões presas a algo que só existe no seu computador, como um app ou banco local, ou um channel cujo plugin roda ali. O que não está no repositório nem no ambiente de nuvem não existe na VM.</td></tr>
+  <tr><td>O que está versionado vai junto, porque a VM clona o repositório: CLAUDE.md, regras, skills, subagents em <code>.claude/agents/</code>. O <code>.claude/settings.json</code> do repositório vale numa sessão com <strong>um só repositório</strong>; nas threads de um project, as permissões, os hooks e o <code>env</code> dele não se aplicam.</td><td>Configuração pessoal: plugins instalados no escopo de usuário não chegam às sessões na nuvem.</td></tr>
 </table>
 <p>A segurança é por desenho: nos ambientes da Anthropic, as credenciais do GitHub ficam criptografadas nos servidores e <strong>nunca entram na VM</strong>. O git sai por um proxy que anexa a credencial do lado de fora, e a rede vem limitada por padrão.</p>
 <p>Sessão parada por muito tempo expira e a VM é recolhida. Ao reabrir, o histórico volta, mas comandos e subagents que estavam rodando param e precisam ser retomados.</p>
@@ -198,7 +198,7 @@
     <label class="opt"><input type="radio" name="q2" value="d">D. Tanto faz, porque a nuvem e o terminal leem as mesmas variáveis</label>
   </div>
   <button class="answer">Responder</button>
-  <div class="feedback"><strong>Gabarito: C.</strong> A VM da nuvem é isolada por desenho e não recebe o que está logado na sua máquina; nem a credencial do GitHub entra nela, que sai por um proxy. Colar token no prompt põe o segredo na conversa, o que é pior. Nenhuma das duas lê as variáveis da outra.<span class="ts">Fonte: docs: claude-code-on-the-web</span></div>
+  <div class="feedback"><strong>Gabarito: C.</strong> A VM da nuvem é isolada por desenho e não recebe o que está logado na sua máquina; nem a credencial do GitHub entra nela, que sai por um proxy. Login interativo, como um CLI de nuvem por SSO, não funciona lá. Um token de API de serviço até pode ir como <em>network secret</em> do ambiente de nuvem, mas colá-lo no prompt põe o segredo na conversa. E nenhuma das duas lê as variáveis da outra.<span class="ts">Fonte: docs: claude-code-on-the-web</span></div>
 </div>
 
 <div class="q" data-correct="a,c">
@@ -283,6 +283,8 @@
 <ul class="fontes">
   <li>Live <em>Claude Code: Advanced</em> (Anthropic, 24/11/2026): recomendação do app desktop no Q&amp;A.</li>
   <li>Sessões na nuvem, <code>--cloud</code> e <code>--teleport</code>: <a href="https://code.claude.com/docs/en/claude-code-on-the-web">https://code.claude.com/docs/en/claude-code-on-the-web</a></li>
+  <li>Ambientes de nuvem (o que vai junto, network secrets): <a href="https://code.claude.com/docs/en/cloud-environments">https://code.claude.com/docs/en/cloud-environments</a></li>
+  <li>Configurações em sessões na nuvem: <a href="https://code.claude.com/docs/en/settings">https://code.claude.com/docs/en/settings</a></li>
   <li>Projects: <a href="https://code.claude.com/docs/en/claude-projects">https://code.claude.com/docs/en/claude-projects</a></li>
   <li>App desktop: <a href="https://code.claude.com/docs/en/desktop">https://code.claude.com/docs/en/desktop</a></li>
 </ul>
