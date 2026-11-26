@@ -107,55 +107,21 @@
   </ul>
 </section>
 
-<section class="ficha" id="lean-upstream-subagentresult">
+<section class="ficha" id="lean-upstream-structured-results">
   <div class="ficha-head">
-    <h2>Lean upstream when downstream has little context (SubagentResult)</h2>
+    <h2>Lean structured upstream results and source metadata (TS 5.1 and TS 1.3)</h2>
     <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
   </div>
-  <div class="pt-block pt" style="margin-top:2px"><strong>Upstream enxuto quando o downstream tem pouco contexto (SubagentResult)</strong></div>
+  <div class="pt-block pt" style="margin-top:2px"><strong>Resultados upstream enxutos e metadados de fonte (TS 5.1 e TS 1.3)</strong></div>
   <ul class="assert">
-    <li>When the synthesis agent has a short context budget, every token the upstream agents send competes with the findings, so the fix is upstream: each agent returns a structured contract with summary, key facts, citations, errors and status instead of verbose reasoning.</li>
-    <li>A single example object is not enough; the SubagentResult schema defines IDs, required fields, types and permitted enum values so the contract can be validated.</li>
-    <li>The coordinator applies two gates before synthesis: structural validation parses the JSON and checks it against the schema, and semantic validation checks whether each citation actually supports its claim, including value, date and methodological scope.</li>
-    <li>Passing the schema does not prove a claim is true nor that the source exists.</li>
-    <li>Verify, don't repeat: the coordinator confirms the upstream work rather than redoing it, and because each citation carries source, locator and the exact excerpt, the coordinator opens that point and checks that excerpt without searching for sources again or re-extracting the data.</li>
-    <li>The excerpt is what makes checking cheap; without it, checking a claim becomes repeating the investigation and the system pays twice in tokens and latency for the same work.</li>
-    <li>Finding sources, extracting data and formulating each claim with source, locator and excerpt belong to the upstream subagent; validating parse, schema and metadata coherence, checking that the source exists and the excerpt supports the claim, and deciding what enters synthesis, what goes to quarantine and what is re-delegated belong to the coordinator.</li>
+    <li>When the synthesis agent has a limited context budget, modify the upstream agents to return structured data with key facts, citations and relevance scores instead of verbose content and reasoning chains.</li>
+    <li>Require subagents to include metadata such as dates, source locations and methodological context in their structured outputs to support accurate downstream synthesis.</li>
+    <li>Use structured data formats to separate content from metadata, including source URLs, document names and page numbers, so attribution is preserved when context passes between agents.</li>
   </ul>
   <ul class="assert pt-block pt">
-    <li>Quando o agente de síntese tem orçamento de contexto curto, cada token que os agentes upstream mandam compete com os findings, então a correção é no upstream: cada agente devolve um contrato estruturado com resumo, fatos-chave, citações, erros e status, em vez de raciocínio verboso.</li>
-    <li>Um objeto de exemplo não basta; o schema SubagentResult define IDs, campos obrigatórios, tipos e valores de enum permitidos para que o contrato possa ser validado.</li>
-    <li>O coordinator aplica dois gates antes da síntese: a validação estrutural faz o parse do JSON e o confere contra o schema, e a validação semântica confere se cada citação realmente sustenta sua claim, incluindo valor, data e recorte metodológico.</li>
-    <li>Passar no schema não prova que uma claim é verdadeira nem que a fonte existe.</li>
-    <li>Verify, don't repeat: o coordinator confere o trabalho do upstream em vez de refazê-lo, e como cada citação traz fonte, locator e o excerpt exato, o coordinator abre aquele ponto e confere aquele trecho sem buscar fontes de novo nem reextrair os dados.</li>
-    <li>O excerpt é o que torna a conferência barata; sem ele, conferir uma claim vira repetir a investigação e o sistema paga duas vezes em tokens e latência pelo mesmo trabalho.</li>
-    <li>Buscar fontes, extrair dados e formular cada claim com fonte, locator e excerpt são do subagent upstream; validar parse, schema e coerência dos metadados, conferir se a fonte existe e se o excerpt sustenta a claim, e decidir o que entra na síntese, o que vai para quarentena e o que é re-delegado são do coordinator.</li>
-  </ul>
-</section>
-
-<section class="ficha" id="verification-depth-content-hash">
-  <div class="ficha-head">
-    <h2>L1/L2/L3 verification depth and content_hash</h2>
-    <button type="button" class="ver-traducao" aria-expanded="false">🇧🇷 ver tradução</button>
-  </div>
-  <div class="pt-block pt" style="margin-top:2px"><strong>Profundidade de verificação L1/L2/L3 e content_hash</strong></div>
-  <ul class="assert">
-    <li>Verification depth is proportional to the risk of the claim: a trivial, directly verifiable datum should not consume the same budget as a financial, legal or statistical value that decides the conclusion.</li>
-    <li>L1 checks structure (parse, schema, types, IDs and metadata coherence) on every result at low cost; L2 checks that the source opens at the locator and the excerpt is there and supports the claim's value, date and scope, for every claim entering synthesis, at medium cost; L3 checks methodology, cross-source contradictions and independent confirmation of that one claim, for high-impact claims and subagent conflicts, at high cost.</li>
-    <li>The content_hash records the content the upstream read; if the source changed since collection the hash does not match and the excerpt must be rechecked against the current content.</li>
-    <li>The content_hash shows whether the content changed; it does not prove the source is authentic nor that the claim is correct.</li>
-    <li>When L2 or L3 fails, the claim goes to quarantine, the gap is recorded in errors and verification can be re-delegated to a subagent; the coordinator does not plug the hole with its own research.</li>
-    <li>If the search ends with no data, findings stays empty and the summary declares the absence; failure or coverage gaps use partial or failed plus errors, and the gap is never filled with an invented value or citation.</li>
-    <li>The citations field in this JSON is a custom application metadata, not the API's native Citations feature; one does not activate or imply compatibility with the other.</li>
-  </ul>
-  <ul class="assert pt-block pt">
-    <li>A profundidade da verificação é proporcional ao risco da claim: um dado trivial e diretamente verificável não deve consumir o mesmo orçamento que um valor financeiro, jurídico ou estatístico que decide a conclusão.</li>
-    <li>O L1 confere a estrutura (parse, schema, tipos, IDs e coerência dos metadados) em todo resultado, a custo baixo; o L2 confere que a fonte abre no locator e que o excerpt está lá e sustenta o valor, a data e o recorte da claim, para toda claim que entra na síntese, a custo médio; o L3 confere metodologia, contradições entre fontes e confirmação independente só daquela claim, para claims de alto impacto e conflitos entre subagents, a custo alto.</li>
-    <li>O content_hash registra o conteúdo que o upstream leu; se a fonte mudou desde a coleta o hash não bate e o excerpt precisa ser conferido no conteúdo atual.</li>
-    <li>O content_hash mostra se o conteúdo mudou; não prova que a fonte é autêntica nem que a claim é correta.</li>
-    <li>Quando o L2 ou o L3 falha, a claim vai para quarentena, a lacuna entra em errors e a verificação pode ser re-delegada a um subagent; o coordinator não tapa o buraco com pesquisa própria.</li>
-    <li>Se a busca termina sem dados, findings fica vazio e o summary declara a ausência; falha ou lacuna de cobertura usa partial ou failed mais errors, e o vazio nunca é preenchido com valor ou citação inventados.</li>
-    <li>O campo citations desse JSON é um metadado customizado da aplicação, não o recurso nativo Citations da API; um não ativa o outro nem implica compatibilidade entre eles.</li>
+    <li>Quando o agente de síntese tem orçamento de contexto limitado, modifique os agentes upstream para devolverem dados estruturados com fatos-chave, citações e relevance scores em vez de conteúdo verboso e cadeias de raciocínio.</li>
+    <li>Exija que os subagents incluam metadados como datas, localizações de fontes e contexto metodológico nos outputs estruturados para apoiar uma síntese downstream precisa.</li>
+    <li>Use formatos de dados estruturados para separar conteúdo de metadados, incluindo URLs de fontes, nomes de documentos e números de páginas, para que a atribuição seja preservada quando o contexto passa entre agentes.</li>
   </ul>
 </section>
 
@@ -320,7 +286,7 @@
     <tr><td class="en">atomic checkpoint</td><td>Writing the full manifest atomically (temp file, flush, rename) after the artifact is durable, so a read never finds a partial checkpoint.</td><td class="ptm pt">Gravar o manifest completo atomicamente (arquivo temporário, flush, rename) depois de o artefato ser durável, para que a leitura nunca encontre um checkpoint parcial.</td></tr>
     <tr><td class="en">orphan artifact</td><td>An artifact written before a crash but not yet recorded in the manifest; must be validated (IDs, inputs, schema, version, hash) before being adopted.</td><td class="ptm pt">Um artefato gravado antes de um crash mas ainda não registrado no manifest; deve ser validado (IDs, inputs, schema, versão, hash) antes de ser adotado.</td></tr>
     <tr><td class="en">idempotency key</td><td>A stable per-task key used with deduplication or a transaction/outbox so a recovered task does not repeat an external side effect on retry.</td><td class="ptm pt">Uma chave estável por tarefa usada com deduplicação ou transação/outbox para que uma tarefa recuperada não repita um efeito colateral externo no retry.</td></tr>
-    <tr><td class="en">structural vs. semantic validation</td><td>Structural checks parse and schema; semantic checks whether a citation truly supports its claim. Schema validity does not prove a claim is true.</td><td class="ptm pt">A validação estrutural confere parse e schema; a semântica confere se a citação realmente sustenta a claim. Validade de schema não prova que a claim é verdadeira.</td></tr>
+    <tr><td class="en">source metadata</td><td>Dates, source locations and methodological context included in structured subagent outputs to support accurate downstream synthesis.</td><td class="ptm pt">Datas, localizações de fontes e contexto metodológico incluídos nos outputs estruturados dos subagents para apoiar uma síntese downstream precisa.</td></tr>
     <tr><td class="en">few-shot examples</td><td>Examples in the system prompt that demonstrate the decision boundary (when to resolve versus escalate), paired with explicit escalation criteria.</td><td class="ptm pt">Exemplos no system prompt que demonstram a fronteira de decisão (quando resolver versus escalar), combinados com critérios explícitos de escalonamento.</td></tr>
     <tr><td class="en">context budget</td><td>The limited context a downstream agent has; upstream agents must return lean structured results so their tokens do not crowd out the findings.</td><td class="ptm pt">O contexto limitado que um agente downstream tem; os agentes upstream devem devolver resultados estruturados e enxutos para seus tokens não espremerem os findings.</td></tr>
     <tr><td class="en">relevance score</td><td>A per-finding relevance value returned in the structured result instead of verbose content, helping the synthesis agent weigh each fact.</td><td class="ptm pt">Um valor de relevância por finding devolvido no resultado estruturado em vez de conteúdo verboso, ajudando o agente de síntese a pesar cada fato.</td></tr>

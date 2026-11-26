@@ -23,7 +23,7 @@ Curso de estudo para a prova **Claude Certified Architect – Foundations (CCAR-
 - **Fichamento (study notes)**: página separada, em inglês, com as afirmações factuais da aula (sem
   explicação), tradução por seção que dá para mostrar, e narração só em inglês. Veja a seção
   [Fichamento](#fichamento-study-notes-em-inglês). Por enquanto, aulas 03, 04, 06, 07, 08, 11, 12 e 13.
-- **Revisão final (English Q&A)**: página única `revisao.html`, 100% em inglês, com 147 perguntas e
+- **Revisão final (English Q&A)**: página única `revisao.html`, 100% em inglês, com 145 perguntas e
   respostas afirmativas sempre visíveis, agrupadas por aula e ordenadas por prioridade de revisão.
   Os cards não dependem de JavaScript; a narração opcional em inglês usa o player do curso.
 
