@@ -10,7 +10,8 @@ Saída:
   audio/aula-XX.txt     texto narrado, para conferir
   narracao/aula-XX.js   instante em que a narração chega a cada parágrafo (usado por narracao/player.js)
 
-Fica de fora da narração: traduções (.pt), blocos de código (viram um aviso), botões e navegação.
+Fica de fora da narração: traduções (.pt), blocos de código (viram um aviso), botões, navegação
+e elementos com aria-hidden="true".
 O parágrafo é identificado pelo caminho de índices a partir do <body> na árvore do html5lib, que
 monta a página como o navegador (inclusive o <tbody> implícito), então o caminho vale nos dois lados.
 """
@@ -50,7 +51,8 @@ def _classes(el):
 
 
 def _pular(el):
-    return el.tag in PULAR_TAGS or bool(_classes(el) & PULAR_CLASSES) or el.get("id") in PULAR_IDS
+    return (el.tag in PULAR_TAGS or bool(_classes(el) & PULAR_CLASSES) or el.get("id") in PULAR_IDS
+            or el.get("aria-hidden") == "true")
 
 
 def _bloco(el):

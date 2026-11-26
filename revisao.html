@@ -39,7 +39,7 @@
     text-transform: uppercase; margin: 0 0 4px; }
   .lesson-head h2 { font-size: 20px; line-height: 1.3; margin: 0 0 5px; }
   .lesson-meta { color: var(--muted); font-size: 12.5px; margin: 0; }
-  .lesson-meta a { margin-left: 8px; white-space: nowrap; }
+  .lesson-nav { font-size: 12.5px; margin-top: 4px; }
   ol.cards { list-style: none; padding: 0; margin: 0; }
   .card { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent);
     border-radius: 8px; padding: 12px 15px; margin: 8px 0; overflow-wrap: break-word; }
@@ -55,7 +55,6 @@
     h1 { font-size: 24px; }
     .review-index { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .lesson-head h2 { font-size: 18px; }
-    .lesson-meta a { display: inline-block; margin: 4px 0 0; }
     .card { padding: 11px 12px; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -74,7 +73,7 @@
     <span class="tag">147 cards</span>
     <span class="tag">14 lessons</span>
     <span class="tag">English</span>
-    <span class="tag">Text edition</span>
+    <span class="tag">English narration</span>
   </div>
 </header>
 
@@ -100,9 +99,10 @@
     <div class="lesson-head">
       <p class="priority">Priority 01</p>
       <h2 id="heading-12">Lesson 12 · Context Management &amp; Escalation</h2>
-      <p class="lesson-meta">Domain 5 · Context Management &amp; Reliability · 15 cards
+      <p class="lesson-meta">Domain 5 · Context Management &amp; Reliability · 15 cards</p>
+      <nav class="lesson-nav" aria-label="Lesson 12 navigation">
         <a href="aula-12.html" aria-label="Open full Lesson 12">Full lesson</a>
-      </p>
+      </nav>
     </div>
     <ol class="cards">
     <li class="card">
@@ -172,9 +172,10 @@
     <div class="lesson-head">
       <p class="priority">Priority 02</p>
       <h2 id="heading-06">Lesson 06 · CLAUDE.md Hierarchy, Imports, and Rules</h2>
-      <p class="lesson-meta">Domain 3 · Claude Code Configuration &amp; Workflows · 9 cards
+      <p class="lesson-meta">Domain 3 · Claude Code Configuration &amp; Workflows · 9 cards</p>
+      <nav class="lesson-nav" aria-label="Lesson 06 navigation">
         <a href="aula-06.html" aria-label="Open full Lesson 06">Full lesson</a>
-      </p>
+      </nav>
     </div>
     <ol class="cards">
     <li class="card">
@@ -220,9 +221,10 @@
     <div class="lesson-head">
       <p class="priority">Priority 03</p>
       <h2 id="heading-07">Lesson 07 · Slash Commands, Skills, Permissions, and Plan Mode</h2>
-      <p class="lesson-meta">Domain 3 · Claude Code Configuration &amp; Workflows · 14 cards
+      <p class="lesson-meta">Domain 3 · Claude Code Configuration &amp; Workflows · 14 cards</p>
+      <nav class="lesson-nav" aria-label="Lesson 07 navigation">
         <a href="aula-07.html" aria-label="Open full Lesson 07">Full lesson</a>
-      </p>
+      </nav>
     </div>
     <ol class="cards">
     <li class="card">
@@ -288,9 +290,10 @@
     <div class="lesson-head">
       <p class="priority">Priority 04</p>
       <h2 id="heading-04">Lesson 04 · Tool Descriptions, Distribution, and tool_choice</h2>
-      <p class="lesson-meta">Domain 2 · Tool Design &amp; MCP Integration · 11 cards
+      <p class="lesson-meta">Domain 2 · Tool Design &amp; MCP Integration · 11 cards</p>
+      <nav class="lesson-nav" aria-label="Lesson 04 navigation">
         <a href="aula-04.html" aria-label="Open full Lesson 04">Full lesson</a>
-      </p>
+      </nav>
     </div>
     <ol class="cards">
     <li class="card">
@@ -344,9 +347,10 @@
     <div class="lesson-head">
       <p class="priority">Priority 05</p>
       <h2 id="heading-08">Lesson 08 · Iterative Refinement and Claude Code in CI/CD</h2>
-      <p class="lesson-meta">Domain 3 · Claude Code Configuration &amp; Workflows · 14 cards
+      <p class="lesson-meta">Domain 3 · Claude Code Configuration &amp; Workflows · 14 cards</p>
+      <nav class="lesson-nav" aria-label="Lesson 08 navigation">
         <a href="aula-08.html" aria-label="Open full Lesson 08">Full lesson</a>
-      </p>
+      </nav>
     </div>
     <ol class="cards">
     <li class="card">
@@ -412,9 +416,10 @@
     <div class="lesson-head">
       <p class="priority">Priority 06</p>
       <h2 id="heading-13">Lesson 13 · Error Propagation, Human Review, and Provenance</h2>
-      <p class="lesson-meta">Domain 5 · Context Management &amp; Reliability · 12 cards
+      <p class="lesson-meta">Domain 5 · Context Management &amp; Reliability · 12 cards</p>
+      <nav class="lesson-nav" aria-label="Lesson 13 navigation">
         <a href="aula-13.html" aria-label="Open full Lesson 13">Full lesson</a>
-      </p>
+      </nav>
     </div>
     <ol class="cards">
     <li class="card">
@@ -472,9 +477,10 @@
     <div class="lesson-head">
       <p class="priority">Priority 07</p>
       <h2 id="heading-02">Lesson 02 · Coordinator and Subagent Orchestration</h2>
-      <p class="lesson-meta">Domain 1 · Agentic Architecture &amp; Orchestration · 11 cards
+      <p class="lesson-meta">Domain 1 · Agentic Architecture &amp; Orchestration · 11 cards</p>
+      <nav class="lesson-nav" aria-label="Lesson 02 navigation">
         <a href="aula-02.html" aria-label="Open full Lesson 02">Full lesson</a>
-      </p>
+      </nav>
     </div>
     <ol class="cards">
     <li class="card">
@@ -528,9 +534,10 @@
     <div class="lesson-head">
       <p class="priority">Priority 08</p>
       <h2 id="heading-11">Lesson 11 · Message Batches and Multi-Pass Review</h2>
-      <p class="lesson-meta">Domain 4 · Prompt Engineering &amp; Structured Output · 10 cards
+      <p class="lesson-meta">Domain 4 · Prompt Engineering &amp; Structured Output · 10 cards</p>
+      <nav class="lesson-nav" aria-label="Lesson 11 navigation">
         <a href="aula-11.html" aria-label="Open full Lesson 11">Full lesson</a>
-      </p>
+      </nav>
     </div>
     <ol class="cards">
     <li class="card">
@@ -580,9 +587,10 @@
     <div class="lesson-head">
       <p class="priority">Priority 09</p>
       <h2 id="heading-05">Lesson 05 · Structured Errors, MCP, and Built-In Tools</h2>
-      <p class="lesson-meta">Domain 2 · Tool Design &amp; MCP Integration · 12 cards
+      <p class="lesson-meta">Domain 2 · Tool Design &amp; MCP Integration · 12 cards</p>
+      <nav class="lesson-nav" aria-label="Lesson 05 navigation">
         <a href="aula-05.html" aria-label="Open full Lesson 05">Full lesson</a>
-      </p>
+      </nav>
     </div>
     <ol class="cards">
     <li class="card">
@@ -640,9 +648,10 @@
     <div class="lesson-head">
       <p class="priority">Priority 10</p>
       <h2 id="heading-01">Lesson 01 · The Agent SDK and the Agentic Loop</h2>
-      <p class="lesson-meta">Domain 1 · Agentic Architecture &amp; Orchestration · 8 cards
+      <p class="lesson-meta">Domain 1 · Agentic Architecture &amp; Orchestration · 8 cards</p>
+      <nav class="lesson-nav" aria-label="Lesson 01 navigation">
         <a href="aula-01.html" aria-label="Open full Lesson 01">Full lesson</a>
-      </p>
+      </nav>
     </div>
     <ol class="cards">
     <li class="card">
@@ -684,9 +693,10 @@
     <div class="lesson-head">
       <p class="priority">Priority 11</p>
       <h2 id="heading-03">Lesson 03 · Enforcement, Hooks, and Session Management</h2>
-      <p class="lesson-meta">Domain 1 · Agentic Architecture &amp; Orchestration · 8 cards
+      <p class="lesson-meta">Domain 1 · Agentic Architecture &amp; Orchestration · 8 cards</p>
+      <nav class="lesson-nav" aria-label="Lesson 03 navigation">
         <a href="aula-03.html" aria-label="Open full Lesson 03">Full lesson</a>
-      </p>
+      </nav>
     </div>
     <ol class="cards">
     <li class="card">
@@ -728,9 +738,10 @@
     <div class="lesson-head">
       <p class="priority">Priority 12</p>
       <h2 id="heading-09">Lesson 09 · Explicit Criteria and Few-Shot Prompting</h2>
-      <p class="lesson-meta">Domain 4 · Prompt Engineering &amp; Structured Output · 7 cards
+      <p class="lesson-meta">Domain 4 · Prompt Engineering &amp; Structured Output · 7 cards</p>
+      <nav class="lesson-nav" aria-label="Lesson 09 navigation">
         <a href="aula-09.html" aria-label="Open full Lesson 09">Full lesson</a>
-      </p>
+      </nav>
     </div>
     <ol class="cards">
     <li class="card">
@@ -768,9 +779,10 @@
     <div class="lesson-head">
       <p class="priority">Priority 13</p>
       <h2 id="heading-10">Lesson 10 · Structured Output, Schemas, and Validation Retry</h2>
-      <p class="lesson-meta">Domain 4 · Prompt Engineering &amp; Structured Output · 9 cards
+      <p class="lesson-meta">Domain 4 · Prompt Engineering &amp; Structured Output · 9 cards</p>
+      <nav class="lesson-nav" aria-label="Lesson 10 navigation">
         <a href="aula-10.html" aria-label="Open full Lesson 10">Full lesson</a>
-      </p>
+      </nav>
     </div>
     <ol class="cards">
     <li class="card">
@@ -816,9 +828,10 @@
     <div class="lesson-head">
       <p class="priority">Priority 14</p>
       <h2 id="heading-14">Lesson 14 · Exam Strategy and Logistics</h2>
-      <p class="lesson-meta">Final review · All domains · 7 cards
+      <p class="lesson-meta">Final review · All domains · 7 cards</p>
+      <nav class="lesson-nav" aria-label="Lesson 14 navigation">
         <a href="aula-14.html" aria-label="Open full Lesson 14">Full lesson</a>
-      </p>
+      </nav>
     </div>
     <ol class="cards">
     <li class="card">
@@ -854,9 +867,12 @@
 </main>
 
 <footer>
-  <a href="#top">Back to review index</a> · <a href="index.html">Course index</a> · Read the question, confirm the answer, move on.
+  <p>Read the question, confirm the answer, move on.</p>
+  <nav aria-label="Review navigation"><a href="#top">Back to review index</a> · <a href="index.html">Course index</a></nav>
 </footer>
 
 </div>
+<script src="narracao/revisao.js"></script>
+<script src="narracao/player.js"></script>
 </body>
 </html>
