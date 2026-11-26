@@ -24,16 +24,8 @@
           "a": "Put a key-findings summary at the start of the aggregated input and organize detailed results under explicit section headers; metadata alone does not fix the positional effect."
         },
         {
-          "q": "What should an upstream subagent return when downstream context is limited?",
-          "a": "Return a schema-validated SubagentResult with a concise summary, key facts, citations, errors, and status instead of verbose reasoning; an example object alone is not a validation contract."
-        },
-        {
-          "q": "How do L1, L2, and L3 verification depths differ?",
-          "a": "L1 validates structure and metadata on every result; L2 opens each cited source and checks that its excerpt supports the claim entering synthesis; L3 examines methodology, contradictions, and independent confirmation for high-impact or disputed claims."
-        },
-        {
-          "q": "How does the coordinator verify upstream work without repeating the investigation?",
-          "a": "Each citation supplies source, locator, exact excerpt, and content_hash; the coordinator checks those points and quarantines failed claims instead of searching again, while the hash only detects changed content rather than proving truth or authenticity."
+          "q": "What should upstream research agents return when downstream context is limited?",
+          "a": "Return structured key facts, citations, relevance scores, and source metadata—dates, source locations, and methodological context—instead of verbose content and reasoning; separate content from source URLs, document names, and page numbers so attribution survives the handoff."
         },
         {
           "q": "Which four techniques manage a growing context window?",
