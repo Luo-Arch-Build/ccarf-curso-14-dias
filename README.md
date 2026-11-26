@@ -23,6 +23,9 @@ Curso de estudo para a prova **Claude Certified Architect – Foundations (CCAR-
 - **Fichamento (study notes)**: página separada, em inglês, com as afirmações factuais da aula (sem
   explicação), tradução por seção que dá para mostrar, e narração só em inglês. Veja a seção
   [Fichamento](#fichamento-study-notes-em-inglês). Por enquanto, aulas 03, 04, 06, 07, 08, 11, 12 e 13.
+- **Revisão final (English Q&A)**: página única `revisao.html`, 100% em inglês, com 147 perguntas e
+  respostas afirmativas sempre visíveis, agrupadas por aula e ordenadas por prioridade de revisão.
+  A edição de texto funciona sem JavaScript e sem depender de áudio.
 
 ## Como usar
 
@@ -83,6 +86,19 @@ Notas de operação:
   o gerador aborta. Nesse caso, dê uma pausa de alguns segundos e **rode o mesmo comando de novo**: ele pula
   as partes já salvas e retoma daquela linha. Pode ajudar subir `NARRAR_TENTATIVAS` e `PAUSA` na retomada.
 - `&` cru trava o edge-tts (SSML); o `normalizar` já troca por "and"/"e".
+
+## Revisão final (English Q&A)
+
+A página `revisao.html` reúne todo o conteúdo de prova em uma única revisão rápida, 100% em inglês.
+Cada card traz uma pergunta curta e uma resposta afirmativa visível; não há toggles, subpáginas de
+revisão ou questões repetidas do simulado. As aulas aparecem em ordem de prioridade, com mais cards
+nos pontos que exigem maior atenção e manutenção curta nos já consolidados.
+
+A edição de texto é estática e não exige JavaScript. Para regenerar depois de editar o conteúdo:
+
+```bash
+python3 tools/revisao.py    # tools/revisao-content.json -> revisao.html
+```
 
 ## Extensão 24/11 (produto atual, fora da prova)
 

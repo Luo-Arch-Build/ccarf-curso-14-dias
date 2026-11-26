@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="CCAR-F final review: 147 concise English questions with visible answers, ordered by review priority.">
+<title>CCAR-F · Final Review · 147 English Q&A Cards</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --card2: #1d212b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97757; --accent2: #a78bfa;
+    --ok: #34d399;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 28px 20px 72px; }
+  header.top { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 20px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  .crumbs a { color: var(--muted); }
+  h1 { font-size: 28px; line-height: 1.2; margin: 0 0 8px; }
+  .lead { color: var(--muted); font-size: 14px; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+  .tag { display: inline-block; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 3px 10px; font-size: 12px; color: var(--muted); }
+  a { color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent2); outline-offset: 3px; border-radius: 3px; }
+  .review-index { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    gap: 8px; margin: 20px 0 28px; }
+  .review-index a { display: block; min-height: 44px; padding: 11px 10px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+    text-decoration: none; font-size: 12.5px; }
+  .review-index a:hover { border-color: var(--accent); }
+  .review-index .rank { color: var(--accent); font-weight: 700; margin-right: 5px; }
+  section.lesson { margin: 32px 0 0; scroll-margin-top: 16px; }
+  .lesson-head { border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px; }
+  .priority { color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; margin: 0 0 4px; }
+  .lesson-head h2 { font-size: 20px; line-height: 1.3; margin: 0 0 5px; }
+  .lesson-meta { color: var(--muted); font-size: 12.5px; margin: 0; }
+  .lesson-meta a { margin-left: 8px; white-space: nowrap; }
+  ol.cards { list-style: none; padding: 0; margin: 0; }
+  .card { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    border-radius: 8px; padding: 12px 15px; margin: 8px 0; overflow-wrap: break-word; }
+  .q, .a { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 7px; }
+  .q { font-size: 15px; font-weight: 650; }
+  .a { margin-top: 6px; font-size: 14px; color: var(--text); }
+  .label { font-size: 11px; font-weight: 800; line-height: 1.8; color: var(--accent); }
+  .a .label { color: var(--ok); }
+  footer { border-top: 1px solid var(--border); margin-top: 36px; padding-top: 18px;
+    color: var(--muted); font-size: 13px; }
+  @media (max-width: 560px) {
+    .wrap { padding: 20px 14px 56px; }
+    h1 { font-size: 24px; }
+    .review-index { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lesson-head h2 { font-size: 18px; }
+    .lesson-meta a { display: inline-block; margin: 4px 0 0; }
+    .card { padding: 11px 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="top">
+
+<header class="top">
+  <div class="crumbs"><a href="index.html">CCAR-F · 14-Day Course</a> / Final Review</div>
+  <h1>CCAR-F · Final Review</h1>
+  <p class="lead">English Q&amp;A · One page · Answers visible · Ordered by review priority</p>
+  <div class="meta">
+    <span class="tag">147 cards</span>
+    <span class="tag">14 lessons</span>
+    <span class="tag">English</span>
+    <span class="tag">Text edition</span>
+  </div>
+</header>
+
+<nav class="review-index" aria-label="Review lessons">
+    <a href="#lesson-12" aria-label="Priority 1: Lesson 12, Context Management &amp; Escalation"><span class="rank">01</span>Lesson 12</a>
+    <a href="#lesson-06" aria-label="Priority 2: Lesson 06, CLAUDE.md Hierarchy, Imports, and Rules"><span class="rank">02</span>Lesson 06</a>
+    <a href="#lesson-07" aria-label="Priority 3: Lesson 07, Slash Commands, Skills, Permissions, and Plan Mode"><span class="rank">03</span>Lesson 07</a>
+    <a href="#lesson-04" aria-label="Priority 4: Lesson 04, Tool Descriptions, Distribution, and tool_choice"><span class="rank">04</span>Lesson 04</a>
+    <a href="#lesson-08" aria-label="Priority 5: Lesson 08, Iterative Refinement and Claude Code in CI/CD"><span class="rank">05</span>Lesson 08</a>
+    <a href="#lesson-13" aria-label="Priority 6: Lesson 13, Error Propagation, Human Review, and Provenance"><span class="rank">06</span>Lesson 13</a>
+    <a href="#lesson-02" aria-label="Priority 7: Lesson 02, Coordinator and Subagent Orchestration"><span class="rank">07</span>Lesson 02</a>
+    <a href="#lesson-11" aria-label="Priority 8: Lesson 11, Message Batches and Multi-Pass Review"><span class="rank">08</span>Lesson 11</a>
+    <a href="#lesson-05" aria-label="Priority 9: Lesson 05, Structured Errors, MCP, and Built-In Tools"><span class="rank">09</span>Lesson 05</a>
+    <a href="#lesson-01" aria-label="Priority 10: Lesson 01, The Agent SDK and the Agentic Loop"><span class="rank">10</span>Lesson 01</a>
+    <a href="#lesson-03" aria-label="Priority 11: Lesson 03, Enforcement, Hooks, and Session Management"><span class="rank">11</span>Lesson 03</a>
+    <a href="#lesson-09" aria-label="Priority 12: Lesson 09, Explicit Criteria and Few-Shot Prompting"><span class="rank">12</span>Lesson 09</a>
+    <a href="#lesson-10" aria-label="Priority 13: Lesson 10, Structured Output, Schemas, and Validation Retry"><span class="rank">13</span>Lesson 10</a>
+    <a href="#lesson-14" aria-label="Priority 14: Lesson 14, Exam Strategy and Logistics"><span class="rank">14</span>Lesson 14</a>
+</nav>
+
+<main>
+  <section class="lesson" id="lesson-12" aria-labelledby="heading-12">
+    <div class="lesson-head">
+      <p class="priority">Priority 01</p>
+      <h2 id="heading-12">Lesson 12 · Context Management &amp; Escalation</h2>
+      <p class="lesson-meta">Domain 5 · Context Management &amp; Reliability · 15 cards
+        <a href="aula-12.html" aria-label="Open full Lesson 12">Full lesson</a>
+      </p>
+    </div>
+    <ol class="cards">
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Who preserves conversation state between Messages API requests?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>The application preserves state and resends the messages, tool calls, and tool results needed for coherence; the API keeps no state between requests.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do you preserve exact facts while summarizing a long conversation?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Extract and verify exact IDs, amounts, dates, decisions, and customer commitments before summarizing; persist them in a case-facts block outside the summary and inject that block into later requests.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do history, context, structured state, and a summary differ?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>History is the stored exchange; context is what this request sends to the model; structured state is exact data persisted outside history and reinjected when needed; a summary is compressed history that loses detail.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What is the correct mitigation for lost-in-the-middle failures?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Put a key-findings summary at the start of the aggregated input and organize detailed results under explicit section headers; metadata alone does not fix the positional effect.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What should an upstream subagent return when downstream context is limited?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Return a schema-validated SubagentResult with a concise summary, key facts, citations, errors, and status instead of verbose reasoning; an example object alone is not a validation contract.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do L1, L2, and L3 verification depths differ?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>L1 validates structure and metadata on every result; L2 opens each cited source and checks that its excerpt supports the claim entering synthesis; L3 examines methodology, contradictions, and independent confirmation for high-impact or disputed claims.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How does the coordinator verify upstream work without repeating the investigation?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Each citation supplies source, locator, exact excerpt, and content_hash; the coordinator checks those points and quarantines failed claims instead of searching again, while the hash only detects changed content rather than proving truth or authenticity.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Which four techniques manage a growing context window?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Combine summarization, a structured state object, a sliding window, and selective retention according to what must survive; they are complementary rather than competing techniques.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Where should verbose tool results be reduced, and what should remain in context?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Trim irrelevant fields in the tool or integration layer before they enter history; then selectively extract-persist-reinject exact facts, summarize decisions and rationale, and remove content that has already served its purpose.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Does a sliding window of N turns impose a token or cost limit?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>No: turns vary in size and early facts fall out of the window, so use a token budget and cut policy together with immediate extraction of durable facts.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What are the three legitimate escalation triggers?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Escalate for an explicit human request, a policy exception or gap, or inability to make meaningful progress; complexity, frustration, sentiment, and raw self-confidence are not escalation triggers.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How should over-escalation and under-escalation be corrected first?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Write observable criteria for both escalation and non-escalation, add few-shot examples on both sides of the boundary, and measure precision and recall separately before considering a dedicated classifier.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What should the agent do when a lookup returns multiple possible customers?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Ask for an additional identifier such as email, tax ID, or order number; never guess by recency or location because selecting the wrong customer can disclose private data.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How should exploration findings survive compaction and phase boundaries?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Persist exact findings in scratchpads or manifests, inject phase summaries into the next phase's subagents, run directed compaction with preservation instructions, and verify the result item by item before acting.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What makes crash recovery safe in a multi-agent pipeline?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Persist versioned artifacts and an atomic RunManifest, reconcile task states, artifacts, hashes, and external effects before resuming, treat crashed in_progress work as unfinished, and use idempotency keys or deduplication for side effects.</span></div>
+    </li>
+    </ol>
+  </section>
+
+  <section class="lesson" id="lesson-06" aria-labelledby="heading-06">
+    <div class="lesson-head">
+      <p class="priority">Priority 02</p>
+      <h2 id="heading-06">Lesson 06 · CLAUDE.md Hierarchy, Imports, and Rules</h2>
+      <p class="lesson-meta">Domain 3 · Claude Code Configuration &amp; Workflows · 9 cards
+        <a href="aula-06.html" aria-label="Open full Lesson 06">Full lesson</a>
+      </p>
+    </div>
+    <ol class="cards">
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Which three CLAUDE.md levels does the exam test?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>User level is ~/.claude/CLAUDE.md for personal cross-project preferences; project level is the root or .claude/CLAUDE.md shared through git; directory level is a subdirectory CLAUDE.md loaded while working in that tree.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Do CLAUDE.md files override one another?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>No: applicable files load together and their instructions add up in the session context.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Why does a new teammate miss rules stored in ~/.claude/CLAUDE.md?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>That file is personal and outside version control; move shared conventions to the versioned project CLAUDE.md at the repository root or .claude/CLAUDE.md.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do /memory and /context support different diagnoses?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use /memory to locate, open, or create memory files; use /context and its Memory files section to inspect what loaded at session launch.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do you diagnose rules that load only on demand?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Reproduce access to a matching file and inspect the terminal's Loaded line or an InstructionsLoaded hook; one launch-time /context call cannot list files that may load later.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Does splitting a large CLAUDE.md with @import reduce context by itself?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>No: @path/to/file modularizes maintenance, but imported content still loads; path-scoped rules are what reduce irrelevant context.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How does .claude/rules/ help modularize project guidance?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>It stores focused, versioned topic files such as testing.md and api-conventions.md instead of one monolithic CLAUDE.md, with optional YAML paths globs for conditional loading.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When does a rule with paths enter the context?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>It loads when Claude works with a matching file through Read, Write, Edit, or a recognized single-file Bash read such as cat or head; loading is not limited to edits.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Why use **/*.test.tsx instead of directory CLAUDE.md files for scattered tests?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>The glob follows the file type across directories, while a directory CLAUDE.md is bound to its own tree; deterministic loading still leaves model adherence probabilistic, so guarantees require code.</span></div>
+    </li>
+    </ol>
+  </section>
+
+  <section class="lesson" id="lesson-07" aria-labelledby="heading-07">
+    <div class="lesson-head">
+      <p class="priority">Priority 03</p>
+      <h2 id="heading-07">Lesson 07 · Slash Commands, Skills, Permissions, and Plan Mode</h2>
+      <p class="lesson-meta">Domain 3 · Claude Code Configuration &amp; Workflows · 14 cards
+        <a href="aula-07.html" aria-label="Open full Lesson 07">Full lesson</a>
+      </p>
+    </div>
+    <ol class="cards">
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Where should a team-shared slash command live?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Store its Markdown file in the repository's .claude/commands/ directory so git distributes it; ~/.claude/commands/ is for personal shortcuts.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How does a skill differ from CLAUDE.md?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>A skill is an on-demand procedure whose description stays available and whose SKILL.md body loads when used; CLAUDE.md supplies persistent project guidance and is not an occasional workflow.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What do context: fork, allowed-tools, and argument-hint do in SKILL.md?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>context: fork isolates execution in a subagent; on the exam allowed-tools restricts available tools; argument-hint tells the user which parameters to supply.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Which skill rules follow the exam guide rather than current product behavior?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>On the exam, commands and skills are distinct and allowed-tools restricts tools; in the current product they are unified, allowed-tools only pre-approves, and disallowed-tools removes access.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How should you personalize a project skill without changing the team's workflow?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Create a differently named variant under ~/.claude/skills/; editing or committing personal changes to the project skill would affect everyone.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do you map common needs to the right configuration mechanism?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use project CLAUDE.md for universal standards, a paths rule for file-type conventions, a skill for occasional parameterized workflows, a slash command for a named shared prompt, and a personal command or skill for private shortcuts.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When should you use a deny rule versus a PreToolUse hook?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use deny for an unconditional target that matches a tool, command, or path pattern; use PreToolUse when blocking or rewriting depends on conditions such as environment, branch, or amount.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How are permission rules evaluated?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Evaluation is deny, then ask, then allow, and deny always wins; a personal allow cannot reopen a project deny.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What is the settings-file precedence from strongest to weakest?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Managed organization policy, command-line arguments, .claude/settings.local.json, project .claude/settings.json, then ~/.claude/settings.json; permission lists combine across files.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do PreToolUse hook decisions and exit codes work?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>permissionDecision can allow, deny, or ask, updatedInput can rewrite the call, and exit 2 blocks without JSON; exit 1 does not block by default, and a hook allow cannot override a deny or skip an ask.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Which hooks fit a formatter and a validator?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Run a formatter in PostToolUse after a successful edit; run a blocking validator in PreToolUse before the action executes.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When is direct execution preferable to plan mode?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use direct execution for a simple, understood, well-scoped change; per-edit permission prompts already provide supervision and do not turn the task into plan mode.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When do plan mode and a multi-phase workflow apply?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use plan mode when design uncertainty requires exploration and approval before edits; use a multi-phase workflow when separate phases produce artifacts and require explicit handoffs and independent human or programmatic gates.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What does plan approval authorize, and how is the same plan implemented headlessly?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>It authorizes implementation, not production or deployment; a later headless run must explicitly resume the session or receive the approved plan artifact and its context, while external release gates remain separate.</span></div>
+    </li>
+    </ol>
+  </section>
+
+  <section class="lesson" id="lesson-04" aria-labelledby="heading-04">
+    <div class="lesson-head">
+      <p class="priority">Priority 04</p>
+      <h2 id="heading-04">Lesson 04 · Tool Descriptions, Distribution, and tool_choice</h2>
+      <p class="lesson-meta">Domain 2 · Tool Design &amp; MCP Integration · 11 cards
+        <a href="aula-04.html" aria-label="Open full Lesson 04">Full lesson</a>
+      </p>
+    </div>
+    <ol class="cards">
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What is the first fix when an agent confuses two similar tools?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Expand and differentiate their descriptions; minimal or overlapping descriptions are the primary cause of unreliable selection, so start there instead of adding routing infrastructure.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What belongs in a high-quality tool description?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>State domain-specific purpose, accepted input formats, example user queries, edge cases, and boundaries that say when to use this tool instead of a similar one.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How should severely overlapping tools be redesigned?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Rename and specialize them, or split a generic tool into single-purpose tools with clear input and output contracts; names and descriptions both guide selection.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What if good tool descriptions still fail around a literal keyword?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Inspect the system prompt and rewrite keyword-sensitive routing as intent-based guidance, such as using lookup_order for order-status questions rather than anything containing the word order.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Why should each agent receive only role-relevant tools?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>A smaller scoped tool set reduces semantic overlap, decision complexity, and cross-role misuse; follow least privilege rather than treating any specific tool count as a quota.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do you stop an agent from using a generic tool outside its role?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Replace it with a constrained alternative whose handler validates and rejects disallowed targets, such as load_document instead of unrestricted fetch_url; descriptions and schemas alone do not enforce that semantic policy.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Can a specialist receive a tool normally associated with another role?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Yes, if it is narrowly scoped to a frequent need: give synthesis a limited verify_fact for simple checks while complex investigation still goes through the coordinator to the research agent.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do tool_choice auto, any, and forced selection differ?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>auto permits text or a tool; any requires some tool while allowing a choice; forced selection requires the named tool, such as extract_metadata.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When is tool_choice the right guarantee?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use it when the model must emit a tool_use in this turn; an imperative prompt remains probabilistic, while tool_choice controls the requested emission.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Does forced tool selection guarantee successful execution and workflow order?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>No: tool_choice controls emission, while application code executes the handler and a prerequisite gate validates success and business data before enabling the next step.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What is the correct client-tool loop across turns?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>The model emits tool_use with id, name, and input; the application executes and validates the handler, preserves the assistant block, returns tool_result with the matching tool_use_id, and keeps later steps blocked after failure or invalid output.</span></div>
+    </li>
+    </ol>
+  </section>
+
+  <section class="lesson" id="lesson-08" aria-labelledby="heading-08">
+    <div class="lesson-head">
+      <p class="priority">Priority 05</p>
+      <h2 id="heading-08">Lesson 08 · Iterative Refinement and Claude Code in CI/CD</h2>
+      <p class="lesson-meta">Domain 3 · Claude Code Configuration &amp; Workflows · 14 cards
+        <a href="aula-08.html" aria-label="Open full Lesson 08">Full lesson</a>
+      </p>
+    </div>
+    <ol class="cards">
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do you make an ambiguous transformation converge consistently?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Provide 2–3 concrete input/output examples that demonstrate capitalization, null handling, formats, and field names instead of adding more prose.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What does test-driven iteration look like?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Write tests for expected behavior, edge cases, and performance first; implement, run them, and feed back exact failures with input, expected output, and actual output until the suite passes.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When should Claude interview you before coding?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use the interview pattern in an unfamiliar domain so Claude surfaces requirements, constraints, and failure modes you did not know to specify; a longer prompt cannot describe unknown considerations.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How should interacting and independent issues be iterated?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Put interacting fixes in one detailed message so their shared behavior stays coherent; handle independent fixes sequentially because they do not invalidate one another.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Which flag prevents Claude Code from hanging for input in CI?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use -p or --print to process the prompt, write the result to stdout, and exit; shell redirections and timeouts do not provide the same behavior.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do --output-format json and --json-schema work together?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>The first produces parseable JSON and the second constrains valid structured output; consume the validated structured_output field only after checking that the run succeeded and the field exists with the expected type.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What does missing structured_output mean?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>It means the run did not produce valid structured output, not that there were zero findings; fail the job explicitly instead of substituting an empty findings array.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What does dontAsk do in a non-interactive job?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>It denies calls that would require approval while actions that need no prompt continue; allow rules, allowedTools, and approving hooks can still permit specific calls, so it is not an absolute allowlist.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When are bypassPermissions and acceptEdits appropriate?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use bypassPermissions only in an isolated container or VM, with deny rules and denying hooks still effective; use acceptEdits for a code-generation job that may edit in the working directory, not for a read-only reviewer.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do --max-turns and --max-budget-usd contain runaway work?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>They cap agentic turns and client-estimated spend in -p mode; the budget is not a hard billing cap, and legitimate limit failures call for adjustment or task splitting rather than removing the safeguard.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do --tools, --disallowedTools, and --allowedTools differ?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>--tools restricts built-ins, --disallowedTools removes built-in or MCP tools, and --allowedTools only pre-approves without restricting availability; removing Edit and Write is insufficient while Bash remains available.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What is the shape of a read-only PR-review job?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use -p with dontAsk, --tools Read,Grep,Glob, --disallowedTools mcp__*, turn and budget limits, JSON output and schema, and a prompt that reports rather than fixes findings.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How does --bare improve CI reproducibility?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>It skips automatic discovery of host memory, hooks, skills, plugins, and MCP configuration; supply reviewed context explicitly, for example with --append-system-prompt-file CLAUDE.md, while -p separately controls non-interactive execution.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do Claude Code Action and managed Code Review differ, and how do repeat reviews stay clean?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use the Action with claude_args when you control workflow flags and limits; managed Code Review comments without commits and reads REVIEW.md from the base branch, and every rerun receives prior findings so it reports only new or unresolved issues.</span></div>
+    </li>
+    </ol>
+  </section>
+
+  <section class="lesson" id="lesson-13" aria-labelledby="heading-13">
+    <div class="lesson-head">
+      <p class="priority">Priority 06</p>
+      <h2 id="heading-13">Lesson 13 · Error Propagation, Human Review, and Provenance</h2>
+      <p class="lesson-meta">Domain 5 · Context Management &amp; Reliability · 12 cards
+        <a href="aula-13.html" aria-label="Open full Lesson 13">Full lesson</a>
+      </p>
+    </div>
+    <ol class="cards">
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What error context should a subagent send to the coordinator?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Send structured failure type, attempted query or parameters, partial results, and alternative approaches, with an explicit status such as partial_failure; a vague error string is insufficient for recovery.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Which failures should a subagent resolve locally, and what happens next?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Handle transient failures locally with backoff or a reformulated query; propagate only unresolved failures with their full context so the coordinator can retry, switch source, re-delegate, or proceed with an annotated gap.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How should synthesis handle partial research coverage?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Identify well-supported findings and explicitly name areas whose sources failed or remained incomplete; never hide coverage gaps behind fluent prose.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Why is high aggregate accuracy insufficient before reducing human review?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Aggregate accuracy can hide weak document types and fields; measure performance by document segment and by field before changing the review policy.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How does field-level confidence become a calibrated routing signal?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Calibrate thresholds on a labeled validation set for each field-by-segment slice; a raw model score is only an input signal, not a probability of correctness.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Which conditions independently trigger human review?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Low calibrated confidence, an unvalidated segment, ambiguity or contradiction, and high impact are OR conditions: any one is enough, and a high score does not cancel another trigger.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When can a field be auto-approved, and what audit still applies?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Auto-approve only when no trigger is active and that field-by-segment slice is validated; keep auto-approved fields in a separate stratified random audit sample to measure real errors and support recalibration.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How does targeted triage differ from audit sampling?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Targeted triage reviews known risks identified by triggers; audit sampling examines auto-approved items to discover missed patterns, so sampling complements rather than replaces triage.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do the extraction reviewer, domain specialist, and authorization owner differ?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>The extraction reviewer checks the flagged value and necessary excerpt, the domain specialist resolves interpretive ambiguity, and the authorization owner approves high-impact or irreversible action; reviewing data is not authorizing its use.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What belongs in a claim-source mapping?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Pair each claim with its source URL or document, relevant evidence excerpt, locator where useful, and publication or collection date, and preserve those mappings through synthesis.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How should credible sources with conflicting statistics be handled?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Preserve both values with their sources and methodological contexts, pass the conflict to the coordinator for reconciliation, and keep the analysis alive rather than choosing, averaging, or discarding evidence.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How should dates and certainty appear in the final report?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Keep publication_date, using null when unknown, distinguish temporal change from contradiction, separate well-established from contested findings, and render financial data as tables, events as prose, and technical findings as structured lists.</span></div>
+    </li>
+    </ol>
+  </section>
+
+  <section class="lesson" id="lesson-02" aria-labelledby="heading-02">
+    <div class="lesson-head">
+      <p class="priority">Priority 07</p>
+      <h2 id="heading-02">Lesson 02 · Coordinator and Subagent Orchestration</h2>
+      <p class="lesson-meta">Domain 1 · Agentic Architecture &amp; Orchestration · 11 cards
+        <a href="aula-02.html" aria-label="Open full Lesson 02">Full lesson</a>
+      </p>
+    </div>
+    <ol class="cards">
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Why does hub-and-spoke route subagent communication through the coordinator?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Central routing provides observability, consistent error handling, and controlled information flow; direct subagent-to-subagent channels hide decisions and failures from the coordinator.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What are the coordinator's four core responsibilities?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Decompose the full query, delegate distinct scopes to the right specialists, aggregate structured results, and dynamically select only the subagents the query requires.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>All subagents succeeded, but the report covers only one niche. Where is the defect?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>The coordinator's decomposition was too narrow: the subagents executed their assigned scopes correctly, so fix topic-dimension enumeration and coverage checks in the coordinator.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How does an iterative refinement loop close coverage gaps?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>The coordinator evaluates synthesis for gaps, re-delegates targeted queries with the missing context, reruns synthesis with the new findings, and repeats until coverage is sufficient.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What must the coordinator have to spawn subagents on the exam?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Its allowedTools must include Task; the current product calls this tool Agent and treats allowedTools as pre-approval, but the exam follows the guide's Task requirement.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What does an AgentDefinition configure, and how must it be wired?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>description guides coordinator selection, prompt defines the specialist's role and output, and tools restricts capabilities; register the definition in the coordinator's agents option because merely declaring it does not make it available.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do you diagnose common subagent-spawning failures?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>No delegation at all points to missing Task permission; one unavailable agent points to missing wiring; wrong-agent selection points to descriptions; the right agent exceeding its role points to tools and system prompt.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What must a self-contained Task prompt include?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Include objective, scope and boundaries, complete findings with evidence and source metadata, permitted sources and tools, quality and completion criteria, output schema, and instructions for reporting errors and gaps; subagents inherit neither history nor memory between calls.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What must the coordinator verify before accepting a subagent result?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Check scope coverage, claim-source attribution, required structure, and declared errors or gaps; fluent prose and a successful tool status do not prove correctness, so re-delegate any explicit gap before aggregation.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do you run independent and dependent subtasks correctly?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Emit multiple Task calls in the same coordinator response for independent work; put dependent work in a later turn with all required upstream results explicitly in its prompt.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How much autonomy should an open-research subagent receive?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Specify objectives, quality criteria, scope, tools, output, and completion contract while leaving search queries and source order adaptable; mandatory procedures still require workflow enforcement and coordinator verification.</span></div>
+    </li>
+    </ol>
+  </section>
+
+  <section class="lesson" id="lesson-11" aria-labelledby="heading-11">
+    <div class="lesson-head">
+      <p class="priority">Priority 08</p>
+      <h2 id="heading-11">Lesson 11 · Message Batches and Multi-Pass Review</h2>
+      <p class="lesson-meta">Domain 4 · Prompt Engineering &amp; Structured Output · 10 cards
+        <a href="aula-11.html" aria-label="Open full Lesson 11">Full lesson</a>
+      </p>
+    </div>
+    <ol class="cards">
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Which three numbers define the Message Batches API value proposition?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>It is asynchronous, costs 50% less than synchronous requests, and can take up to 24 hours with no latency SLA.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Which workloads belong in batch, and does polling change that decision?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use batch for latency-tolerant, non-blocking work consumed hours later, not real-time replies or merge-blocking checks; polling is normal tracking but neither shortens processing nor creates an SLA.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do you correlate batch requests with out-of-order results?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Assign a unique custom_id to each request and match results and failures by the returned custom_id rather than by list position.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What is the exam's client-tool limitation for a batch request?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>A single batch item cannot run the application-driven multi-turn loop of tool_use followed by tool_result; orchestrate that loop outside the item, without generalizing this into a ban on every kind of tool.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How often should batches be submitted under a 30-hour delivery SLA?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use submission interval plus 24 hours plus margin within the SLA; the guide's 4-hour interval gives 28 hours total and a 2-hour margin, while 6 hours is the theoretical zero-margin ceiling.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How should batch failures and prompt refinement be handled?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Fix causes and resubmit only failed custom_id items, and refine prompts on a small synchronous sample before a large run; sample testing improves first-pass success but does not change the 50% discount.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Why is an independent review instance stronger than self-review?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>It receives the diff or code and review criteria without the generator's reasoning history, avoiding the assumptions and self-confirmation bias that extended thinking in the same session cannot remove.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do per-file and cross-file passes address attention dilution?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Review each file in a focused pass for local issues, then run a separate integration pass for cross-file contracts and data flow; a larger context window or repeated identical passes does not provide that focus.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Why specialize review passes by concern?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Security, business logic, and API design examples compete for recall in one prompt, so use independent focused passes with their own few-shot examples and merge their findings.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How can confidence route findings after a verification pass?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Calibrate confidence thresholds against labeled confirmed and dismissed findings; send low-confidence findings to triage or another pass rather than deleting them, and never treat raw confidence as truth.</span></div>
+    </li>
+    </ol>
+  </section>
+
+  <section class="lesson" id="lesson-05" aria-labelledby="heading-05">
+    <div class="lesson-head">
+      <p class="priority">Priority 09</p>
+      <h2 id="heading-05">Lesson 05 · Structured Errors, MCP, and Built-In Tools</h2>
+      <p class="lesson-meta">Domain 2 · Tool Design &amp; MCP Integration · 12 cards
+        <a href="aula-05.html" aria-label="Open full Lesson 05">Full lesson</a>
+      </p>
+    </div>
+    <ol class="cards">
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How does an MCP tool communicate failure to the agent?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Return a tool result with isError: true and readable error content so the agent can reason about recovery; failure is data, not necessarily a crashed agentic loop.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do transient, validation, business, and permission errors differ?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Transient errors warrant backoff or retry; validation requires corrected input; business violations require explanation or escalation without retry; permission failures require credentials, scope, or human intervention.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What structured error metadata prevents blind retries?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Include errorCategory, isRetryable, and a human-readable description, with a customer-friendly explanation for business violations; Operation failed gives the agent no recovery decision.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How does an access failure differ from a valid empty result?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>A valid empty result is a successful query with no matches; an access failure means the query did not complete and must carry isError plus category and retryability instead of pretending that no data exists.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Where are shared and personal MCP servers configured?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use a versioned project-root .mcp.json for servers the whole team needs and ~/.claude.json for personal servers that should not travel through git.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How can .mcp.json share configuration without committing secrets?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Reference environment variables such as ${GITHUB_TOKEN} instead of hardcoding tokens; the config is shared while each developer supplies the secret locally.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What should you check before rewriting an unused MCP tool's description?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Run /mcp or claude mcp list to verify connection status, approval, missing environment variables, and exposed tool count; only a connected server with discovered tools can have a selection problem.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When should content be exposed as an MCP resource?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Expose catalogs such as issue summaries, documentation hierarchies, and database schemas as resources when the agent wastes exploratory calls discovering what exists; tools perform actions while resources provide content visibility.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When is a custom MCP server justified?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Prefer existing community servers for standard integrations such as GitHub, Jira, Slack, or Postgres; build custom servers for team-specific workflows that existing servers do not cover.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do Grep, Glob, Read, Write, and Edit differ?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Grep searches file contents, Glob finds paths by pattern, Read inspects a file or range, Write creates or replaces complete content, and Edit makes a surgical replacement using a unique anchor.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What is the reliable fallback when Edit's anchor is not unique?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Read the whole file, modify the intended content, and Write it back; do not repeat the same ambiguous Edit or bypass it with sed.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do you explore a large codebase without overstating completeness?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Define the question and stopping criterion, narrow candidates with Glob and Grep, read minimal evidence, follow re-exports and local aliases to actual invocations, log file:line evidence and exclusions, and report dynamic or unresolved calls as boundaries rather than absence.</span></div>
+    </li>
+    </ol>
+  </section>
+
+  <section class="lesson" id="lesson-01" aria-labelledby="heading-01">
+    <div class="lesson-head">
+      <p class="priority">Priority 10</p>
+      <h2 id="heading-01">Lesson 01 · The Agent SDK and the Agentic Loop</h2>
+      <p class="lesson-meta">Domain 1 · Agentic Architecture &amp; Orchestration · 8 cards
+        <a href="aula-01.html" aria-label="Open full Lesson 01">Full lesson</a>
+      </p>
+    </div>
+    <ol class="cards">
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do you consume query() and recognize the final Agent SDK result?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Iterate query() with async for, handle AssistantMessage blocks while work progresses, and read ResultMessage.subtype for the final outcome; query() is an asynchronous message stream, not one synchronous HTTP response.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Who controls the loop in Agent SDK, Messages API, and Claude Code CLI?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>The Agent SDK manages the loop and built-in tools; a Messages API application executes client tools and returns tool_result itself; Claude Code manages the CLI loop while scripts control flags, context, permissions, and output handling.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Which stop_reason values control the basic agentic loop?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>On tool_use, execute every requested tool, append all matching results to history, and call again; on end_turn, stop and deliver the final response; never infer completion from assistant text.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How should other stop_reason values be treated?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Treat max_tokens and model_context_window_exceeded as incomplete output, follow the configured rule for stop_sequence, resend the current response to continue after pause_turn, and handle refusal rather than blindly retrying.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What is the contract for multiple tool_use blocks in one response?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Execute all of them, in parallel when independent, and return every tool_result together in one user message with matching tool_use_id values; failed tools also need results because an unmatched tool_use invalidates the next request.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Why can separate user messages for parallel tool results reduce later parallelism?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>They make the history demonstrate one call per turn; return results together instead, and use disable_parallel_tool_use: true only when serialization is intentional.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do model-driven tool selection and access control coexist?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>The model chooses which available tool to call and when to stop, while the runtime defines each role's exposed tool perimeter; this differs from a fixed decision tree and does not grant unrestricted access.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do you configure a read-only Agent SDK reviewer?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Expose only the required read tools, remove write and shell capabilities with disallowed_tools, and use dontAsk; allowed_tools pre-approves rather than forming a complete allowlist, and the SDK does not load .env automatically.</span></div>
+    </li>
+    </ol>
+  </section>
+
+  <section class="lesson" id="lesson-03" aria-labelledby="heading-03">
+    <div class="lesson-head">
+      <p class="priority">Priority 11</p>
+      <h2 id="heading-03">Lesson 03 · Enforcement, Hooks, and Session Management</h2>
+      <p class="lesson-meta">Domain 1 · Agentic Architecture &amp; Orchestration · 8 cards
+        <a href="aula-03.html" aria-label="Open full Lesson 03">Full lesson</a>
+      </p>
+    </div>
+    <ol class="cards">
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When is a prerequisite gate required instead of stronger prompting?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use a gate whenever identity verification, a value limit, or tool order is mandatory: code blocks downstream execution until the prerequisite is valid, whereas prompt guidance always has a nonzero failure rate.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What makes a human handoff actionable without transcript access?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Send fixed fields with the verified customer ID, established root cause, amount involved, and recommended action; the human should act without rereading or repeating the diagnosis.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How should one message containing several customer concerns be handled?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Decompose it into distinct items, investigate them in parallel with the same verified context, and return one unified resolution that closes every item rather than answering only the first.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When should a PreToolUse hook intercept a call?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use it before execution to prevent a policy violation and optionally redirect the model with permissionDecision deny and a reason; PostToolUse is too late to undo an action.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When is PostToolUse the right normalization mechanism?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use it to transform heterogeneous tool results, such as Unix timestamps and numeric statuses, into canonical values before the model processes them; mechanical normalization belongs in code rather than prompt instructions.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When do prompt chaining and dynamic decomposition fit?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use prompt chaining for predictable sequential stages known in advance; use dynamic decomposition for open investigations whose next tasks depend on intermediate discoveries.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When should you resume a session versus start fresh?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Resume a named session when its context remains valid and identify specific changed files for targeted reanalysis; start fresh with a structured summary when tool results are stale or the codebase changed substantially.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>When is fork_session the right operation?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use fork_session to explore divergent approaches from one shared analysis baseline; each branch inherits that baseline and then evolves independently.</span></div>
+    </li>
+    </ol>
+  </section>
+
+  <section class="lesson" id="lesson-09" aria-labelledby="heading-09">
+    <div class="lesson-head">
+      <p class="priority">Priority 12</p>
+      <h2 id="heading-09">Lesson 09 · Explicit Criteria and Few-Shot Prompting</h2>
+      <p class="lesson-meta">Domain 4 · Prompt Engineering &amp; Structured Output · 7 cards
+        <a href="aula-09.html" aria-label="Open full Lesson 09">Full lesson</a>
+      </p>
+    </div>
+    <ol class="cards">
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What reduces false positives better than be conservative or high-confidence filtering?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Define testable categorical criteria for exactly what to report and what to skip, such as flagging a comment only when its claimed behavior contradicts actual code behavior.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What should you do while repairing a review category with many false positives?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Temporarily disable that category, rewrite it with explicit criteria and few-shot examples, then re-enable it; noisy categories also erode trust in accurate categories.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do you make severity labels consistent across reviews?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Define each severity level with an explicit behavioral criterion and a concrete code example, rather than relying on labels such as major or minor alone.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Which project knowledge belongs in persistent review context?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Document project conventions, intentionally accepted patterns, and exclusion criteria so every review can distinguish real defects from team decisions and out-of-scope code.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Where should persistent and one-off review criteria live?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Keep persistent criteria in versioned CLAUDE.md, path-scoped rules, or managed-review REVIEW.md; keep a one-off exception in that run's prompt so it does not affect future reviews.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What makes few-shot examples effective?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use 2–4 complete input/output examples targeting ambiguous cases, show why the chosen action beats the plausible alternative, and demonstrate the exact output format rather than adding only obvious examples.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How does few-shot reduce hallucination in document extraction?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Demonstrate correct extraction across layout and notation variations, including an example that returns null when information is absent instead of inventing a value.</span></div>
+    </li>
+    </ol>
+  </section>
+
+  <section class="lesson" id="lesson-10" aria-labelledby="heading-10">
+    <div class="lesson-head">
+      <p class="priority">Priority 13</p>
+      <h2 id="heading-10">Lesson 10 · Structured Output, Schemas, and Validation Retry</h2>
+      <p class="lesson-meta">Domain 4 · Prompt Engineering &amp; Structured Output · 9 cards
+        <a href="aula-10.html" aria-label="Open full Lesson 10">Full lesson</a>
+      </p>
+    </div>
+    <ol class="cards">
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Why is tool use with a JSON schema the exam's most reliable structured-output method?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>The extraction tool's input_schema makes the model return structured tool input instead of prose, eliminating JSON syntax and formatting failures by construction; strict: true enforces exact schema conformance in the current product.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do prompt formatting, prefill, and tool use differ on the exam?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Prompt formatting offers no guarantee, prefill only forces the response to begin inside JSON, and tool use with a strict schema imposes structure; choose according to how much deviation the consumer can tolerate.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How should output that grows with input size be prevented from truncating?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Split the work into smaller scoped calls with the same schema and merge, deduplicate, and recalculate results in code; raising max_tokens only fits a predictable fixed-size output that barely exceeds a low configured limit.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What remains to validate after strict schema validation succeeds?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Validate semantics in application code: totals may disagree and values may occupy the wrong fields while remaining schema-valid; schema guarantees shape, not meaning.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How should a schema represent missing, ambiguous, or novel source values?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use optional or nullable fields for absent information, unclear for ambiguity, and other plus a detail string for new categories so the schema does not pressure the model to fabricate.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Should normalization happen in a hook or in the prompt?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Normalize values returned by tools in PostToolUse code; normalize values the model reads from documents with prompt rules and examples alongside the schema, because the error originates in interpretation rather than transport.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What makes retry-with-error-feedback effective, and when is it useless?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Resend the original document, the failed extraction, and specific validation errors so the model can correct inconsistent fields; if the source lacks the information, supply it or accept null instead of repeatedly pressuring for fabrication.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How can a schema support self-correction for inconsistent totals?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Extract calculated_total from line items alongside the document's stated_total and set conflict_detected when they disagree, exposing source inconsistency instead of silently choosing one value.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Why record detected_pattern on each review finding?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Group dismissed findings by the construct that triggered them to identify weak rules and refine the tool from evidence; this records what fired the finding, not how confident the model felt.</span></div>
+    </li>
+    </ol>
+  </section>
+
+  <section class="lesson" id="lesson-14" aria-labelledby="heading-14">
+    <div class="lesson-head">
+      <p class="priority">Priority 14</p>
+      <h2 id="heading-14">Lesson 14 · Exam Strategy and Logistics</h2>
+      <p class="lesson-meta">Final review · All domains · 7 cards
+        <a href="aula-14.html" aria-label="Open full Lesson 14">Full lesson</a>
+      </p>
+    </div>
+    <ol class="cards">
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What are the core numbers and languages of the CCAR-F exam?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>There are 60 questions in 120 minutes across 4 scenarios drawn from 6, with a passing score of 720 on a 100–1000 scale; the exam is offered in English and Japanese.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>What should you identify before reading the answer options?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Identify the production symptom or the key design requirement, form a root-cause hypothesis, and then find the option that solves that mechanism with the smallest proportional change.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How do you choose between a structural mechanism and a prompt refinement?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Use code, schemas, hooks, gates, or configuration for deterministic guarantees; use specific descriptions, explicit criteria, and few-shot examples for judgment problems, avoiding both cosmetic patches and over-engineering.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How should you handle Select TWO and unanswered questions?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Select exactly the requested count and never leave an item blank: wrong guesses carry no additional penalty, so eliminate what you can and choose the most plausible answer.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>How should you manage the 120-minute clock?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Budget about 2 minutes per question; eliminate options, decide, mark uncertainty for review, move on, and return with remaining time rather than sacrificing the pace of later questions.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Which identification and technology checks belong before exam day?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Bring a valid government-issued photo ID whose name exactly matches the Pearson registration, and run the Pearson VUE tech check on the same machine, network, webcam, microphone, and location.</span></div>
+    </li>
+    <li class="card">
+      <div class="q"><span class="label" aria-hidden="true">Q</span><span>Which exam-day rules protect the session and registration?</span></div>
+      <div class="a"><span class="label" aria-hidden="true">A</span><span>Keep the desk clear with no notes, second monitor, headphones, or smartwatch; start check-in early, accept the NDA, stay visible without speaking to anyone, and allow 48 hours for cancellation or rescheduling under the current FAQ and policies.</span></div>
+    </li>
+    </ol>
+  </section>
+</main>
+
+<footer>
+  <a href="#top">Back to review index</a> · <a href="index.html">Course index</a> · Read the question, confirm the answer, move on.
+</footer>
+
+</div>
+</body>
+</html>
