@@ -25,7 +25,7 @@ Curso de estudo para a prova **Claude Certified Architect – Foundations (CCAR-
   [Fichamento](#fichamento-study-notes-em-inglês). Por enquanto, aulas 03, 04, 06, 07, 08, 11, 12 e 13.
 - **Revisão final (English Q&A)**: página única `revisao.html`, 100% em inglês, com 147 perguntas e
   respostas afirmativas sempre visíveis, agrupadas por aula e ordenadas por prioridade de revisão.
-  A edição de texto funciona sem JavaScript e sem depender de áudio.
+  Os cards não dependem de JavaScript; a narração opcional em inglês usa o player do curso.
 
 ## Como usar
 
@@ -94,11 +94,25 @@ Cada card traz uma pergunta curta e uma resposta afirmativa visível; não há t
 revisão ou questões repetidas do simulado. As aulas aparecem em ordem de prioridade, com mais cards
 nos pontos que exigem maior atenção e manutenção curta nos já consolidados.
 
-A edição de texto é estática e não exige JavaScript. Para regenerar depois de editar o conteúdo:
+Os cards são estáticos e ficam visíveis sem JavaScript. A narração opcional em inglês tem cerca de
+42 minutos, acompanha o texto e usa o mesmo player das outras páginas. Para regenerar a página depois
+de editar o conteúdo:
 
 ```bash
 python3 tools/revisao.py    # tools/revisao-content.json -> revisao.html
 ```
+
+Ao mudar o texto, regenere também a narração e publique o MP3 na release. As marcações
+`narracao/revisao.js` entram no git; o MP3 fica fora dele:
+
+```bash
+PAUSA=4 NARRAR_TIMEOUT=60 NARRAR_TENTATIVAS=8 \
+  uv run --with edge-tts --with html5lib python tools/narrar_lento.py revisao.html --en
+uv run --with edge-tts --with html5lib python tools/narrar.py --conferir revisao.html --en
+gh release upload narracao audio/revisao.mp3 --clobber
+```
+
+Limpe `audio/revisao.txt` e `audio/.revisao-parts/` depois da geração, como nas demais narrações.
 
 ## Extensão 24/11 (produto atual, fora da prova)
 

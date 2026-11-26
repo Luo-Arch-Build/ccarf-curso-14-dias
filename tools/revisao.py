@@ -40,7 +40,7 @@ ESTILO = """\
     text-transform: uppercase; margin: 0 0 4px; }
   .lesson-head h2 { font-size: 20px; line-height: 1.3; margin: 0 0 5px; }
   .lesson-meta { color: var(--muted); font-size: 12.5px; margin: 0; }
-  .lesson-meta a { margin-left: 8px; white-space: nowrap; }
+  .lesson-nav { font-size: 12.5px; margin-top: 4px; }
   ol.cards { list-style: none; padding: 0; margin: 0; }
   .card { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent);
     border-radius: 8px; padding: 12px 15px; margin: 8px 0; overflow-wrap: break-word; }
@@ -56,7 +56,6 @@ ESTILO = """\
     h1 { font-size: 24px; }
     .review-index { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .lesson-head h2 { font-size: 18px; }
-    .lesson-meta a { display: inline-block; margin: 4px 0 0; }
     .card { padding: 11px 12px; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -88,9 +87,10 @@ def lesson_html(lesson, rank):
     <div class="lesson-head">
       <p class="priority">Priority {rank:02d}</p>
       <h2 id="heading-{attr(number)}">Lesson {esc(number)} · {esc(title)}</h2>
-      <p class="lesson-meta">{esc(lesson['domain'])} · {len(lesson['cards'])} cards
+      <p class="lesson-meta">{esc(lesson['domain'])} · {len(lesson['cards'])} cards</p>
+      <nav class="lesson-nav" aria-label="Lesson {attr(number)} navigation">
         <a href="aula-{attr(number)}.html" aria-label="Open full Lesson {attr(number)}">Full lesson</a>
-      </p>
+      </nav>
     </div>
     <ol class="cards">
 {cards}
@@ -130,7 +130,7 @@ def construir():
     <span class="tag">{total} cards</span>
     <span class="tag">{len(lessons)} lessons</span>
     <span class="tag">English</span>
-    <span class="tag">Text edition</span>
+    <span class="tag">English narration</span>
   </div>
 </header>
 
@@ -143,16 +143,19 @@ def construir():
 </main>
 
 <footer>
-  <a href="#top">Back to review index</a> · <a href="index.html">Course index</a> · Read the question, confirm the answer, move on.
+  <p>Read the question, confirm the answer, move on.</p>
+  <nav aria-label="Review navigation"><a href="#top">Back to review index</a> · <a href="index.html">Course index</a></nav>
 </footer>
 
 </div>
+<script src="narracao/revisao.js"></script>
+<script src="narracao/player.js"></script>
 </body>
 </html>
 """
     destino = RAIZ / "revisao.html"
     destino.write_text(pagina, encoding="utf-8")
-    print(f"ok: {destino.name} ({len(lessons)} lessons, {total} cards, English text edition)")
+    print(f"ok: {destino.name} ({len(lessons)} lessons, {total} cards, English narration)")
 
 
 if __name__ == "__main__":
