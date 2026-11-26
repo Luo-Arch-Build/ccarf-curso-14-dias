@@ -40,6 +40,13 @@
   .reset:hover { border-color: #f87171; color: #f87171; }
   .dica { border-left: 3px solid var(--accent); }
   .dica strong { color: var(--accent); }
+  .review-link { display: block; margin: 14px 0; padding: 14px 18px; background: var(--card);
+    border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 10px;
+    color: var(--text); text-decoration: none; }
+  .review-link strong, .review-link span { display: block; }
+  .review-link span { color: var(--muted); font-size: 13px; margin-top: 3px; }
+  .review-link:hover { border-color: var(--accent); }
+  .review-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 </style>
 </head>
 <body>
@@ -53,6 +60,11 @@
   <div class="progress-outer"><div class="progress-inner" id="bar"></div></div>
   <div class="stats" id="stats">Carregando…</div>
 </div>
+
+<a class="review-link" href="revisao.html">
+  <strong>Final review · English Q&A</strong>
+  <span>One page · visible answers · ordered by review priority · text edition</span>
+</a>
 
 <div class="card dica">
   <strong>Como usar.</strong> Uma aula por dia, ~60 min. Leia o conteúdo, decore o glossário EN→PT e
